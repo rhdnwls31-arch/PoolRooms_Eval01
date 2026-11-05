@@ -73,3 +73,11 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# CCGS — 세션 상태/로그는 기록용이라 커밋하지 않는다 (CLAUDE.md 규칙)
+/production/session-state/
+/production/session-logs/
+
+# 배치 빌드/에디터 실행 로그
+/build_result.txt
+/builder_log.txt
