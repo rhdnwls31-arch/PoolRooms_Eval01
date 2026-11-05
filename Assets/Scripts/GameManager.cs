@@ -238,6 +238,40 @@ public class GameManager : MonoBehaviour
         foreach (TextMesh sign in depthSigns) sign.text = text;
     }
 
+    // [신규] 마네킹에 부딪쳤을 때 호출됨: 정신력을 하나 깎고 잠깐 암전
+    public void OnPlayerHit(GameObject attacker)
+    {
+        if (gameOver || busy) return;
+        StartCoroutine(HitRoutine(attacker));
+    }
+
+    IEnumerator HitRoutine(GameObject attacker)
+    {
+        busy = true;                 // 부딪친 동안은 복도 끝 판정이 겹치지 않게 막음
+        SetPlayerControl(false);
+
+        sanity--;                    // 정신력 하나 감소
+        UpdateVignette();            // 화면 가장자리가 어두워짐
+        UpdateLamps();               // 램프가 하나 꺼짐
+        Debug.Log("마네킹에 부딪쳤다! 정신력 " + sanity + "/" + maxSanity);
+
+        yield return fader.FadeOut();                        // 화면이 검게
+        if (attacker != null) attacker.SetActive(false);    // 어두운 사이에 마네킹이 사라짐
+
+        if (sanity <= 0)
+        {
+            gameOver = true;
+            Debug.Log("실패... 익사했다");
+            yield return ShowResult(false);
+            yield break;
+        }
+
+        yield return new WaitForSeconds(0.3f);
+        yield return fader.FadeIn();                         // 다시 밝아짐
+        SetPlayerControl(true);
+        busy = false;
+    }
+
     // 전환 중에는 플레이어 이동/시점을 막음
     void SetPlayerControl(bool on)
     {

@@ -6,19 +6,20 @@ public class AnomalyManager : MonoBehaviour
     [Header("마네킹")]
     public MannequinTracker mannequinA; // 왼쪽 벽 마네킹
     public MannequinTracker mannequinB; // 오른쪽 벽 마네킹
-    public GameObject extraMannequin;   // 평소엔 꺼져 있는 마네킹
+    public GameObject extraMannequin;   // 평소엔 꺼져 있는 마네킹 (MannequinRunner가 붙어 있음)
     public Transform player;            // 플레이어 (바라볼 대상)
 
-    [Header("조명 / 소품 / 물 (신규)")]
+    [Header("조명 / 소품 / 물")]
     public Transform corridor; // Corridor 오브젝트 (아래의 천장 조명을 자동으로 찾음)
     public Transform flamingo; // 플라밍고
     public Transform radio;    // 라디오
     public Transform water;    // 물 바닥
 
     [Header("물 차오르기")]
-    public float waterStartY = 0.02f; // 물의 시작 높이
-    public float waterMaxY = 0.7f;    // 물의 최대 높이
-    public float waterSpeed = 0.06f;  // 초당 올라가는 높이(m)
+    public float waterStartY = 0.02f;   // 물의 시작 높이
+    public float waterMaxY = 0.7f;      // 물의 최대 높이
+    public float waterSpeed = 0.06f;    // 초당 올라가는 높이(m)
+    public float waterHiddenY = -1f;    // 평소에 숨겨 두는 높이 (바닥 아래)
 
     const int TypeCount = 8; // 이상현상 종류 수
     int lastType = -1;       // 직전 라운드의 종류 (연속 방지용)
@@ -31,6 +32,8 @@ public class AnomalyManager : MonoBehaviour
 
     bool waterRising;        // 물이 차오르는 중인가
 
+    MannequinRunner runner;  // 달려오는 마네킹 스크립트
+
     Vector3 flamingoPos, radioPos;    // 소품의 원래 위치
     Quaternion flamingoRot, radioRot; // 소품의 원래 회전
 
@@ -39,6 +42,10 @@ public class AnomalyManager : MonoBehaviour
         // 마네킹: 플레이어를 알려 주고, 추가 마네킹은 끈 상태로 시작
         mannequinA.player = player;
         mannequinB.player = player;
+
+        runner = extraMannequin.GetComponent<MannequinRunner>();
+        runner.player = player;
+        runner.Init();                 // 꺼지기 전에 원래 위치를 기억시킴
         extraMannequin.SetActive(false);
 
         // 천장 조명을 모두 찾아서 원래 색/밝기를 기억
@@ -55,7 +62,17 @@ public class AnomalyManager : MonoBehaviour
         flamingoPos = flamingo.position; flamingoRot = flamingo.rotation;
         radioPos = radio.position; radioRot = radio.rotation;
 
-        water.gameObject.SetActive(false);
+        // 물은 끄지 않고 바닥 아래에 숨겨 둔다
+        // (꺼 두면 처음 켤 때 쉐이더를 준비하느라 화면이 끊김 → 미리 그려 두면 끊김이 없음)
+        water.gameObject.SetActive(true);
+        SetWaterY(waterHiddenY);
+    }
+
+    void SetWaterY(float y)
+    {
+        Vector3 p = water.position;
+        p.y = y;
+        water.position = p;
     }
 
     void Update()
@@ -63,9 +80,8 @@ public class AnomalyManager : MonoBehaviour
         // 물이 차오르는 중이면 매 프레임 조금씩 올림
         if (waterRising)
         {
-            Vector3 p = water.position;
-            p.y = Mathf.MoveTowards(p.y, waterMaxY, waterSpeed * Time.deltaTime);
-            water.position = p;
+            float y = Mathf.MoveTowards(water.position.y, waterMaxY, waterSpeed * Time.deltaTime);
+            SetWaterY(y);
         }
 
         // 조명 하나가 깜빡이는 중이면 불규칙하게 켰다 껐다 함
@@ -86,6 +102,7 @@ public class AnomalyManager : MonoBehaviour
     {
         mannequinA.ResetState();
         mannequinB.ResetState();
+        runner.ResetState();            // 달리던 마네킹을 멈추고 제자리로
         extraMannequin.SetActive(false);
 
         for (int i = 0; i < ceilingLights.Length; i++)
@@ -99,10 +116,7 @@ public class AnomalyManager : MonoBehaviour
         radio.position = radioPos; radio.rotation = radioRot;
 
         waterRising = false;
-        water.gameObject.SetActive(false);
-        Vector3 p = water.position;
-        p.y = waterStartY;
-        water.position = p;
+        SetWaterY(waterHiddenY);        // 물을 다시 바닥 아래로 숨김
     }
 
     // hasAnomaly가 true면 이상현상 하나를 켜고, false면 모두 원래대로 둔다
@@ -129,7 +143,8 @@ public class AnomalyManager : MonoBehaviour
                 break;
             case 1:
                 extraMannequin.SetActive(true);
-                Debug.Log("이상현상: 마네킹이 한 명 늘었다");
+                runner.StartRun();      // 잠시 뒤 플레이어를 향해 달려옴
+                Debug.Log("이상현상: 마네킹이 달려온다");
                 break;
             case 2:
                 target.StartHeadTrack();
@@ -158,8 +173,8 @@ public class AnomalyManager : MonoBehaviour
                 Debug.Log("이상현상: 라디오가 복도 가운데로 옮겨졌다");
                 break;
             case 7:
-                water.gameObject.SetActive(true);
-                waterRising = true; // Update에서 서서히 올라감
+                SetWaterY(waterStartY); // 바닥 아래에서 시작 높이로 올림
+                waterRising = true;     // Update에서 서서히 올라감
                 Debug.Log("이상현상: 물이 차오른다");
                 break;
         }

@@ -2978,6 +2978,7 @@ MonoBehaviour:
   waterStartY: 0.1
   waterMaxY: 1.1
   waterSpeed: 0.14
+  waterHiddenY: -1
 --- !u!1 &881800906
 GameObject:
   m_ObjectHideFlags: 0
@@ -4708,13 +4709,14 @@ GameObject:
   - component: {fileID: 1833788466}
   - component: {fileID: 1833788468}
   - component: {fileID: 1833788467}
+  - component: {fileID: 1833788469}
   m_Layer: 0
   m_Name: Water
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1833788466
 Transform:
   m_ObjectHideFlags: 0
@@ -4724,7 +4726,7 @@ Transform:
   m_GameObject: {fileID: 1833788465}
   serializedVersion: 2
   m_LocalRotation: {x: 0.7071068, y: -0, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 0.02, z: 0}
+  m_LocalPosition: {x: 0, y: -1, z: 0}
   m_LocalScale: {x: 5, y: 40, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4787,6 +4789,19 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1833788465}
   m_Mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &1833788469
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1833788465}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2cfa36a81fae7a848a59b48cac61078a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WaterScroll
+  scrollSpeed: {x: 0.015, y: 0.025}
 --- !u!1 &1853351207
 GameObject:
   m_ObjectHideFlags: 0
@@ -5546,7 +5561,13 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2440049413940071930, guid: 67681034a981212438b307ed3552d167, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2068210429}
+    - targetCorrespondingSourceObject: {fileID: 2440049413940071930, guid: 67681034a981212438b307ed3552d167, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2068210430}
   m_SourcePrefab: {fileID: 100100000, guid: 67681034a981212438b307ed3552d167, type: 3}
 --- !u!4 &1986563679 stripped
 Transform:
@@ -5558,6 +5579,47 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 2440049413940071930, guid: 67681034a981212438b307ed3552d167, type: 3}
   m_PrefabInstance: {fileID: 1986563678}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &2068210429
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2068210428}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a974c6b6a5502714f80466db0e12e8cd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MannequinRunner
+  player: {fileID: 0}
+  runSpeed: 6
+  startDelay: 1.2
+  stopDistance: 2.2
+  bobHeight: 0.07
+  bobSpeed: 13
+  leanAngle: 16
+--- !u!95 &2068210430
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2068210428}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 0f3268b580e0b694e8323bbb64dae53c, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &2068850422
 GameObject:
   m_ObjectHideFlags: 0
