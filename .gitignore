@@ -81,3 +81,6 @@ crashlytics-build.properties
 # 배치 빌드/에디터 실행 로그
 /build_result.txt
 /builder_log.txt
+
+# Visual Studio 새 솔루션 포맷 (자동 생성, *.sln과 같은 이유로 제외)
+*.slnx

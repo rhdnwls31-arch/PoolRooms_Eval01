@@ -1,7 +1,7 @@
 # Evidence: Story 001 — 밤의 야외 수영장 도입부
 
 **Date**: 2026-11-05
-**Story**: `production/epics/depth-5m/story-001-night-pool-intro.md`
+**Story**: `production/epics/depth-5m/story-001-dawn-pool-intro.md`
 
 ## Screenshots
 

@@ -113,9 +113,9 @@
 *Governed by `qa.level`: at `qa.level: minimal` tests are waived (advisory), but a Visual/Feel story's retained screenshot is not.*
 
 **Story Type**: Visual/Feel
-**Required evidence**: a retained screenshot in `production/qa/evidence/` + sign-off in `production/qa/evidence/story-001-night-pool-intro-evidence.md`
+**Required evidence**: a retained screenshot in `production/qa/evidence/` + sign-off in `production/qa/evidence/story-001-dawn-pool-intro-evidence.md`
 
-**Status**: [x] Created — `production/qa/evidence/story-001-night-pool-intro/05-dawn-pool-intro-skyfixed.png`
+**Status**: [x] Created — `production/qa/evidence/story-001-dawn-pool-intro/05-dawn-pool-intro-skyfixed.png`
 
 ---
 
@@ -131,5 +131,5 @@
 **Completed**: 2026-11-05
 **Criteria**: 8/9 passing (1 deferred — WASD movement not re-verified in Play mode this session)
 **Deviations**: ADVISORY — sky-band colors read pale/hazy rather than a saturated sunset (candidate for a later lighting/exposure pass); camera uses engine-default Skybox + emissive gradient quads rather than a custom skybox material (per the story's own "or gradient" allowance). OUT OF SCOPE (pre-existing, not from this story): `AnomalyManager.cs`, `GameManager.cs`, `Scene_Game.unity`, `PC_Renderer.asset`, `ProjectSettings.asset` were already modified before this session; `PC_RPAsset.asset` was touched by Unity batchmode build reserialization, not an intentional edit.
-**Test Evidence**: `production/qa/evidence/story-001-night-pool-intro/05-dawn-pool-intro-skyfixed.png` + sign-off in `production/qa/evidence/story-001-night-pool-intro-evidence.md`
+**Test Evidence**: `production/qa/evidence/story-001-dawn-pool-intro/05-dawn-pool-intro-skyfixed.png` + sign-off in `production/qa/evidence/story-001-dawn-pool-intro-evidence.md`
 **Reviewed by**: self, no independent review (solo mode)

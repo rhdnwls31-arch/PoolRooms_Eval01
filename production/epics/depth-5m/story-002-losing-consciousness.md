@@ -114,7 +114,7 @@
 **Story Type**: Visual/Feel
 **Required evidence**: a retained screenshot in `production/qa/evidence/` + sign-off in `production/qa/evidence/losing-consciousness-evidence.md`
 
-**Status**: [x] 스크린샷 보관 완료 (2026-11-05, 3차) — lead sign-off 대기 중
+**Status**: [x] 스크린샷 보관 완료 + lead sign-off Approved (2026-11-05)
 
 `production/qa/evidence/story-002-losing-consciousness/` (해시 스탬프: `stamp.txt`)
 
@@ -135,7 +135,7 @@
 
 ## Dependencies
 
-- Depends on: `production/epics/depth-5m/story-001-night-pool-intro.md`
+- Depends on: `production/epics/depth-5m/story-001-dawn-pool-intro.md`
 - Unlocks: `production/epics/depth-5m/story-003-waking-in-corridor.md`
 
 ---
