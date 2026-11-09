@@ -21,7 +21,9 @@ public class AnomalyManager : MonoBehaviour
     public float waterSpeed = 0.06f;    // 초당 올라가는 높이(m)
     public float waterHiddenY = -1f;    // 평소에 숨겨 두는 높이 (바닥 아래)
 
-    const int TypeCount = 8; // 이상현상 종류 수
+    const int TypeCount = 8; // 이상현상 종류 수 (case 번호 유지를 위해 그대로 둠)
+    // 뽑기 대상 종류만 배열로 명시 (case 1: 달려오는 마네킹은 Story 004에서 제외)
+    static readonly int[] RandomTypes = { 0, 2, 3, 4, 5, 6, 7 };
     int lastType = -1;       // 직전 라운드의 종류 (연속 방지용)
 
     Light[] ceilingLights;   // 복도의 천장 조명들
@@ -125,9 +127,9 @@ public class AnomalyManager : MonoBehaviour
         ResetAll(); // 먼저 전부 원래 상태로
         if (!hasAnomaly) return;
 
-        // 직전 라운드와 다른 종류가 나올 때까지 다시 뽑음
+        // 직전 라운드와 다른 종류가 나올 때까지 다시 뽑음 (뽑기 대상은 RandomTypes로 제한)
         int pick;
-        do { pick = Random.Range(0, TypeCount); } while (pick == lastType);
+        do { pick = RandomTypes[Random.Range(0, RandomTypes.Length)]; } while (pick == lastType);
         lastType = pick;
 
         // 왼쪽(A)/오른쪽(B) 중 누구에게 시킬지 무작위로 고름
