@@ -1,12 +1,12 @@
 # Story 007: 화면 전환 연출 (노이즈 증가 → 암전 → 눈뜨기)
 
 > **Epic**: DEPTH 5m
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Presentation
 > **Type**: Visual/Feel
 > **Estimate**: M
 > **Manifest Version**: N/A (minimal — no control manifest)
-> **Last Updated**: (set by /dev-story when implementation begins)
+> **Last Updated**: 2026-11-09
 
 ## Context
 
@@ -57,11 +57,9 @@
 
 ## Files
 
-- `Assets/Scripts/DreamTransitionController.cs` (신규 — 노이즈 보간 + 씬 전환 + 페이드 연결)
-- `Assets/Settings/Horror_PostFX.asset` (Film Grain 강도 범위 확장)
-- (사용) `Assets/Scripts/ScreenFader.cs` — 재사용
-
----
+- `Assets/Scripts/DreamTransitionController.cs` (신규) — 노이즈 스파이크 + 암전 + 씬 전환 코루틴
+- `Assets/Editor/SecondDreamSceneBuilder.cs` (신규) — 목적지 플레이스홀더 씬(Scene_SecondDream)을 에디터 API로 생성하는 빌더, 메뉴 실행
+- `Assets/Scripts/GameManager.cs` (수정) — `dreamTransition` 필드 추가 및 `OnFakeEndingContact()`에서 `BeginTransition()` 호출 연결
 
 ## QA Test Cases
 
@@ -81,7 +79,7 @@
 **Story Type**: Visual/Feel
 **Required evidence**: a retained screenshot in `production/qa/evidence/` + sign-off in `production/qa/evidence/screen-transition-evidence.md`
 
-**Status**: [ ] Not yet created
+**Status**: [x] Created — `production/qa/evidence/story-007-screen-transition/` (4장) + sign-off `production/qa/evidence/screen-transition-evidence.md`
 
 ---
 
@@ -89,3 +87,13 @@
 
 - Depends on: `production/epics/depth-5m/story-006-mannequin-charge.md`
 - Unlocks: `production/epics/depth-5m/story-008-second-dream-space.md`
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-11-09
+**Criteria**: 5/5 passing
+**Deviations**: ADVISORY — 암전→페이드인 구간이 설정값(`fadeTime: 2`초)보다 빠르게 보임; `production/qa/evidence/screen-transition-evidence.md`에 기록된 대로 자동 캡처 첫 실행 시의 셰이더 컴파일 hitch로 추정되며, 사용자가 실제 라운드를 플레이한 경로에서는 문제 없음을 확인함. OUT OF SCOPE (스토리의 `## Files`에 없었으나 구현 중 사용자 승인) — `Assets/Scenes/Scene_Game.unity`(DreamTransitionController 컴포넌트 배선), `Assets/Scenes/Scene_SecondDream.unity`(+`.meta`, story-008 선행용 플레이스홀더 씬), `ProjectSettings/EditorBuildSettings.asset`(씬 등록), `GameManager.cs`의 `--skiptofakeending` 디버그 전용 테스트 훅(일반 플레이 영향 없음).
+**Test Evidence**: `production/qa/evidence/story-007-screen-transition/` (4장) + sign-off `production/qa/evidence/screen-transition-evidence.md`
+**Reviewed by**: self, no independent review (solo mode)

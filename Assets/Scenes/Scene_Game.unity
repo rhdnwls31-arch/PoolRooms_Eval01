@@ -2222,6 +2222,7 @@ GameObject:
   m_Component:
   - component: {fileID: 685084242}
   - component: {fileID: 685084241}
+  - component: {fileID: 685084243}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -2244,6 +2245,7 @@ MonoBehaviour:
   player: {fileID: 1140152651}
   anomalyManager: {fileID: 862425448}
   fader: {fileID: 742542195}
+  dreamTransition: {fileID: 685084243}
   depthSigns:
   - {fileID: 445447923}
   - {fileID: 615200993}
@@ -2259,6 +2261,7 @@ MonoBehaviour:
   lampOnMat: {fileID: 2100000, guid: 6a0b6bd9eb7aa1941bdbef3101191396, type: 2}
   lampOffMat: {fileID: 2100000, guid: 6a2248df91290b24faa9012a15d516d9, type: 2}
   firstDelay: 0.4
+  firstFadeTime: 2
   signLookTime: 0.3
   afterTeleportDelay: 0.1
   vignetteBase: 0.2
@@ -2278,6 +2281,26 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &685084243
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 685084240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c7ec77cc129579469b1c24294f2e688, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DreamTransitionController
+  postFxVolume: {fileID: 1104456705}
+  fader: {fileID: 742542195}
+  player: {fileID: 1140152651}
+  nextSceneName: Scene_SecondDream
+  grainPeakIntensity: 1
+  grainRiseTime: 0.12
+  grainFallTime: 0.35
+  blackoutFadeTime: 0.5
 --- !u!1 &689831228
 GameObject:
   m_ObjectHideFlags: 0
@@ -2979,6 +3002,9 @@ MonoBehaviour:
   waterMaxY: 1.1
   waterSpeed: 0.14
   waterHiddenY: -1
+  fakeEndingTurnSpeed: 1.5
+  fakeEndingRestOffsetAngle: 70
+  fakeEndingWatchDuration: 2.5
 --- !u!1 &881800906
 GameObject:
   m_ObjectHideFlags: 0
@@ -5594,10 +5620,9 @@ MonoBehaviour:
   player: {fileID: 0}
   runSpeed: 6
   startDelay: 1.2
-  stopDistance: 2.2
-  bobHeight: 0.07
-  bobSpeed: 13
-  leanAngle: 16
+  hitDistance: 0.9
+  turnSpeed: 10
+  runYawOffset: -85
 --- !u!95 &2068210430
 Animator:
   serializedVersion: 7

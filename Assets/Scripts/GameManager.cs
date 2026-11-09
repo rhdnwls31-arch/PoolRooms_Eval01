@@ -14,6 +14,7 @@ public class GameManager : MonoBehaviour
     public Transform player;              // 플레이어 (Inspector에서 연결)
     public AnomalyManager anomalyManager; // 이상현상 담당 (Inspector에서 연결)
     public ScreenFader fader;             // 페이드 담당 (FadeCanvas)
+    public DreamTransitionController dreamTransition; // [신규] Story 007: 가짜 엔딩 접촉 뒤 노이즈 스파이크 → 암전 → 씬 전환 연출
     public TextMesh[] depthSigns;         // 문 위 수심 표지판 글자 2개
     public Volume postFxVolume;           // 후처리 (PostFX Volume)
     public int targetRounds = 5;          // 연속 정답 목표
@@ -78,6 +79,19 @@ public class GameManager : MonoBehaviour
         UpdateLamps(); // [신규]
 
         StartCoroutine(FirstRound());
+
+        foreach (var a in System.Environment.GetCommandLineArgs())
+            if (a == "--skiptofakeending") { StartCoroutine(DebugSkipToFakeEnding()); break; }
+    }
+
+    // [디버그 전용] --skiptofakeending 인자로 실행하면 라운드를 거치지 않고 바로 가짜 엔딩
+    // 접촉 상태로 건너뛴다. Story 007의 화면 전환(노이즈/암전/씬 전환)을 자동 스크린샷
+    // 파이프라인으로 확인하기 위한 테스트 훅 — 인자를 명시적으로 넘길 때만 동작하므로
+    // 일반 플레이/빌드에는 영향 없다.
+    IEnumerator DebugSkipToFakeEnding()
+    {
+        yield return new WaitForSeconds(firstDelay + firstFadeTime + 0.5f); // 첫 페이드인이 끝날 때까지 대기
+        OnFakeEndingContact();
     }
 
     // 게임 시작: 검은 화면에서 라운드를 준비하고 서서히 밝아짐
@@ -227,14 +241,15 @@ public class GameManager : MonoBehaviour
     }
 
     // [신규] 가짜 엔딩 돌진 마네킹에 닿았을 때 호출됨 (Story 006). 정신력/DROWNED는 건드리지 않고
-    // 화면 전환 트리거만 알린다 — 실제 전환 연출(노이즈/암전/씬 로딩)은 Story 007이 이 지점을 이어받는다.
+    // 노이즈 스파이크 → 암전 → 씬 전환(DreamTransitionController, Story 007)으로 이어진다.
     public bool FakeEndingTransitionTriggered { get; private set; }
 
     public void OnFakeEndingContact()
     {
         if (FakeEndingTransitionTriggered) return;
         FakeEndingTransitionTriggered = true;
-        Debug.Log("가짜 엔딩: 마네킹에게 닿았다 — 화면 전환 트리거 (Story 007에서 이어받음)");
+        Debug.Log("가짜 엔딩: 마네킹에게 닿았다 — 화면 전환 연출 시작 (Story 007)");
+        if (dreamTransition != null) dreamTransition.BeginTransition();
     }
 
     // 결과 화면을 보여 주고, R 키를 누르면 처음부터 다시 시작
