@@ -52,7 +52,8 @@ public class PlayerController : MonoBehaviour
         if (kb.aKey.isPressed) x -= 1f;
 
         float speed = kb.leftShiftKey.isPressed ? runSpeed : walkSpeed;
-        Vector3 move = (transform.right * x + transform.forward * z).normalized * speed;
+        Vector3 input = transform.right * x + transform.forward * z;
+        Vector3 move = input.sqrMagnitude > 0f ? input.normalized * speed : Vector3.zero;
 
         // 중력: 바닥에 붙어 있으면 약하게 눌러 주고, 공중이면 점점 빨라지게
         if (controller.isGrounded) verticalVelocity = -1f;
