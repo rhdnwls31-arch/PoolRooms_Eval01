@@ -1,12 +1,12 @@
 # Story 005: 수심 1m 가짜 엔딩 — 마네킹이 바라봄
 
 > **Epic**: DEPTH 5m
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Core
 > **Type**: Logic
 > **Estimate**: M
 > **Manifest Version**: N/A (minimal — no control manifest)
-> **Last Updated**: (set by /dev-story when implementation begins)
+> **Last Updated**: 2026-11-09
 
 ## Context
 
@@ -55,10 +55,9 @@
 
 ## Files
 
-- `Assets/Scripts/GameManager.cs` (수심 1m 분기 추가)
-- `Assets/Scripts/MannequinTracker.cs` (바라보기 트리거 조건 추가, 또는 신규 `MannequinWatcher.cs`로 분리 — 구현 시 판단)
-
----
+- `Assets/Scripts/GameManager.cs` (modified — 수심 1m 분기 추가)
+- `Assets/Scripts/AnomalyManager.cs` (modified — extraMannequin을 처음부터 보이게 하고 MannequinWatcher를 붙임)
+- `Assets/Scripts/MannequinWatcher.cs` (신규 — 가짜 엔딩의 바라보기/정적 구간 상태 머신)
 
 ## QA Test Cases
 
@@ -87,3 +86,13 @@
 
 - Depends on: `production/epics/depth-5m/story-004-first-dream-anomaly-loop.md`
 - Unlocks: `production/epics/depth-5m/story-006-mannequin-charge.md`
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-11-09
+**Criteria**: 4/4 passing
+**Deviations**: `fakeEndingWatchDuration = 2.5f` (정적 구간 신호 시간)는 확정값이 아닌 임시값 — `GAME_DESIGN.md` "확인이 필요한 것"에 추가 검토 필요
+**Test Evidence**: `production/qa/evidence/story-005-depth-1m-fake-ending/01-round1-mannequin-hidden.png` (유닛 테스트는 `qa.level: minimal`에서 waived)
+**Reviewed by**: self, no independent review (solo mode)

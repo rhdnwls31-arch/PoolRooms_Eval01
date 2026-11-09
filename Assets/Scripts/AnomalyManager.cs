@@ -6,7 +6,7 @@ public class AnomalyManager : MonoBehaviour
     [Header("마네킹")]
     public MannequinTracker mannequinA; // 왼쪽 벽 마네킹
     public MannequinTracker mannequinB; // 오른쪽 벽 마네킹
-    public GameObject extraMannequin;   // 평소엔 꺼져 있는 마네킹 (MannequinRunner가 붙어 있음)
+    public GameObject extraMannequin;   // 평소엔 꺼져 있다가 수심 1m 가짜 엔딩에서 복도 중앙에 서는 마네킹 (MannequinRunner + MannequinWatcher + [신규] MannequinChargeTrigger가 붙어 있음 — 돌진은 애니메이션 없이 MannequinChargeTrigger가 단독으로 처리)
     public Transform player;            // 플레이어 (바라볼 대상)
 
     [Header("조명 / 소품 / 물")]
@@ -21,6 +21,13 @@ public class AnomalyManager : MonoBehaviour
     public float waterSpeed = 0.06f;    // 초당 올라가는 높이(m)
     public float waterHiddenY = -1f;    // 평소에 숨겨 두는 높이 (바닥 아래)
 
+    [Header("가짜 엔딩 (수심 1m)")]
+    public float fakeEndingTurnSpeed = 1.5f;           // 마네킹이 플레이어를 돌아보는 속도 (일반 추적보다 느리고 음산하게)
+    public float fakeEndingRestOffsetAngle = 70f;      // "쉬는 자세" 자체를 플레이어 정면에서 이만큼 어긋나게 둔다 —
+                                                        // 복도 중앙이라 플레이어와 일직선이 되는 경우가 있어, 어긋나게
+                                                        // 안 해두면 Slerp이 할 일이 없어 회전이 전혀 안 보일 수 있다
+    public float fakeEndingWatchDuration = 2.5f;       // [임시값] 바라보기 시작부터 정적 구간 끝까지 전체 시간(초) — 수치 미정, GAME_DESIGN.md 확인 필요
+
     const int TypeCount = 8; // 이상현상 종류 수 (case 번호 유지를 위해 그대로 둠)
     // 뽑기 대상 종류만 배열로 명시 (case 1: 달려오는 마네킹은 Story 004에서 제외)
     static readonly int[] RandomTypes = { 0, 2, 3, 4, 5, 6, 7 };
@@ -34,21 +41,46 @@ public class AnomalyManager : MonoBehaviour
 
     bool waterRising;        // 물이 차오르는 중인가
 
-    MannequinRunner runner;  // 달려오는 마네킹 스크립트
+    MannequinRunner runner;   // 달려오는 마네킹 스크립트
+    MannequinWatcher watcher; // [신규] 가짜 엔딩에서 플레이어를 돌아보는 마네킹 스크립트 (extraMannequin에 런타임으로 붙임)
+    MannequinChargeTrigger chargeTrigger; // [신규] 가짜 엔딩의 돌진 트리거 (Story 006, extraMannequin에 런타임으로 붙임)
 
     Vector3 flamingoPos, radioPos;    // 소품의 원래 위치
     Quaternion flamingoRot, radioRot; // 소품의 원래 회전
 
     void Awake()
     {
-        // 마네킹: 플레이어를 알려 주고, 추가 마네킹은 끈 상태로 시작
+        // 마네킹: 플레이어를 알려 줌
         mannequinA.player = player;
         mannequinB.player = player;
 
         runner = extraMannequin.GetComponent<MannequinRunner>();
         runner.player = player;
-        runner.Init();                 // 꺼지기 전에 원래 위치를 기억시킴
+
+        // [신규] 복도 중앙이라 플레이어 스폰 지점과 정확히 일직선에 있다 — "쉬는 자세"를 그대로 두면
+        // 가짜 엔딩이 시작돼도 이미 플레이어를 정면으로 보고 있는 셈이라 돌아보는 움직임이 안 보인다.
+        // Init()이 "원래 자세"로 기억하기 전에 미리 어긋나게 돌려 둬서, 항상 눈에 보이는 회전이 있게 한다.
+        extraMannequin.transform.rotation *= Quaternion.Euler(0f, fakeEndingRestOffsetAngle, 0f);
+        runner.Init();                 // 꺼지기 전에 원래 위치를 기억시킴 (이 어긋난 자세가 "원래 자세"가 됨)
         extraMannequin.SetActive(false);
+
+        // extraMannequin은 이제 수심 1m 가짜 엔딩의 "복도 중앙에 서 있는 마네킹"이기도 하다.
+        // 평소 라운드에서는 기존처럼 꺼 둔다 — 가짜 엔딩 라운드가 시작될 때(화면이 검을 때)
+        // ShowFakeEndingMannequin()에서 미리 켜서, 화면이 밝아졌을 땐 이미 서 있는 것처럼 보이게 한다.
+        watcher = extraMannequin.AddComponent<MannequinWatcher>();
+        watcher.player = player;
+        watcher.turnSpeed = fakeEndingTurnSpeed;
+        watcher.watchDuration = fakeEndingWatchDuration;
+
+        // [신규] 가짜 엔딩의 돌진 트리거 (Story 006) — 바라보기 다음 단계. 애니메이션/MannequinRunner
+        // 없이 독자적으로 움직이므로 player만 필요하다.
+        chargeTrigger = extraMannequin.AddComponent<MannequinChargeTrigger>();
+        chargeTrigger.player = player;
+
+        // [신규] 가짜 엔딩은 완전히 정적인 자세여야 한다 — Animator를 꺼서 기본 상태(Idle)의
+        // 미세한 움직임조차 재생되지 않게 한다 (다른 마네킹처럼 애니메이션이 전혀 없어야 함)
+        Animator extraAnimator = extraMannequin.GetComponent<Animator>();
+        if (extraAnimator != null) extraAnimator.enabled = false;
 
         // 천장 조명을 모두 찾아서 원래 색/밝기를 기억
         ceilingLights = corridor.GetComponentsInChildren<Light>();
@@ -105,7 +137,7 @@ public class AnomalyManager : MonoBehaviour
         mannequinA.ResetState();
         mannequinB.ResetState();
         runner.ResetState();            // 달리던 마네킹을 멈추고 제자리로
-        extraMannequin.SetActive(false);
+        extraMannequin.SetActive(false); // 평소 라운드에서는 다시 숨김 (가짜 엔딩 때만 StartFakeEndingLook()이 켬)
 
         for (int i = 0; i < ceilingLights.Length; i++)
         {
@@ -180,5 +212,32 @@ public class AnomalyManager : MonoBehaviour
                 Debug.Log("이상현상: 물이 차오른다");
                 break;
         }
+    }
+
+    // [신규] 수심 1m 가짜 엔딩 1단계: 마네킹을 켠다 (화면이 검을 때 호출 — 화면이 밝아지면
+    // "이미 서 있던 것"처럼 보이고, 아직 돌아보기는 시작하지 않은 평소 자세 그대로다)
+    public void ShowFakeEndingMannequin()
+    {
+        extraMannequin.SetActive(true);
+    }
+
+    // [신규] 수심 1m 가짜 엔딩 2단계: 플레이어를 돌아보기 시작한다 (GameManager가 화면이 다
+    // 밝아진 "뒤에" 호출 — 돌아보는 움직임 전체가 플레이어 눈에 보이도록 하기 위함)
+    public void StartFakeEndingLook()
+    {
+        watcher.BeginWatching();
+    }
+
+    // [신규] 돌아보기 뒤의 정적 구간이 끝났는가 (GameManager가 매 프레임 폴링)
+    public bool FakeEndingStaticPauseComplete => watcher.StaticPauseComplete;
+
+    // [신규] 수심 1m 가짜 엔딩 3단계: 정적 구간이 끝난 뒤 돌진을 시작한다 (GameManager가 호출).
+    // watcher는 여기서 끈다 — watcher의 느린 Slerp 회전이 돌진 중에도 계속 끼어들면 "천천히 돌아보다가
+    // 다가오는" 것처럼 보여 돌진이 굼떠 보인다. chargeTrigger가 시작 즉시 플레이어 쪽으로 방향을
+    // 스냅시키므로, 더는 watcher가 필요 없다.
+    public void StartFakeEndingCharge()
+    {
+        watcher.enabled = false;
+        chargeTrigger.StartCharge();
     }
 }

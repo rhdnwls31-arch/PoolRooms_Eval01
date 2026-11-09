@@ -1,0 +1,3 @@
+Reviewed-Content-Hash: Assets/Scripts/GameManager.cs 0ad98c128440f0c16618e90408e272c85eb793d1
+Reviewed-Content-Hash: Assets/Scripts/AnomalyManager.cs ee4b528aea912c0c8d1e9eee99c4a8665afdb059
+Reviewed-Content-Hash: Assets/Scripts/MannequinWatcher.cs 1c90045347c661a132f898a97acda889ed5dd1c9

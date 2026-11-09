@@ -1,12 +1,12 @@
 # Story 006: 마네킹의 짧은 직선 돌진과 접촉 처리
 
 > **Epic**: DEPTH 5m
-> **Status**: Ready
+> **Status**: In Progress
 > **Layer**: Feature
 > **Type**: Logic
 > **Estimate**: M
 > **Manifest Version**: N/A (minimal — no control manifest)
-> **Last Updated**: (set by /dev-story when implementation begins)
+> **Last Updated**: 2026-11-09
 
 ## Context
 
@@ -60,10 +60,9 @@
 
 ## Files
 
-- `Assets/Scripts/MannequinChargeTrigger.cs` (신규 — `MannequinRunner.cs`의 이동 패턴 재사용)
-- `Assets/Scripts/MannequinRunner.cs` (애니메이션 결함 수정 대상 — Implementation Notes 참조. 더 이상 "변경 없음"이 아니다)
-
----
+- `Assets/Scripts/MannequinChargeTrigger.cs` (신규 — 애니메이션 없이 정적 자세로, 시작 거리를 약 1초에 주파하도록 속도를 역산해 돌진. 방향은 시작 즉시 스냅)
+- `Assets/Scripts/AnomalyManager.cs` (수정 — chargeTrigger 배선, extraMannequin의 Animator를 꺼서 애니메이션 완전 제거, StartFakeEndingCharge()가 watcher를 끄고 돌진 시작)
+- `Assets/Scripts/GameManager.cs` (수정 — FakeEndingRoutine()에서 돌진 시작 호출 + OnFakeEndingContact() 추가)
 
 ## QA Test Cases
 

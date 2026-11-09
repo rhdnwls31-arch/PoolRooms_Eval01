@@ -50,6 +50,7 @@ public class GameManager : MonoBehaviour
     bool hasAnomaly;       // 이번 라운드에 이상현상이 있는가
     bool gameOver;         // 게임이 끝났는가
     bool busy;             // 페이드 전환 중인가 (중복 판정 방지)
+    bool fakeEndingTriggered; // [신규] 수심 1m 가짜 엔딩에 들어갔는가 (한 번 들어가면 기존 SURFACE/DROWNED 판정으로 돌아가지 않음)
     Vector3 startPos;      // 플레이어 시작 위치
     Quaternion startRot;   // 플레이어 시작 방향
     Vignette vignette;     // 후처리의 비네팅 설정
@@ -115,22 +116,28 @@ public class GameManager : MonoBehaviour
 
         Debug.Log("라운드 " + roundCount + " 시작 / 이상현상: " + hasAnomaly);
 
-        // CharacterController는 끄고 옮겨야 위치가 정확히 바뀜
-        CharacterController cc = player.GetComponent<CharacterController>();
-        cc.enabled = false;
-        player.position = startPos;
-        player.rotation = startRot;
-        cc.enabled = true;
+        RepositionPlayer();
 
         // 플레이어를 옮긴 "다음에" 이상현상을 적용 (순서가 중요)
         anomalyManager.ApplyRound(hasAnomaly);
         UpdateSigns();
     }
 
+    // [신규] 플레이어를 시작 위치/방향으로 되돌림 (CharacterController는 끄고 옮겨야 위치가 정확히 바뀜)
+    // StartRound()와 FakeEndingRoutine() 양쪽에서 재사용한다
+    void RepositionPlayer()
+    {
+        CharacterController cc = player.GetComponent<CharacterController>();
+        cc.enabled = false;
+        player.position = startPos;
+        player.rotation = startRot;
+        cc.enabled = true;
+    }
+
     // 플레이어가 복도 끝에 도착하면 호출됨
     public void OnPlayerReachedEnd(bool isFrontEnd)
     {
-        if (gameOver || busy) return;
+        if (gameOver || busy || fakeEndingTriggered) return;
 
         // 이상 없음 + 앞쪽, 또는 이상 있음 + 뒤쪽이면 정답
         bool correct = (isFrontEnd && !hasAnomaly) || (!isFrontEnd && hasAnomaly);
@@ -162,6 +169,14 @@ public class GameManager : MonoBehaviour
         yield return new WaitForSeconds(signLookTime); // 바뀐 숫자를 잠깐 볼 시간
         yield return fader.FadeOut();                  // 화면이 검게
 
+        // [신규] 수심 1m: 기존 SURFACE 판정보다 먼저 확인 — 승패를 가르지 않는 별도의 가짜 엔딩 분기로 들어간다
+        if (!fakeEndingTriggered && correctStreak == targetRounds - 1)
+        {
+            fakeEndingTriggered = true;
+            yield return FakeEndingRoutine();
+            yield break;
+        }
+
         if (correctStreak >= targetRounds)
         {
             gameOver = true;
@@ -182,6 +197,44 @@ public class GameManager : MonoBehaviour
         yield return fader.FadeIn();                   // 서서히 밝아짐
         SetPlayerControl(true);
         busy = false;
+    }
+
+    // [신규] 수심 1m 가짜 엔딩: 복도 중앙에 항상 서 있던 마네킹이 플레이어를 천천히 돌아보고,
+    // 다 돌아본 뒤 잠깐 정적 구간에 들어간다. 여기서는 SURFACE/DROWNED 판정을 전혀 건드리지 않는다.
+    // 돌아본 뒤의 돌진/접촉 처리는 Story 006이 이어받는다.
+    IEnumerator FakeEndingRoutine()
+    {
+        Debug.Log("수심 1m... 마네킹이 나를 본다");
+
+        RepositionPlayer();
+        anomalyManager.ApplyRound(false); // 직전 라운드에 남아 있던 이상현상(조명/물/소품)을 정리 — 가짜 엔딩은 조용한 복도에서 시작한다
+        anomalyManager.ShowFakeEndingMannequin(); // 화면이 검은 지금 켜 둔다 — 밝아지면 이미 서 있던 것처럼 보임
+
+        yield return new WaitForSeconds(afterTeleportDelay);
+        yield return fader.FadeIn();                   // 서서히 밝아짐
+        SetPlayerControl(true);
+
+        // 화면이 다 밝아진 "뒤에" 돌아보기를 시작한다 — 돌아보는 움직임 전체가 보이도록
+        anomalyManager.StartFakeEndingLook();
+
+        // 정적 구간이 끝날 때까지 기다림 (그 다음은 Story 006 담당)
+        while (!anomalyManager.FakeEndingStaticPauseComplete)
+            yield return null;
+
+        anomalyManager.StartFakeEndingCharge(); // [신규] 정적 구간이 끝나면 돌진 시작 (Story 006)
+
+        busy = false;
+    }
+
+    // [신규] 가짜 엔딩 돌진 마네킹에 닿았을 때 호출됨 (Story 006). 정신력/DROWNED는 건드리지 않고
+    // 화면 전환 트리거만 알린다 — 실제 전환 연출(노이즈/암전/씬 로딩)은 Story 007이 이 지점을 이어받는다.
+    public bool FakeEndingTransitionTriggered { get; private set; }
+
+    public void OnFakeEndingContact()
+    {
+        if (FakeEndingTransitionTriggered) return;
+        FakeEndingTransitionTriggered = true;
+        Debug.Log("가짜 엔딩: 마네킹에게 닿았다 — 화면 전환 트리거 (Story 007에서 이어받음)");
     }
 
     // 결과 화면을 보여 주고, R 키를 누르면 처음부터 다시 시작
