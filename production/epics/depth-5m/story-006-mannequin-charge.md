@@ -42,6 +42,11 @@
 - 기존 이상현상용 마네킹 돌진과 혼동되지 않도록, 가짜 엔딩 전용 트리거(예: Story 005에서 추가한 분기 상태)에서만 이 돌진이 발동하도록 조건을 명확히 분리한다.
 - "닿아도 게임오버 아님"을 보장하기 위해, 기존 `GameManager`의 정신력 감소/DROWNED 판정 코드 경로를 이 접촉 이벤트에 연결하지 않는다 — 별도의 이벤트(화면 전환 트리거)만 발생시킨다.
 
+- **애니메이션 결함을 여기서 해결한다 (2026-11-09)**: 설계 변경으로 달리는 마네킹이 랜덤 이상현상
+  풀에서 제거되어, 이 돌진이 **게임 내 유일한 등장**이 되었다. 따라서 Run 애니메이션이 약 3초 뒤
+  멈춘 자세로 고정되는 기존 결함은 이 스토리에서 반드시 해결되어야 한다 — 조사 내역은
+  `story-004-first-dream-anomaly-loop.md`의 "알려진 결함" 항목 참조.
+
 ---
 
 ## Out of Scope
@@ -56,7 +61,7 @@
 ## Files
 
 - `Assets/Scripts/MannequinChargeTrigger.cs` (신규 — `MannequinRunner.cs`의 이동 패턴 재사용)
-- (참고, 변경 없음) `Assets/Scripts/MannequinRunner.cs`
+- `Assets/Scripts/MannequinRunner.cs` (애니메이션 결함 수정 대상 — Implementation Notes 참조. 더 이상 "변경 없음"이 아니다)
 
 ---
 

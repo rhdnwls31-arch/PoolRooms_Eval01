@@ -34,6 +34,8 @@ public class GameManager : MonoBehaviour
 
     [Header("연출 시간(초)")]
     public float firstDelay = 0.4f;         // 게임 시작 후 밝아지기 전 대기
+    public float firstFadeTime = 2f;        // 첫 페이드인 길이 — 의식을 되찾고 "눈을 뜨는" 연출용.
+                                            // 라운드 전환 페이드는 ScreenFader.fadeTime(0.4초)을 그대로 쓴다.
     public float signLookTime = 0.3f;       // 표지판 숫자를 보여 주는 시간
     public float afterTeleportDelay = 0.1f; // 순간이동 후 밝아지기 전 대기
 
@@ -85,7 +87,7 @@ public class GameManager : MonoBehaviour
         fader.SetBlack();
         StartRound();
         yield return new WaitForSeconds(firstDelay);
-        yield return fader.FadeIn();
+        yield return fader.FadeIn(firstFadeTime);
         SetPlayerControl(true);
         busy = false;
     }

@@ -1,12 +1,12 @@
 # Story 003: 실내 수영장 복도에서 눈을 뜨는 연출
 
 > **Epic**: DEPTH 5m
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Presentation
 > **Type**: Visual/Feel
 > **Estimate**: S
 > **Manifest Version**: N/A (minimal — no control manifest)
-> **Last Updated**: (set by /dev-story when implementation begins)
+> **Last Updated**: 2026-11-09
 
 ## Context
 
@@ -29,10 +29,10 @@
 
 *From `design/game-brief.md` §"도입부"/"첫 번째 꿈", scoped to this story:*
 
-- [ ] 암전 이후 화면이 천천히 밝아지며 "눈을 뜨는" 느낌을 준다
-- [ ] 페이드인이 끝나면 플레이어는 기존 `Scene_Game.unity`의 수영장 복도 시작 지점에 위치한다
-- [ ] 페이드인 완료 후 플레이어 입력(이동/시점)이 다시 활성화된다
-- [ ] 기존 `GameManager`의 라운드 시작 로직이 정상적으로 트리거된다 (수심 5m, 정신력 3으로 초기화)
+- [x] 암전 이후 화면이 천천히 밝아지며 "눈을 뜨는" 느낌을 준다
+- [x] 페이드인이 끝나면 플레이어는 기존 `Scene_Game.unity`의 수영장 복도 시작 지점에 위치한다
+- [x] 페이드인 완료 후 플레이어 입력(이동/시점)이 다시 활성화된다
+- [x] 기존 `GameManager`의 라운드 시작 로직이 정상적으로 트리거된다 (수심 5m, 정신력 3으로 초기화)
 
 ---
 
@@ -76,9 +76,9 @@
 ## Test Evidence
 
 **Story Type**: Visual/Feel
-**Required evidence**: a retained screenshot in `production/qa/evidence/` + sign-off in `production/qa/evidence/waking-in-corridor-evidence.md`
+**Required evidence**: a retained screenshot in `production/qa/evidence/` + sign-off in `production/qa/evidence/story-003-waking-in-corridor-evidence.md`
 
-**Status**: [ ] Not yet created
+**Status**: [x] Created — `production/qa/evidence/story-003-waking-in-corridor/01-fade-in-mid.png` (+ 02, 03, 04)
 
 ---
 
@@ -86,3 +86,13 @@
 
 - Depends on: `production/epics/depth-5m/story-002-losing-consciousness.md`
 - Unlocks: `production/epics/depth-5m/story-004-first-dream-anomaly-loop.md`
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-11-09
+**Criteria**: 4/4 passing
+**Deviations**: ADVISORY — `GameManager.cs`에 `firstFadeTime`(2.0초) 필드를 추가하고 `FirstRound()`의 `FadeIn()` 호출을 `FadeIn(firstFadeTime)`으로 변경함(Implementation Notes의 "기존 로직 변경 없이 연결만" 지시보다 넓은 수정 — AC-1 "천천히"를 만족시키기 위해 사용자가 승인한 선택). 라운드 전환(0.4s)·마네킹 피격(0.4s) 경로는 변경하지 않음. `ScreenFader.cs`에 `FadeIn(float)` 오버로드 신규 추가(기존 `FadeOut(float)`과 대칭, 기존 호출부 영향 없음). OUT OF SCOPE (같은 세션의 별개 작업, 이 스토리의 변경 아님): `design/game-brief.md`(수영장 진입/탈출 설계 의도 + 마네킹 제외 기록), `story-004-first-dream-anomaly-loop.md`, `story-006-mannequin-charge.md`, `docs/tech-debt-register.md`(신규, TD-001/TD-002 — Story 001 영역 Scene_Intro 콜라이더·수영장 사다리 부재).
+**Test Evidence**: `production/qa/evidence/story-003-waking-in-corridor/` (4장) + sign-off `production/qa/evidence/story-003-waking-in-corridor-evidence.md`
+**Reviewed by**: self, no independent review (solo mode)

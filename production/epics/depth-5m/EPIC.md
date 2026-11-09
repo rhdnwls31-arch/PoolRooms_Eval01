@@ -22,7 +22,7 @@
 |---|-------|------|--------|-----|
 | 001 | 밝고 몽환적인 노을/새벽빛 야외 수영장 도입부 | Visual/Feel | Complete | N/A (minimal) |
 | 002 | 자유 이동 중 의식을 잃는 연출 | Visual/Feel | Complete | N/A (minimal) |
-| 003 | 실내 수영장 복도에서 눈을 뜨는 연출 | Visual/Feel | Ready | N/A (minimal) |
+| 003 | 실내 수영장 복도에서 눈을 뜨는 연출 | Visual/Feel | Complete | N/A (minimal) |
 | 004 | 첫 번째 꿈 — 기존 이상현상 시스템 연결 | Integration | Ready | N/A (minimal) |
 | 005 | 수심 1m 가짜 엔딩 — 마네킹이 바라봄 | Logic | Ready | N/A (minimal) |
 | 006 | 마네킹의 짧은 직선 돌진과 접촉 처리 | Logic | Ready | N/A (minimal) |

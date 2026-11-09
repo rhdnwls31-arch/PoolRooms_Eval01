@@ -27,6 +27,10 @@ public class ScreenFader : MonoBehaviour
     // 검은 화면 → 보이는 화면 (페이드 인)
     public IEnumerator FadeIn() { return Fade(1f, 0f, fadeTime); }
 
+    // 기본 fadeTime 대신 다른 길이로 페이드인한다. 의식을 되찾으며 "눈을 뜨는" 첫
+    // 페이드인처럼 라운드 전환용 기본값(0.4초)보다 길게 걸어야 하는 경우에 쓴다.
+    public IEnumerator FadeIn(float duration) { return Fade(1f, 0f, duration); }
+
     // 보이는 화면 → 검은 화면 (페이드 아웃)
     public IEnumerator FadeOut() { return Fade(0f, 1f, fadeTime); }
 
