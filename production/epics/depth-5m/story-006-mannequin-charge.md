@@ -1,7 +1,7 @@
 # Story 006: 마네킹의 짧은 직선 돌진과 접촉 처리
 
 > **Epic**: DEPTH 5m
-> **Status**: In Progress
+> **Status**: Complete
 > **Layer**: Feature
 > **Type**: Logic
 > **Estimate**: M
@@ -91,3 +91,13 @@
 
 - Depends on: `production/epics/depth-5m/story-005-depth-1m-fake-ending.md`
 - Unlocks: `production/epics/depth-5m/story-007-screen-transition.md`
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-11-09
+**Criteria**: 4/4 passing
+**Deviations**: 플레이테스트 중 사용자 요청으로 설계 변경 — `MannequinRunner.cs` 재사용과 Run 애니메이션을 모두 버리고, 애니메이션 없이 정적 자세로 시작 거리를 약 1초에 주파하는 독립 이동(`MannequinChargeTrigger`)으로 재구현함. 그 결과 이 스토리가 원래 요구했던 Run 애니메이션 고정 결함 수정은 더 이상 적용 대상이 아니게 되어 `MannequinRunner.cs`는 수정 전 상태로 되돌림.
+**Test Evidence**: `production/qa/evidence/story-006-mannequin-charge/01-static-pose-fast.png` (유닛 테스트는 `qa.level: minimal`에서 waived). AC-3(화면 전환 트리거)은 시각적 연출이 없는 스토리 범위라 로그(`player.log`)와 코드 검토로만 확인 — 사용자 육안 확인 불가는 의도된 범위.
+**Reviewed by**: self, no independent review (solo mode)
