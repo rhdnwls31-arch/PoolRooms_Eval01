@@ -1,12 +1,12 @@
 # Story 008: 두 번째 꿈 공간 제작
 
 > **Epic**: DEPTH 5m
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Feature
 > **Type**: Integration
 > **Estimate**: L
 > **Manifest Version**: N/A (minimal — no control manifest)
-> **Last Updated**: (set by /dev-story when implementation begins)
+> **Last Updated**: 2026-11-09
 
 ## Context
 
@@ -58,10 +58,8 @@
 
 ## Files
 
-- `Assets/Scenes/Scene_SecondDream.unity` (신규, 또는 `Scene_Game.unity` 확장)
-- (재사용) `Assets/Materials/Env/*`, `Assets/Textures/Env/*`
-
----
+- `Assets/Editor/SecondDreamSceneBuilder.cs` (modified — builds the Pool Hall content into Scene_SecondDream)
+- `Assets/Scenes/Scene_SecondDream.unity` (modified — regenerated via Unity batch mode, not hand-edited)
 
 ## QA Test Cases
 
@@ -91,3 +89,13 @@
 
 - Depends on: `production/epics/depth-5m/story-007-screen-transition.md`
 - Unlocks: `production/epics/depth-5m/story-009-second-dream-exit.md`
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-11-09
+**Criteria**: 5/5 passing (none deferred)
+**Deviations**: Advisory — implementation detail numbers diverged from the design proposal shown to the user, due to an orchestration mix-up in `/dev-story` (same AC and intent, different specifics); `prop_radio` instance got a new AudioSource with no clip yet (placeholder, no audio asset exists in the project); basin cold-light bloom/exposure washes out up close — recommend a lighting pass before final polish.
+**Test Evidence**: `production/qa/evidence/story-008-second-dream-space/{01-pool-hall-entry,02-pool-hall-interior}.png` + `stamp.txt` (waived at `qa.level: minimal`, screenshot not waived — run-and-observe). No separate `production/qa/playtests/` record written.
+**Reviewed by**: self, no independent review (solo mode)
