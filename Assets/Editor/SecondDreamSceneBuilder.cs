@@ -213,8 +213,11 @@ public static class SecondDreamSceneBuilder
     static void BuildPillars(Transform env)
     {
         float hallStartZ = EntryHalfZ;
-        float deckStripHalfX = (HallHalfX - BasinHalfX) / 2f;
-        float pillarX = BasinHalfX + deckStripHalfX / 2f;
+        // 중앙 경로 수정: 턱 쪽으로 붙여두면(원래 BasinHalfX + deckStripHalfX/2) 수영장 턱
+        // 바깥쪽(BasinHalfX+0.3)과 기둥 사이 틈이 0.05m밖에 안 남아 플레이어 캡슐(반지름 0.3,
+        // 최소 틈 0.6m 필요)이 못 지나간다. 턱 바깥쪽과 벽 안쪽 사이 빈 공간 한가운데로 옮겨
+        // 기둥 양옆에 통행 가능한 여유를 둔다.
+        float pillarX = (BasinHalfX + 0.3f + HallHalfX - WallThick / 2f) / 2f;
 
         for (int i = 0; i < PillarZOffsets.Length; i++)
         {
@@ -284,8 +287,10 @@ public static class SecondDreamSceneBuilder
             var light = go.AddComponent<Light>();
             light.type = LightType.Point;
             light.color = new Color(0.55f, 0.75f, 0.95f); // 차가운 물빛
-            light.intensity = 2f;
-            light.range = 7f;
+            // Story 008 완료 노트: 원래 2f/7f는 멀리서는 은은하지만 가까이 다가가면 Bloom과
+            // 겹쳐 과다노출로 번졌다. 세기/범위를 낮춰 대비 효과는 유지하되 근접 노출만 줄인다.
+            light.intensity = 1.1f;
+            light.range = 5f;
         }
     }
 

@@ -97,3 +97,5 @@
 **Deviations**: Advisory — AC-5의 "세 단계에 맞게 각각 다른 값으로 설정되어 있다"는 문구를 "데이터로 설정됨"으로 해석했음: 전환 단계의 Chromatic Aberration/Vignette 참고값(`transitionChromaticAberrationReference`/`transitionVignetteOffsetReference`)은 Story 002/006/007의 기존 전환 로직을 건드리지 않는 범위 제약에 따라 실제 전환 순간에는 연결되지 않고, Film Grain만 실제로 재생됨. Advisory — 근접 단계의 노이즈 증가는 코드상 명확하나(Film Grain 0.1→0.2, Chromatic Aberration 0.03→0.1) 정적 스크린샷에서는 체감 차이가 미세함.
 **Test Evidence**: `production/qa/evidence/story-010-screen-noise-staging/{01-normal,01b-normal-crop,02-near-anomaly,02b-near-anomaly-crop,03-transition-spike,03b-transition-spike-crop}.png` + `stamp.txt`(staleness 확인 — 4개 파일 모두 UNCHANGED) + 사인오프 `production/qa/evidence/screen-noise-staging-evidence.md`(5개 AC 모두 Approved)
 **Reviewed by**: self, no independent review (solo mode)
+
+**2026-11-10 후속 결정**: "전환 단계 CA/Vignette 연결 여부"를 안정화 작업 중 사용자와 재검토 — **연결하지 않고 현행 유지(Film Grain만 실제 재생, CA/Vignette는 참고 데이터로만 존재)로 확정**. 연결하려면 이미 Play 검증을 마친 Story 002/006/007의 전환 연출 코드 3곳을 전부 수정해야 해서, 회귀 위험이 이번 안정화 단계의 목표("기존 기능 안 깨뜨리기")보다 크다고 판단함. 재논의 불필요.

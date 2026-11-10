@@ -19,19 +19,24 @@ public static class IntroMapBuilder
     const string ScenePath = "Assets/Scenes/Scene_Intro.unity";
 
     // ---- 치수 (여기만 고치면 된다) ----------------------------------------
-    const float DeckHalfX = 15f;    // 데크 반폭
-    const float DeckHalfZ = 20f;    // 데크 반길이
-    const float PoolHalfX = 4.3f;   // 수영장 개구부 반폭
-    const float PoolHalfZ = 7.3f;   // 수영장 개구부 반길이
+    const float DeckHalfX = 22f;    // 데크 반폭 — 맵 확장(2026-11-10): 기존 소품 배치는 그대로,
+                                    // 가장자리에 걸어 다닐 여백을 더 둔다.
+    const float DeckHalfZ = 28f;    // 데크 반길이
+    // 2026-11-10: Pool Glow 레퍼런스(사진 같은 라군 분위기)처럼 수영장을 더 크게 — 단, 기존
+    // 데크 가구(가장 안쪽인 Lounger_W/E가 x=±6.6, 가장 가까운 Bench류가 z=±13)와 겹치지
+    // 않는 선까지만. 가구를 옮기지 않고 이 한도 안에서 키운다.
+    const float PoolHalfX = 5.6f;   // 수영장 개구부 반폭 (기존 4.3 — Lounger까지 여유 0.3m)
+    const float PoolHalfZ = 10.5f;  // 수영장 개구부 반길이 (기존 7.3 — Bench까지 여유 1.85m)
     const float PoolDepth = 1.5f;   // 수영장 깊이
-    const float WallHeight = 9f;    // 중정 벽 높이 — 지평선을 가릴 만큼
+    const float WallHeight = 16f;   // 중정 벽 높이 — 지평선을 가릴 만큼 (2026-11-10: 9→16,
+                                    // 벽 위쪽 끝과 하늘이 너무 또렷하게 잘려 보이는 문제 완화)
     const float WallThick = 0.6f;
     const float CurbHeight = 0.36f; // CharacterController의 StepOffset(0.3)보다 높게 =
                                     // 플레이어가 수영장에 빠지지 않는다
     const float DeckThick = 0.4f;
     const float WaterY = -0.12f;    // 수면은 데크보다 살짝 아래 (실제 수영장처럼)
 
-    static Material MatFloor, MatWall, MatWater, MatGlow, MatProp, MatCushion, MatPlant, MatMetal, MatPoolTile;
+    static Material MatFloor, MatWall, MatWater, MatGlow, MatProp, MatCushion, MatPlant, MatMetal, MatPoolTile, MatTrunk;
 
     [MenuItem("DEPTH 5m/Rebuild Intro Map")]
     public static void Build()
@@ -44,12 +49,14 @@ public static class IntroMapBuilder
         ClearChildren(env, keep: "PoolReflectionProbe");
         ClearChildren(dummies, keep: null);
 
+        BuildDawnSky();
         BuildDeck(env);
         BuildPoolBasin(env);
         BuildWater(env);
         BuildCourtyardWalls(env);
         BuildBackdrop(env);
-        BuildProps(dummies);
+        var interactPrompt = BuildInteractPrompt(scene);
+        BuildProps(dummies, interactPrompt);
         BuildEyelids(scene);
 
         EditorSceneManager.MarkSceneDirty(scene);
@@ -79,6 +86,7 @@ public static class IntroMapBuilder
         MatCushion = MakeMat("Assets/Materials/Env/Env_Court_Cushion.mat", new Color(0.98f, 0.97f, 0.95f), 0.05f);
         MatPlant = MakeMat("Assets/Materials/Env/Env_Court_Plant.mat", new Color(0.30f, 0.52f, 0.28f), 0.15f);
         MatMetal = MakeMat("Assets/Materials/Env/Env_Court_Metal.mat", new Color(0.82f, 0.84f, 0.86f), 0.80f);
+        MatTrunk = MakeMat("Assets/Materials/Env/Env_Court_Trunk.mat", new Color(0.45f, 0.32f, 0.22f), 0.10f);
     }
 
     static Material Load(string p)
@@ -100,6 +108,27 @@ public static class IntroMapBuilder
         return m;
     }
 
+    // 하늘이 지나치게 밝고 바래 보이는 문제 — 기존엔 Unity 기본 프로시저럴 스카이박스
+    // (Default-Skybox) 그대로였다. 이미 설정된 따뜻한 안개색/환경광과 맞춘 톤 + 낮은 노출로
+    // 전용 머터리얼을 만들어 쓴다. 셰이더 자체는 그대로(Skybox/Procedural) — 셰이더 교체는
+    // 별도 보류 작업([[depth5m-visual-reference-pool-glow]] 참고).
+    static void BuildDawnSky()
+    {
+        var mat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Env/Env_DawnSky.mat");
+        if (mat == null)
+        {
+            mat = new Material(Shader.Find("Skybox/Procedural"));
+            AssetDatabase.CreateAsset(mat, "Assets/Materials/Env/Env_DawnSky.mat");
+        }
+        mat.SetColor("_SkyTint", new Color(0.93f, 0.78f, 0.70f));
+        mat.SetColor("_GroundColor", new Color(0.62f, 0.54f, 0.50f));
+        mat.SetFloat("_AtmosphereThickness", 1.15f);
+        mat.SetFloat("_Exposure", 0.9f);
+        EditorUtility.SetDirty(mat);
+
+        RenderSettings.skybox = mat;
+    }
+
     // ---- 구조 -------------------------------------------------------------
     // 데크를 통판 하나로 깔면 수영장이 "평면 위의 사각형"이 되어 물 위를 걸어 다니게 된다.
     // 개구부를 비운 4장으로 나눠 깐다.
@@ -117,8 +146,22 @@ public static class IntroMapBuilder
             new Vector3(sideLen, DeckThick, PoolHalfZ * 2f), MatFloor, true);
 
         // 코핑(테두리 턱). StepOffset보다 높아 플레이어가 수영장에 빠지지 않는다.
-        Box(env, "PoolCurb_North", new Vector3(0, CurbHeight / 2f, -PoolHalfZ - 0.15f),
-            new Vector3(PoolHalfX * 2f + 0.6f, CurbHeight, 0.3f), MatFloor, true);
+        // TD-002: 사다리로 올라온 뒤 데크로 나갈 수 있도록, 북쪽 코핑에 사다리 x(±2.2) 위치에
+        // 폭 1.0m 개구부 2곳을 남기고 3구간으로 분할한다. PoolHalfX가 바뀌어도(2026-11-10
+        // 맵 확장) 자동으로 맞도록 고정 숫자 대신 수식으로 계산한다.
+        const float ladderX = 2.2f;
+        const float gapHalf = 0.5f; // 개구부 폭(1.0m)의 절반
+        float curbOuterX = PoolHalfX + 0.3f;             // 코핑 전체 바깥쪽 끝
+        float centerSegWidth = (ladderX - gapHalf) * 2f;  // 가운데(문 사이) 구간 폭
+        float sideSegWidth = curbOuterX - (ladderX + gapHalf); // 양쪽 끝 구간 폭
+        float sideSegCenterX = (curbOuterX + (ladderX + gapHalf)) / 2f;
+
+        Box(env, "PoolCurb_North_W", new Vector3(-sideSegCenterX, CurbHeight / 2f, -PoolHalfZ - 0.15f),
+            new Vector3(sideSegWidth, CurbHeight, 0.3f), MatFloor, true);
+        Box(env, "PoolCurb_North_C", new Vector3(0, CurbHeight / 2f, -PoolHalfZ - 0.15f),
+            new Vector3(centerSegWidth, CurbHeight, 0.3f), MatFloor, true);
+        Box(env, "PoolCurb_North_E", new Vector3(sideSegCenterX, CurbHeight / 2f, -PoolHalfZ - 0.15f),
+            new Vector3(sideSegWidth, CurbHeight, 0.3f), MatFloor, true);
         Box(env, "PoolCurb_South", new Vector3(0, CurbHeight / 2f, PoolHalfZ + 0.15f),
             new Vector3(PoolHalfX * 2f + 0.6f, CurbHeight, 0.3f), MatFloor, true);
         Box(env, "PoolCurb_West", new Vector3(-PoolHalfX - 0.15f, CurbHeight / 2f, 0),
@@ -176,26 +219,49 @@ public static class IntroMapBuilder
         Box(env, "Wall_South", new Vector3(0, h, wz), new Vector3(DeckHalfX * 2f, WallHeight, WallThick), MatWall, true);
         Box(env, "Wall_West", new Vector3(-wx, h, 0), new Vector3(WallThick, WallHeight, DeckHalfZ * 2f - WallThick * 2f), MatWall, true);
         Box(env, "Wall_East", new Vector3(wx, h, 0), new Vector3(WallThick, WallHeight, DeckHalfZ * 2f - WallThick * 2f), MatWall, true);
+
+        // 파라펫(옥상 난간 턱) — 벽 맨 위에 살짝 튀어나온 얇은 테두리를 둘러, 완전히 평평한
+        // 상자가 하늘과 또렷한 수평선으로 잘려 보이는 문제를 완화한다. 콜라이더는 걸어 다니는
+        // 높이보다 훨씬 위라 게임플레이에 영향 없음.
+        float capH = 0.6f;
+        float capY = WallHeight + capH / 2f;
+        float capOverhang = 0.4f; // 벽 두께보다 이만큼 더 두껍게 — 옥상 턱처럼 보이게
+        Box(env, "Wall_North_Cap", new Vector3(0, capY, -wz), new Vector3(DeckHalfX * 2f, capH, WallThick + capOverhang), MatWall, true);
+        Box(env, "Wall_South_Cap", new Vector3(0, capY, wz), new Vector3(DeckHalfX * 2f, capH, WallThick + capOverhang), MatWall, true);
+        Box(env, "Wall_West_Cap", new Vector3(-wx, capY, 0), new Vector3(WallThick + capOverhang, capH, DeckHalfZ * 2f - WallThick * 2f), MatWall, true);
+        Box(env, "Wall_East_Cap", new Vector3(wx, capY, 0), new Vector3(WallThick + capOverhang, capH, DeckHalfZ * 2f - WallThick * 2f), MatWall, true);
     }
 
     // 벽 너머로 솟는 건물 매스. 지평선을 열지 않으면서 깊이를 준다.
+    // 북쪽 벽(Wall_North, z=-wz) 뒤에 자리잡아야 하므로 DeckHalfZ/WallHeight를 따라간다 —
+    // 둘 다 맵 확장(2026-11-10)으로 바뀌었으니 하드코딩하면 벽보다 안쪽(앞)으로 들어와 버린다.
     static void BuildBackdrop(Transform env)
     {
-        Box(env, "BuildingBackdrop", new Vector3(0, 7f, -24f), new Vector3(34f, 14f, 6f), MatWall, false);
+        const float peekAboveWall = 5f;  // 기존(벽 9 -> 매스 14)과 같은 비율로 벽 위로 솟는 높이
+        const float gapBehindWall = 4f;  // 벽에서 얼마나 더 뒤에 세울지
+
+        float backdropHeight = WallHeight + peekAboveWall;
+        float backdropZ = -(DeckHalfZ + gapBehindWall);
+        float backdropY = backdropHeight / 2f;
+
+        Box(env, "BuildingBackdrop", new Vector3(0, backdropY, backdropZ), new Vector3(34f, backdropHeight, 6f), MatWall, false);
+
+        float windowY = WallHeight + 2f;        // 벽 위로 2m — 기존과 같은 "살짝 넘겨 보이는" 비율
+        float windowZ = backdropZ + 3.05f;      // 매스 앞면 쪽 (기존 상대 위치 그대로)
         for (int i = 0; i < 3; i++)
         {
             var q = GameObject.CreatePrimitive(PrimitiveType.Quad);
             q.name = "BuildingWindow_" + (i + 1);
             Object.DestroyImmediate(q.GetComponent<Collider>());
             q.transform.SetParent(env, false);
-            q.transform.localPosition = new Vector3(-10f + i * 10f, 11f, -20.95f);
+            q.transform.localPosition = new Vector3(-10f + i * 10f, windowY, windowZ);
             q.transform.localScale = new Vector3(1.4f, 1.9f, 1f);
             q.GetComponent<MeshRenderer>().sharedMaterial = MatGlow;
         }
     }
 
     // ---- 소품 (전부 Dummies 하위. 그룹 하나가 나중에 VARCO 에셋이 들어올 슬롯) ----
-    static void BuildProps(Transform d)
+    static void BuildProps(Transform d, GameObject interactPrompt)
     {
         // 실제 프리팹이 이미 있는 것은 프리미티브로 대체하지 않는다.
         //
@@ -207,6 +273,19 @@ public static class IntroMapBuilder
         PlaceFlamingo(d, "Prop_Flamingo_A", new Vector3(1.9f, -0.191f, 1.6f), 18f);
         PlaceFlamingo(d, "Prop_Flamingo_B", new Vector3(-2.2f, -0.21f, -3.4f), -47f);
         PlacePrefab(d, "Assets/Prefabs/prop_radio.prefab", "Prop_Radio", new Vector3(-8f, 0.52f, -2f), 20f);
+
+        // 2026-11-10: Pool Glow 레퍼런스 분위기 — 물 속에서 자라는 야자수 + 큰 흰 기둥.
+        // 좌표는 사다리(x ±2.2, z≈-7.05)/플라밍고/코핑(새 PoolHalfX 5.6, PoolHalfZ 10.5)과
+        // 겹치지 않도록 간격을 두고 골랐다.
+        WaterPalm(d, "Prop_WaterPalm_1", new Vector3(-3.5f, 0, -5.0f), 3.2f);
+        WaterPalm(d, "Prop_WaterPalm_2", new Vector3(3.5f, 0, -2.5f), 3.6f);
+        WaterPalm(d, "Prop_WaterPalm_3", new Vector3(-3.0f, 0, 5.0f), 3.0f);
+        WaterPalm(d, "Prop_WaterPalm_4", new Vector3(3.5f, 0, 7.0f), 3.4f);
+
+        // 플레이어 스폰(0,0,10)이 -Z를 정면으로 보고 있어, x=0 근처에 두면 기둥이 시야를
+        // 전부 가린다 — 야자수처럼 옆으로 비켜 세운다.
+        BigPillar(d, "Prop_BigPillar_1", new Vector3(-4.0f, 0, 1.0f), 5.5f);
+        BigPillar(d, "Prop_BigPillar_2", new Vector3(4.0f, 0, 3.0f), 5.0f);
 
         float[] rowZ = { -4.5f, 0f, 4.5f };
         for (int i = 0; i < rowZ.Length; i++)
@@ -223,8 +302,10 @@ public static class IntroMapBuilder
         Bench(d, "Prop_Bench_1", new Vector3(-9f, 0, 13f), 0f);
         Bench(d, "Prop_Bench_2", new Vector3(9f, 0, 13f), 0f);
         Bench(d, "Prop_Bench_3", new Vector3(0f, 0, 17f), 180f);
-        Ladder(d, "Prop_PoolLadder_W", new Vector3(-2.2f, 0, -PoolHalfZ - 0.1f));
-        Ladder(d, "Prop_PoolLadder_E", new Vector3(2.2f, 0, -PoolHalfZ - 0.1f));
+        // TD-002: 코핑 위(−0.1f)가 아니라 수영장 개구부 안쪽(+0.25f)으로 — 사다리가
+        // 실제로 바닥까지 내려가야 들어간 뒤 돌아 나올 수 있다.
+        Ladder(d, "Prop_PoolLadder_W", new Vector3(-2.2f, 0, -PoolHalfZ + 0.25f), interactPrompt);
+        Ladder(d, "Prop_PoolLadder_E", new Vector3(2.2f, 0, -PoolHalfZ + 0.25f), interactPrompt);
 
         // 남쪽(스폰 뒤편)이 벽 하나에 벤치 하나뿐이라 휑했다 — 여기도 채운다
         Lounger(d, "Prop_Lounger_S1", new Vector3(-11.5f, 0, 8.5f), 115f);
@@ -268,6 +349,7 @@ public static class IntroMapBuilder
         Box(g, "Leg_B", new Vector3(0.28f, 0.15f, 0.8f), new Vector3(0.06f, 0.3f, 0.06f), MatMetal, false);
         Box(g, "Leg_C", new Vector3(-0.28f, 0.15f, -0.8f), new Vector3(0.06f, 0.3f, 0.06f), MatMetal, false);
         Box(g, "Leg_D", new Vector3(0.28f, 0.15f, -0.8f), new Vector3(0.06f, 0.3f, 0.06f), MatMetal, false);
+        GroupCollider(g, new Vector3(0, 0.35f, 0), new Vector3(0.80f, 0.70f, 2.00f));
     }
 
     static void TowelStack(Transform p, string name, Vector3 pos)
@@ -284,6 +366,7 @@ public static class IntroMapBuilder
         Box(g, "Back", new Vector3(0, 0.78f, -0.24f), new Vector3(2.1f, 0.55f, 0.1f), MatProp, false);
         Box(g, "Leg_L", new Vector3(-0.9f, 0.22f, 0), new Vector3(0.12f, 0.45f, 0.5f), MatProp, false);
         Box(g, "Leg_R", new Vector3(0.9f, 0.22f, 0), new Vector3(0.12f, 0.45f, 0.5f), MatProp, false);
+        GroupCollider(g, new Vector3(0, 0.50f, -0.05f), new Vector3(2.20f, 1.00f, 0.70f));
     }
 
     static void SideTable(Transform p, string name, Vector3 pos)
@@ -292,6 +375,7 @@ public static class IntroMapBuilder
         Cyl(g, "Top", new Vector3(0, 0.48f, 0), new Vector3(0.52f, 0.03f, 0.52f), MatProp);
         Cyl(g, "Stem", new Vector3(0, 0.24f, 0), new Vector3(0.07f, 0.24f, 0.07f), MatMetal);
         Cyl(g, "Base", new Vector3(0, 0.02f, 0), new Vector3(0.38f, 0.02f, 0.38f), MatMetal);
+        GroupCollider(g, new Vector3(0, 0.26f, 0), new Vector3(0.55f, 0.52f, 0.55f));
     }
 
     static void Parasol(Transform p, string name, Vector3 pos)
@@ -300,14 +384,41 @@ public static class IntroMapBuilder
         Cyl(g, "Pole", new Vector3(0, 1.1f, 0), new Vector3(0.07f, 1.1f, 0.07f), MatMetal);
         Cyl(g, "Canopy", new Vector3(0, 2.2f, 0), new Vector3(2.6f, 0.06f, 2.6f), MatCushion);
         Cyl(g, "Base", new Vector3(0, 0.05f, 0), new Vector3(0.6f, 0.05f, 0.6f), MatProp);
+        // 기둥만 — 캐노피(y 2.2)는 플레이어 키(1.8)보다 위라 콜라이더가 필요 없다.
+        GroupCollider(g, new Vector3(0, 1.10f, 0), new Vector3(0.22f, 2.20f, 0.22f));
     }
 
-    static void Ladder(Transform p, string name, Vector3 pos)
+    static void Ladder(Transform p, string name, Vector3 pos, GameObject interactPrompt)
     {
         var g = Group(p, name, pos, 0f);
-        Cyl(g, "Rail_L", new Vector3(-0.22f, 0.45f, 0), new Vector3(0.05f, 0.45f, 0.05f), MatMetal);
-        Cyl(g, "Rail_R", new Vector3(0.22f, 0.45f, 0), new Vector3(0.05f, 0.45f, 0.05f), MatMetal);
-        Cyl(g, "Rung", new Vector3(0, 0.88f, 0), new Vector3(0.05f, 0.22f, 0.05f), MatMetal, new Vector3(0, 0, 90f));
+
+        // TD-002: 레일을 수영장 바닥 근처까지 연장 (y -1.45 ~ +0.95)
+        Cyl(g, "Rail_L", new Vector3(-0.22f, -0.25f, 0), new Vector3(0.05f, 1.2f, 0.05f), MatMetal);
+        Cyl(g, "Rail_R", new Vector3(0.22f, -0.25f, 0), new Vector3(0.05f, 1.2f, 0.05f), MatMetal);
+
+        // 가로대 — 기존 손잡이(0.88) + 수중 가로대 5개
+        float[] rungY = { 0.88f, -0.25f, -0.50f, -0.75f, -1.00f, -1.25f };
+        foreach (var y in rungY)
+            Cyl(g, "Rung_" + y.ToString("0.00"), new Vector3(0, y, 0), new Vector3(0.05f, 0.22f, 0.05f), MatMetal, new Vector3(0, 0, 90f));
+
+        // TD-002: 자동 계단 등반(스텝 콜라이더)은 CharacterController 캡슐(높이 1.8m)이
+        // 계단 간격(0.25m)보다 훨씬 커서 한 칸 올라서면 바로 위 칸과 몸이 겹쳐 막히는
+        // 문제가 있어 폐기 — 대신 E 입력으로 명시적으로 데크까지 올려준다.
+        var climbZone = new GameObject("ClimbZone");
+        climbZone.transform.SetParent(g, false);
+        climbZone.transform.localPosition = new Vector3(0, -0.75f, 0);
+        var zoneCol = climbZone.AddComponent<BoxCollider>();
+        zoneCol.isTrigger = true;
+        zoneCol.size = new Vector3(1.2f, 1.8f, 1.4f);
+
+        var exitPoint = new GameObject("ExitPoint");
+        exitPoint.transform.SetParent(g, false);
+        // 로컬 z -0.9 = 코핑(폭 0.3, 바깥쪽 끝)을 지나 데크 위 (y 0, 데크 표면과 동일)
+        exitPoint.transform.localPosition = new Vector3(0, 0, -0.9f);
+
+        var climb = climbZone.AddComponent<LadderClimb>();
+        climb.exitPoint = exitPoint.transform;
+        climb.promptUI = interactPrompt;
     }
 
     static void Planter(Transform p, string name, Vector3 pos, float plantHeight)
@@ -323,6 +434,77 @@ public static class IntroMapBuilder
             leaf.transform.localPosition = Quaternion.Euler(0, a, 0) * new Vector3(0, 0.6f + plantHeight, 0.5f);
             leaf.transform.localRotation = Quaternion.Euler(-28f, a, 0);
         }
+        // 화분만 — 잎은 통과(스치는 느낌 유지).
+        GroupCollider(g, new Vector3(0, 0.30f, 0), new Vector3(0.76f, 0.60f, 0.76f));
+    }
+
+    // Pool Glow 레퍼런스 — 물 속에서 자라는 야자수. Planter()와 비슷한 모양이지만 화분이
+    // 없고(수영장 바닥에서 바로 자람), 몸통이 수면 위로 한참 솟아 있다.
+    static void WaterPalm(Transform p, string name, Vector3 pos, float trunkHeight)
+    {
+        var g = Group(p, name, pos, 0f);
+
+        // 몸통 — 수영장 바닥 근처(y -1.0)에서 trunkHeight만큼 위로
+        float trunkCenterY = trunkHeight / 2f - 1.0f;
+        Cyl(g, "Trunk", new Vector3(0, trunkCenterY, 0), new Vector3(0.22f, trunkHeight / 2f, 0.22f), MatTrunk);
+
+        // 잎 — Planter()와 같은 방식(방사형 평판 6장), 몸통 꼭대기에서
+        float topY = trunkHeight - 1.0f;
+        for (int i = 0; i < 6; i++)
+        {
+            float a = i * 60f;
+            var leaf = Box(g, "Leaf_" + (i + 1), Vector3.zero, new Vector3(0.26f, 0.05f, 1.6f), MatPlant, false);
+            leaf.transform.localPosition = Quaternion.Euler(0, a, 0) * new Vector3(0, topY, 0.8f);
+            leaf.transform.localRotation = Quaternion.Euler(-30f, a, 0);
+        }
+
+        // 몸통만 콜라이더 — 수영장 안에서도 부딪히는 느낌(잎은 스치고 지나감).
+        GroupCollider(g, new Vector3(0, trunkCenterY, 0), new Vector3(0.5f, trunkHeight, 0.5f));
+    }
+
+    // Pool Glow 레퍼런스 — 수영장 한가운데 서 있는 큰 흰 기둥.
+    static void BigPillar(Transform p, string name, Vector3 pos, float height)
+    {
+        float centerY = height / 2f - 1.2f; // 바닥(수영장 바닥 근처)부터 위로
+        var go = Cyl(p, name, new Vector3(pos.x, centerY, pos.z), new Vector3(2.4f, height / 2f, 2.4f), MatWall);
+        var col = go.AddComponent<CapsuleCollider>();
+        col.direction = 1; // Y축
+        col.radius = 1.2f;
+        col.height = height;
+        col.center = Vector3.zero;
+    }
+
+    // TD-002: "E로 오르기" 같은 상호작용 안내 문구. 여러 사다리가 이 UI 하나를 공유한다.
+    // 기존 UI(PAUSED, SURFACE 등)와 같은 방식으로 영어 + 기본 폰트를 쓴다 — 이 프로젝트에는
+    // 아직 한글 글리프가 있는 폰트가 설정되어 있지 않아, 지금 한글을 넣으면 빈 네모로 깨진다.
+    // 한글 전환은 별도 작업(TMP 한글 폰트 점검)에서 폰트 문제까지 같이 처리한다.
+    static GameObject BuildInteractPrompt(Scene scene)
+    {
+        var canvas = Find(scene, "FadeCanvas");
+        if (canvas == null) { Debug.LogWarning("[IntroMapBuilder] FadeCanvas 없음 — 상호작용 안내 생략"); return null; }
+
+        var old = canvas.Find("InteractPrompt");
+        if (old != null) Object.DestroyImmediate(old.gameObject);
+
+        var go = new GameObject("InteractPrompt", typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Text));
+        var rt = go.GetComponent<RectTransform>();
+        rt.SetParent(canvas, false);
+        rt.anchorMin = new Vector2(0.5f, 0f);
+        rt.anchorMax = new Vector2(0.5f, 0f);
+        rt.pivot = new Vector2(0.5f, 0f);
+        rt.anchoredPosition = new Vector2(0f, 80f);
+        rt.sizeDelta = new Vector2(400f, 40f);
+
+        var txt = go.GetComponent<UnityEngine.UI.Text>();
+        txt.text = "Press E";
+        txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); // 기존 UI와 동일한 기본 폰트
+        txt.fontSize = 24;
+        txt.alignment = TextAnchor.MiddleCenter;
+        txt.color = Color.white;
+        txt.raycastTarget = false;
+
+        go.SetActive(false); // 평소엔 숨김 — LadderClimb이 근처에서만 켠다
+        return go;
     }
 
     // ---- 눈꺼풀 오버레이 + 연출 컨트롤러 ----------------------------------
@@ -439,6 +621,15 @@ public static class IntroMapBuilder
         if (euler.HasValue) go.transform.localRotation = Quaternion.Euler(euler.Value);
         if (mat != null) go.GetComponent<MeshRenderer>().sharedMaterial = mat;
         return go;
+    }
+
+    // 소품 묶음 전체를 감싸는 단순 콜라이더 1개 — 개별 부품(다리 등)에는 콜라이더를 두지 않는다.
+    // TD-001: 그룹당 콜라이더 1개면 틈이 없어 "의자 다리 끼임"이 재발하지 않는다.
+    static void GroupCollider(Transform group, Vector3 center, Vector3 size)
+    {
+        var col = group.gameObject.AddComponent<BoxCollider>();
+        col.center = center;
+        col.size = size;
     }
 
     static GameObject Cyl(Transform p, string name, Vector3 pos, Vector3 size, Material mat, Vector3? euler = null)

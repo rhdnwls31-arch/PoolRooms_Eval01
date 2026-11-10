@@ -1,11 +1,17 @@
 ## Technical Debt Register
-Last updated: 2026-11-09
-Total items: 2 | Estimated total effort: S + S
+Last updated: 2026-11-10
+Total items: 2 | Estimated total effort: S + S (both closed)
 
 | ID | Category | Description | Files | Effort | Impact | Priority | Status | Added | Sprint |
 |----|----------|-------------|-------|--------|--------|----------|--------|-------|--------|
-| TD-001 | Architecture | Scene_Intro 소품에 콜라이더가 전혀 없어 플레이어가 벤치·선베드·파라솔·화분을 모두 통과한다. 원인은 누락이 아니라 `Box(collide:false)` / `Cyl()`의 전부-아니면-전무 헬퍼 설계 — 하위 박스마다 콜라이더를 켜면 CharacterController가 의자 다리에 끼는 문제가 있어 통째로 껐다. 해법은 그룹당 단순화된 BoxCollider 1개. | Assets/Editor/IntroMapBuilder.cs | S | Med | — | Open | 2026-11-09 | Backlog |
-| TD-002 | Architecture | `Prop_PoolLadder_W/E`가 데크 위 손잡이 기둥(y 0~0.9)일 뿐 수영장 안으로 내려가지 않아, 수영장에 들어간 플레이어가 20초 뒤 CollapseSequence가 발동할 때까지 나올 수 없다. **설계 의도(2026-11-05 확정): 수영장에 들어가는 것은 허용하고, 사다리로 올라올 수 있게 한다** — 코핑 턱을 높여 진입을 막는 방향이 아니다. | Assets/Editor/IntroMapBuilder.cs | S | High | — | Open | 2026-11-09 | Backlog |
+| TD-001 | Architecture | Scene_Intro 소품에 콜라이더가 전혀 없어 플레이어가 벤치·선베드·파라솔·화분을 모두 통과한다. 원인은 누락이 아니라 `Box(collide:false)` / `Cyl()`의 전부-아니면-전무 헬퍼 설계 — 하위 박스마다 콜라이더를 켜면 CharacterController가 의자 다리에 끼는 문제가 있어 통째로 껐다. 해법은 그룹당 단순화된 BoxCollider 1개. | Assets/Editor/IntroMapBuilder.cs | S | Med | — | **Closed** | 2026-11-09 | Backlog |
+| TD-002 | Architecture | `Prop_PoolLadder_W/E`가 데크 위 손잡이 기둥(y 0~0.9)일 뿐 수영장 안으로 내려가지 않아, 수영장에 들어간 플레이어가 20초 뒤 CollapseSequence가 발동할 때까지 나올 수 없다. **설계 의도(2026-11-05 확정): 수영장에 들어가는 것은 허용하고, 사다리로 올라올 수 있게 한다** — 코핑 턱을 높여 진입을 막는 방향이 아니다. | Assets/Editor/IntroMapBuilder.cs, Assets/Scripts/LadderClimb.cs | S | High | — | **Closed** | 2026-11-09 | Backlog |
+
+### 종료 노트
+
+**TD-001** (2026-11-10 Play 검증 완료): 레지스터에 적힌 수치 그대로 그룹당 BoxCollider 1개 적용. 계획대로 동작.
+
+**TD-002** (2026-11-10 Play 검증 완료): 애초 계획("가로대마다 비가시 스텝 콜라이더 + StepOffset 자동 등반")은 실제로 막히는 문제가 있어 폐기 — 계단형 콜라이더들이 전부 같은 x/z 위치에 높이만 다르게 쌓여 있어, CharacterController 캡슐(높이 1.8m)이 한 칸에 올라서는 순간 바로 위 칸과 겹쳐 막혔다. **대신 E 입력으로 명시적 등반**(`LadderClimb.cs`, 트리거 구역 + 출구 지점)으로 교체했고, 근처에 가면 "Press E" 안내 UI(`InteractPrompt`, FadeCanvas 하위)가 뜬다. 안내 문구는 기존 UI(PAUSED, SURFACE 등)와 같이 영어 + 기본 폰트 — 한글 전환은 "TMP 한글 폰트 점검" 작업에서 폰트 문제와 함께 처리 예정.
 
 ### 상세 — 재조사 없이 바로 착수할 수 있도록
 
