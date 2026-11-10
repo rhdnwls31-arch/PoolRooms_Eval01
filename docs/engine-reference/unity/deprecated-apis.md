@@ -17,6 +17,7 @@ and sources).
 | `GraphicsFormat.DepthAuto`, `ShadowAuto`, `VideoAuto` | explicit `GraphicsFormat` values | Now compile errors, not warnings — grep for these if any custom render-texture code is added. |
 | Lighting window "Auto Generate" | `Lightmapping.Bake()` / `Lightmapping.BakeAsync()` | Editor workflow only. |
 | `UPM_CACHE_PATH` env var | `UPM_CACHE_ROOT` | CI/build-machine environment variable, not project code. |
+| `Resources.GetBuiltinResource<Font>("Arial.ttf")` | `Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf")` | Confirmed directly on this pin (6000.6.0f1), not from release notes: `"Arial.ttf"` throws `ArgumentException: Arial.ttf is no longer a valid built in font. Please use LegacyRuntime.ttf` at runtime/batchmode. Hit in `Assets/Editor/SecondDreamSceneBuilder.cs` (Story 009) when building a legacy `UnityEngine.UI.Text` at runtime. |
 
 ## Not sourceable at this pin
 

@@ -5,6 +5,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 // Story 008 — 두 번째 꿈 공간: 말라붙은 실내 수영장 홀.
 //
@@ -64,6 +65,11 @@ public static class SecondDreamSceneBuilder
     const float FogStartDistance = 20f;
     const float FogEndDistance = 38f;
 
+    // ---- 종료 트리거 (Story 009) ---------------------------------------------
+    // Basin 끝(BasinZEndOffset=34)과 마네킹(≈37)을 지난 지점, Hall 끝벽(40) 1.5m 앞 —
+    // Basin을 막지 않고, Entry에서 곧장 닿지도 않는다.
+    const float DemoEndTriggerZOffset = BasinZEndOffset + 4.5f; // = 38.5
+
     static Material MatFloor, MatWall, MatCourtWall, MatCourtDeck, MatPoolTile, MatPillar;
 
     [MenuItem("DEPTH 5m/Build Second Dream Scene")]
@@ -88,6 +94,9 @@ public static class SecondDreamSceneBuilder
         BuildFog();
         BuildVolume(scene);
         ImportPlayerAndFader(scene);
+
+        var demoEndPanel = BuildDemoEndUI(scene);
+        BuildDemoEndTrigger(env, scene, demoEndPanel);
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene, ScenePath);
@@ -355,6 +364,90 @@ public static class SecondDreamSceneBuilder
         var list = new List<EditorBuildSettingsScene>(scenes);
         list.Add(new EditorBuildSettingsScene(ScenePath, true));
         EditorBuildSettings.scenes = list.ToArray();
+    }
+
+    // ---- Story 009: 관찰 후 종료 트리거 -------------------------------------
+    // 닿으면 DemoEndTrigger.cs가 페이드아웃 후 DemoEndPanel을 보여준다. Basin과 마네킹을
+    // 지나친 지점에 둬서, 공간을 다 둘러본 뒤에만 종료되게 한다.
+    static void BuildDemoEndTrigger(Transform env, Scene scene, GameObject demoEndPanel)
+    {
+        float hallStartZ = EntryHalfZ;
+        float z = hallStartZ + DemoEndTriggerZOffset;
+
+        var go = new GameObject("DemoEndTrigger");
+        go.transform.SetParent(env, false);
+        go.transform.localPosition = new Vector3(0, 2f, z);
+
+        var col = go.AddComponent<BoxCollider>();
+        col.isTrigger = true;
+        col.size = new Vector3(HallHalfX * 2f, 4f, 2f);
+
+        var trigger = go.AddComponent<DemoEndTrigger>();
+
+        var fadeCanvasT = Find(scene, "FadeCanvas");
+        trigger.fader = fadeCanvasT != null ? fadeCanvasT.GetComponent<ScreenFader>() : null;
+        if (trigger.fader == null) Debug.LogWarning("[SecondDreamSceneBuilder] FadeCanvas/ScreenFader를 찾지 못했다");
+
+        trigger.demoEndPanel = demoEndPanel;
+
+        var playerT = Find(scene, "Player");
+        trigger.playerController = playerT != null ? playerT.GetComponent<PlayerController>() : null;
+        if (trigger.playerController == null) Debug.LogWarning("[SecondDreamSceneBuilder] Player/PlayerController를 찾지 못했다");
+    }
+
+    // Story 009 — 종료 신호용 정적 화면. FadeCanvas 밑에 전용 패널을 새로 만든다. 기존
+    // ResultPanel/ResultTitle("SURFACE"/"DROWNED")과는 별개의 오브젝트·문구를 써서 승패
+    // 판정과 혼동되지 않게 한다(AC-3). 평소엔 꺼져 있다가 DemoEndTrigger가 페이드아웃 후 켠다.
+    static GameObject BuildDemoEndUI(Scene scene)
+    {
+        var fadeCanvasT = Find(scene, "FadeCanvas");
+        if (fadeCanvasT == null)
+        {
+            Debug.LogWarning("[SecondDreamSceneBuilder] FadeCanvas가 없어 DemoEndPanel을 만들지 못했다");
+            return null;
+        }
+
+        var panelGo = new GameObject("DemoEndPanel", typeof(RectTransform));
+        panelGo.transform.SetParent(fadeCanvasT, false);
+        var panelRect = (RectTransform)panelGo.transform;
+        panelRect.anchorMin = Vector2.zero;
+        panelRect.anchorMax = Vector2.one;
+        panelRect.offsetMin = Vector2.zero;
+        panelRect.offsetMax = Vector2.zero;
+
+        UIText(panelRect, "DemoEndTitle", "To be continued", 110, FontStyle.Bold,
+            new Vector2(0, 60), new Vector2(1400, 160));
+        UIText(panelRect, "DemoEndInfo", "Thank you for playing this DEPTH 5m prototype build.", 36, FontStyle.Normal,
+            new Vector2(0, -60), new Vector2(1400, 80));
+
+        panelGo.SetActive(false); // 평소엔 꺼져 있다 — DemoEndTrigger가 페이드아웃 후 켠다
+        return panelGo;
+    }
+
+    // ResultTitle/ResultInfo와 같은 폰트·정렬을 쓰는 UI Text 생성 헬퍼 (Box/Cyl와 같은 패턴).
+    static Text UIText(Transform parent, string name, string text, int fontSize, FontStyle style,
+        Vector2 anchoredPos, Vector2 sizeDelta)
+    {
+        var go = new GameObject(name, typeof(RectTransform));
+        go.transform.SetParent(parent, false);
+
+        var rect = (RectTransform)go.transform;
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = anchoredPos;
+        rect.sizeDelta = sizeDelta;
+
+        var txt = go.AddComponent<Text>();
+        // Unity 6부터 "Arial.ttf"는 더 이상 유효한 내장 폰트가 아니다(ArgumentException) —
+        // "LegacyRuntime.ttf"가 그 대체재 (docs/engine-reference/unity/ 확인 필요한 변경).
+        txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        txt.fontSize = fontSize;
+        txt.fontStyle = style;
+        txt.alignment = TextAnchor.MiddleCenter;
+        txt.color = Color.white;
+        txt.raycastTarget = false;
+        txt.text = text;
+        return txt;
     }
 
     // ---- 헬퍼 (IntroMapBuilder와 동일한 패턴) ------------------------------

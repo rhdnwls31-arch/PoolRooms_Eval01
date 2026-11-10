@@ -1,12 +1,12 @@
 # Story 009: 두 번째 공간 관찰 후 종료 흐름
 
 > **Epic**: DEPTH 5m
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Feature
 > **Type**: Integration
 > **Estimate**: S
 > **Manifest Version**: N/A (minimal — no control manifest)
-> **Last Updated**: (set by /dev-story when implementation begins)
+> **Last Updated**: 2026-11-10
 
 ## Context
 
@@ -54,11 +54,10 @@
 
 ## Files
 
-- `Assets/Scripts/DemoEndTrigger.cs` (신규)
-- (참고) `Assets/Scripts/PauseMenu.cs` — UI 구성 패턴 참고
-- (사용) `Assets/Scripts/ScreenFader.cs` — 재사용
-
----
+- `Assets/Scripts/DemoEndTrigger.cs` (new — exit trigger: fade out, then show the demo-end panel)
+- `Assets/Editor/SecondDreamSceneBuilder.cs` (modified — places the DemoEndTrigger volume and the new DemoEndPanel UI in Scene_SecondDream)
+- `Assets/Scenes/Scene_SecondDream.unity` (modified — regenerated via Unity batch mode, not hand-edited)
+- `docs/engine-reference/unity/deprecated-apis.md` (modified — logged a newly confirmed Unity 6 API break found while implementing: `Resources.GetBuiltinResource<Font>("Arial.ttf")` -> `"LegacyRuntime.ttf"`)
 
 ## QA Test Cases
 
@@ -86,3 +85,13 @@
 
 - Depends on: `production/epics/depth-5m/story-008-second-dream-space.md`
 - Unlocks: `production/epics/depth-5m/story-010-screen-noise-staging.md`
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-11-10
+**Criteria**: 4/4 passing (none deferred)
+**Deviations**: Advisory — the retained trigger-fire evidence used a temporary (reverted) test spawn placed inside the trigger volume rather than a full natural WASD walkaround (synthetic input injection proved unreliable); recommend a quick human playtest of the natural path. Advisory — the Pool Hall's center-line path dead-ends at the dry basin's near wall (Story 008 scope, already closed); the side decks are the intended route but nothing currently cues the player to detour. Informational — found and fixed a Unity 6 API break (`Arial.ttf` → `LegacyRuntime.ttf`), logged in `docs/engine-reference/unity/deprecated-apis.md`.
+**Test Evidence**: `production/qa/evidence/story-009-second-dream-exit/{01-hall-reachable,02-demo-end-screen}.png` + `stamp.txt` (waived at `qa.level: minimal`, screenshot not waived — run-and-observe). No separate `production/qa/playtests/` record.
+**Reviewed by**: self, no independent review (solo mode)
