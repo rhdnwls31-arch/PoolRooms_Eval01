@@ -1,12 +1,12 @@
 # Story 010: 화면 노이즈 단계별 연출 전체 적용
 
 > **Epic**: DEPTH 5m
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Presentation
 > **Type**: Visual/Feel
 > **Estimate**: M
 > **Manifest Version**: N/A (minimal — no control manifest)
-> **Last Updated**: (set by /dev-story when implementation begins)
+> **Last Updated**: 2026-11-10
 
 ## Context
 
@@ -56,10 +56,10 @@
 
 ## Files
 
-- `Assets/Scripts/ScreenNoiseController.cs` (신규)
-- `Assets/Settings/Horror_PostFX.asset` (단계별 값 정리)
-
----
+- `Assets/Scripts/ScreenNoiseController.cs` (new — 평소/근접 단계 Film Grain·Chromatic Aberration 관리, Vignette 오프셋 노출)
+- `Assets/Scripts/GameManager.cs` (modified — screenNoiseController 통합, UpdateVignette() 합산, --forceanomaly 디버그 훅)
+- `Assets/Settings/Horror_PostFX.asset` (modified — Film Grain 0.3→0.1, Chromatic Aberration 0.2→0.03 베이스라인 정리)
+- `Assets/Scenes/Scene_Game.unity` (modified — ScreenNoiseController 컴포넌트를 GameManager 오브젝트에 배치 및 연결, Unity 배치 모드로 처리)
 
 ## QA Test Cases
 
@@ -87,3 +87,13 @@
 
 - Depends on: `production/epics/depth-5m/story-007-screen-transition.md`
 - Unlocks: None (현재 MVP 범위의 마지막 스토리)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-11-10
+**Criteria**: 5/5 passing (none deferred)
+**Deviations**: Advisory — AC-5의 "세 단계에 맞게 각각 다른 값으로 설정되어 있다"는 문구를 "데이터로 설정됨"으로 해석했음: 전환 단계의 Chromatic Aberration/Vignette 참고값(`transitionChromaticAberrationReference`/`transitionVignetteOffsetReference`)은 Story 002/006/007의 기존 전환 로직을 건드리지 않는 범위 제약에 따라 실제 전환 순간에는 연결되지 않고, Film Grain만 실제로 재생됨. Advisory — 근접 단계의 노이즈 증가는 코드상 명확하나(Film Grain 0.1→0.2, Chromatic Aberration 0.03→0.1) 정적 스크린샷에서는 체감 차이가 미세함.
+**Test Evidence**: `production/qa/evidence/story-010-screen-noise-staging/{01-normal,01b-normal-crop,02-near-anomaly,02b-near-anomaly-crop,03-transition-spike,03b-transition-spike-crop}.png` + `stamp.txt`(staleness 확인 — 4개 파일 모두 UNCHANGED) + 사인오프 `production/qa/evidence/screen-noise-staging-evidence.md`(5개 AC 모두 Approved)
+**Reviewed by**: self, no independent review (solo mode)

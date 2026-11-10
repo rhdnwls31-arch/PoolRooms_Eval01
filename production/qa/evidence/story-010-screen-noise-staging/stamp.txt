@@ -1,0 +1,4 @@
+Reviewed-Content-Hash: Assets/Scripts/ScreenNoiseController.cs 4eed062ee73413eb0b3c0754173e6bd01a6a9e44
+Reviewed-Content-Hash: Assets/Scripts/GameManager.cs 0cd178f38bb32f719cf0ed74a07bb39ed3b11067
+Reviewed-Content-Hash: Assets/Settings/Horror_PostFX.asset 00d24df7da20bd60e1c6101f6766d271074e8c17
+Reviewed-Content-Hash: Assets/Scenes/Scene_Game.unity 05fdf7225602f7995b4cc681a84055a29fe04393

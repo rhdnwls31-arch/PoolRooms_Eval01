@@ -15,6 +15,7 @@ public class GameManager : MonoBehaviour
     public AnomalyManager anomalyManager; // 이상현상 담당 (Inspector에서 연결)
     public ScreenFader fader;             // 페이드 담당 (FadeCanvas)
     public DreamTransitionController dreamTransition; // [신규] Story 007: 가짜 엔딩 접촉 뒤 노이즈 스파이크 → 암전 → 씬 전환 연출
+    public ScreenNoiseController screenNoiseController; // [신규] Story 010: 평소/근접 단계 Film Grain·Chromatic Aberration 및 Vignette 오프셋
     public TextMesh[] depthSigns;         // 문 위 수심 표지판 글자 2개
     public Volume postFxVolume;           // 후처리 (PostFX Volume)
     public int targetRounds = 5;          // 연속 정답 목표
@@ -78,10 +79,17 @@ public class GameManager : MonoBehaviour
         UpdateVignette();
         UpdateLamps(); // [신규]
 
-        StartCoroutine(FirstRound());
-
+        // StartCoroutine(FirstRound())가 StartRound()를 동기적으로(같은 프레임에) 실행하므로,
+        // --forceanomaly 플래그는 그보다 먼저 읽어 둬야 첫 라운드에 반영된다.
+        bool skipToFakeEnding = false;
         foreach (var a in System.Environment.GetCommandLineArgs())
-            if (a == "--skiptofakeending") { StartCoroutine(DebugSkipToFakeEnding()); break; }
+        {
+            if (a == "--skiptofakeending") skipToFakeEnding = true;
+            if (a == "--forceanomaly") forceAnomalyDebug = true; // [신규] Story 010: 첫 라운드를 "근접" 단계로 캡처하기 위한 디버그 훅
+        }
+
+        StartCoroutine(FirstRound());
+        if (skipToFakeEnding) StartCoroutine(DebugSkipToFakeEnding());
     }
 
     // [디버그 전용] --skiptofakeending 인자로 실행하면 라운드를 거치지 않고 바로 가짜 엔딩
@@ -93,6 +101,11 @@ public class GameManager : MonoBehaviour
         yield return new WaitForSeconds(firstDelay + firstFadeTime + 0.5f); // 첫 페이드인이 끝날 때까지 대기
         OnFakeEndingContact();
     }
+
+    // [디버그 전용] Story 010: --forceanomaly 인자로 실행하면 첫 라운드부터 이상현상이 활성화된
+    // "근접" 단계로 시작한다 — 평소/근접 단계를 자동 스크린샷으로 비교 캡처하기 위한 테스트 훅.
+    // 인자를 명시적으로 넘길 때만 동작하므로 일반 플레이/빌드에는 영향 없다.
+    bool forceAnomalyDebug;
 
     // 게임 시작: 검은 화면에서 라운드를 준비하고 서서히 밝아짐
     IEnumerator FirstRound()
@@ -112,7 +125,11 @@ public class GameManager : MonoBehaviour
     {
         roundCount++;
 
-        if (firstRoundNormal && roundCount == 1)
+        if (forceAnomalyDebug && roundCount == 1)
+        {
+            hasAnomaly = true; // [디버그 전용] Story 010: --forceanomaly로 "근접" 단계를 즉시 캡처
+        }
+        else if (firstRoundNormal && roundCount == 1)
         {
             hasAnomaly = false; // 첫 라운드는 무조건 정상
         }
@@ -134,6 +151,9 @@ public class GameManager : MonoBehaviour
 
         // 플레이어를 옮긴 "다음에" 이상현상을 적용 (순서가 중요)
         anomalyManager.ApplyRound(hasAnomaly);
+        // [신규] Story 010: 정답이라 정신력은 그대로여도 단계는 바뀔 수 있으므로 매 라운드 갱신한다
+        if (screenNoiseController != null) screenNoiseController.SetAnomalyProximity(hasAnomaly);
+        UpdateVignette();
         UpdateSigns();
     }
 
@@ -222,6 +242,9 @@ public class GameManager : MonoBehaviour
 
         RepositionPlayer();
         anomalyManager.ApplyRound(false); // 직전 라운드에 남아 있던 이상현상(조명/물/소품)을 정리 — 가짜 엔딩은 조용한 복도에서 시작한다
+        // [신규] Story 010: 가짜 엔딩 복도는 직전 라운드의 "근접" 단계를 물려받지 않고 평소로 시작한다
+        if (screenNoiseController != null) screenNoiseController.SetAnomalyProximity(false);
+        UpdateVignette();
         anomalyManager.ShowFakeEndingMannequin(); // 화면이 검은 지금 켜 둔다 — 밝아지면 이미 서 있던 것처럼 보임
 
         yield return new WaitForSeconds(afterTeleportDelay);
@@ -280,11 +303,14 @@ public class GameManager : MonoBehaviour
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
-    // 남은 정신력에 맞춰 비네팅 세기를 바꿈
+    // 남은 정신력에 맞춰 비네팅 세기를 바꿈. [신규] Story 010: 여기에 screenNoiseController의
+    // 평소/근접 오프셋을 더한다 — Vignette.intensity를 쓰는 곳은 이 메서드 하나로 유지해서
+    // ScreenNoiseController와 서로 덮어쓰지 않게 한다.
     void UpdateVignette()
     {
         if (vignette == null) return;
-        vignette.intensity.value = vignetteBase + (maxSanity - sanity) * vignettePerHit;
+        float stageOffset = screenNoiseController != null ? screenNoiseController.CurrentVignetteOffset : 0f;
+        vignette.intensity.value = vignetteBase + (maxSanity - sanity) * vignettePerHit + stageOffset;
     }
 
     // [신규] 남은 정신력만큼 램프를 켜고 나머지는 끔

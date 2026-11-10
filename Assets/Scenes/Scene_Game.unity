@@ -2223,6 +2223,7 @@ GameObject:
   - component: {fileID: 685084242}
   - component: {fileID: 685084241}
   - component: {fileID: 685084243}
+  - component: {fileID: 685084244}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -2246,6 +2247,7 @@ MonoBehaviour:
   anomalyManager: {fileID: 862425448}
   fader: {fileID: 742542195}
   dreamTransition: {fileID: 685084243}
+  screenNoiseController: {fileID: 685084244}
   depthSigns:
   - {fileID: 445447923}
   - {fileID: 615200993}
@@ -2301,6 +2303,28 @@ MonoBehaviour:
   grainRiseTime: 0.12
   grainFallTime: 0.35
   blackoutFadeTime: 0.5
+--- !u!114 &685084244
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 685084240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f2f508a26cd82734bb8a55c53753acd9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ScreenNoiseController
+  postFxVolume: {fileID: 1104456705}
+  normalFilmGrain: 0.1
+  normalChromaticAberration: 0.03
+  normalVignetteOffset: 0
+  nearFilmGrain: 0.2
+  nearChromaticAberration: 0.1
+  nearVignetteOffset: 0.05
+  transitionFilmGrainReference: 1
+  transitionChromaticAberrationReference: 0.35
+  transitionVignetteOffsetReference: 0.15
 --- !u!1 &689831228
 GameObject:
   m_ObjectHideFlags: 0
