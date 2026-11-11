@@ -150,6 +150,12 @@ Shader "Custom/PoolWater"
                 float fres = pow(1.0 - saturate(dot(N, V)), 3.0);
                 col = lerp(col, _FresnelColor.rgb + diffuseL * 0.05, fres * 0.7);
 
+                // 6.5) 반사: 리플렉션 프로브(벽/하늘)를 프레넬에 비례해 섞는다. 샘플 1회(큐브맵).
+                //      물결 법선은 절반만 반영해서 반사가 너무 어지럽지 않게 한다.
+                float3 Nr = normalize(lerp(float3(0, 1, 0), N, 0.5));
+                half3 refl = GlossyEnvironmentReflection(reflect(-V, Nr), posWS, 0.12, 1.0, screenUV);
+                col = lerp(col, refl, saturate(fres * 0.55 + 0.06));
+
                 // 7) 반짝임
                 col += specL * _SpecIntensity * 0.25;
 
