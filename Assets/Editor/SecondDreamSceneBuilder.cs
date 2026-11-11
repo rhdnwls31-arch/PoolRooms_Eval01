@@ -94,6 +94,7 @@ public static class SecondDreamSceneBuilder
         BuildFog();
         BuildVolume(scene);
         ImportPlayerAndFader(scene);
+        ApplyOpenSky(scene);
 
         var demoEndPanel = BuildDemoEndUI(scene);
         BuildDemoEndTrigger(env, scene, demoEndPanel);
@@ -105,6 +106,22 @@ public static class SecondDreamSceneBuilder
         RegisterInBuildSettings();
 
         Debug.Log("[SecondDreamSceneBuilder] Scene_SecondDream 생성/갱신 완료.");
+    }
+
+    // Visual Polish 1단계(수정안) — 씬의 나머지(Player 로직, 마네킹, 종료 트리거, UI)는 건드리지 않고
+    // 이전에 넣은 Environment/Ceilings를 제거하고 카메라 배경만 안개색 단색으로 바꾼다.
+    // 전체 Build()는 Environment를 통째로 재생성하므로 이미 검증된 씬을 다시 짓지 않으려고 따로 둔다.
+    [MenuItem("DEPTH 5m/Apply Second Dream Open Sky Only")]
+    public static void ApplyOpenSkyOnly()
+    {
+        var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        var env = Find(scene, "Environment");
+        var ceilings = env != null ? env.Find("Ceilings") : null;
+        if (ceilings != null) Object.DestroyImmediate(ceilings.gameObject);
+        ApplyOpenSky(scene);
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene, ScenePath);
+        Debug.Log("[SecondDreamSceneBuilder] 천장 제거 + 인트로 새벽 하늘 적용 완료.");
     }
 
     public static void BuildBatch()
@@ -229,6 +246,30 @@ public static class SecondDreamSceneBuilder
         }
     }
 
+    // 열린 하늘 — 천장을 막으면 답답하고(플레이 피드백), Entry 지붕 틈으로 어차피 하늘이 보였다.
+    // 대신 기본 파란 Skybox를 인트로와 같은 새벽 하늘(Env_DawnSky)로 바꾼다.
+    // 안개색은 BuildFog()가 쓰는 FogColor 상수 — 안개 단계(4단계)에서 하늘과 맞춰 조정한다.
+    // Visual Polish 4단계: 검정 안개 → 밝은 회청색(새벽 하늘과 이어지는 톤). 거리(Linear 20~38m)는 그대로.
+    static readonly Color FogColor = new Color(0.58f, 0.65f, 0.72f);
+
+    /// <summary>Scene_SecondDream의 안개색만 FogColor로 바꾼다(열려 있는 씬 기준, 저장은 호출자가).</summary>
+    public static void ApplyFogColorToOpenScene()
+    {
+        RenderSettings.fogColor = FogColor;
+    }
+
+    static void ApplyOpenSky(Scene scene)
+    {
+        var player = Find(scene, "Player");
+        var cam = player != null ? player.GetComponentInChildren<Camera>(true) : null;
+        if (cam == null) { Debug.LogWarning("[SecondDreamSceneBuilder] Player 카메라를 찾지 못했다 — 배경 변경 생략"); return; }
+        // 인트로(Scene_Intro)와 같은 새벽 하늘 머터리얼을 쓴다 — 두 공간의 하늘이 이어진다.
+        var sky = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Env/Env_DawnSky.mat");
+        if (sky == null) { Debug.LogWarning("[SecondDreamSceneBuilder] Env_DawnSky 머터리얼을 찾지 못했다"); return; }
+        RenderSettings.skybox = sky;
+        cam.clearFlags = CameraClearFlags.Skybox;
+    }
+
     // 홀 끝, Basin 너머에 가만히 선 마네킹 한 명 — 플레이어를 정면으로 바라본다.
     static void BuildMannequin(Transform env)
     {
@@ -303,7 +344,7 @@ public static class SecondDreamSceneBuilder
         RenderSettings.fogMode = FogMode.Linear;
         RenderSettings.fogStartDistance = FogStartDistance;
         RenderSettings.fogEndDistance = FogEndDistance;
-        RenderSettings.fogColor = new Color(0.05f, 0.06f, 0.08f);
+        RenderSettings.fogColor = FogColor;
     }
 
     // Horror_PostFX 프로파일을 쓰는 Volume — 다른 씬과의 분위기 일관성을 위해서만 둔다.

@@ -19,6 +19,32 @@ public static class DawnLightRebuilder
 {
     const string LightName = "DawnLight";
     const string ParentName = "Lighting";
+    const float ShadowStrength = 0.85f; // 완전한 검정 그림자 대신 새벽빛에 어울리는 약간 옅은 그림자
+
+    // Visual Polish 2단계 — 라이트를 새로 만들지 않고(= 저장된 값 유지) 그림자 설정만 켠다.
+    // 열려 있는 Scene_Intro에서 실행. 켠 직후 Console에 IsNormalized/Assertion 오류가 뜨면 멈추고 보고.
+    [MenuItem("DEPTH 5m/Enable DawnLight Shadows")]
+    public static void EnableShadows()
+    {
+        var scene = EditorSceneManager.GetActiveScene();
+        if (scene.name != "Scene_Intro")
+        {
+            Debug.LogError($"[DawnLightRebuilder] 활성 씬이 Scene_Intro가 아니다({scene.name}) — 중단.");
+            return;
+        }
+        Transform parent = FindInScene(scene, ParentName);
+        var t = parent != null ? parent.Find(LightName) : null;
+        var light = t != null ? t.GetComponent<Light>() : null;
+        if (light == null) { Debug.LogError("[DawnLightRebuilder] Lighting/DawnLight를 찾지 못했다."); return; }
+
+        Undo.RecordObject(light, "Enable DawnLight Shadows");
+        light.shadows = LightShadows.Soft;
+        light.shadowStrength = ShadowStrength;
+        EditorUtility.SetDirty(light);
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene);
+        Debug.Log("[DawnLightRebuilder] DawnLight 그림자 ON (Soft, Strength " + ShadowStrength + "). 점/스팟 그림자는 그대로 OFF.");
+    }
 
     [MenuItem("DEPTH 5m/Rebuild DawnLight")]
     public static void Rebuild()
@@ -45,7 +71,8 @@ public static class DawnLightRebuilder
         light.type = LightType.Directional;
         light.color = new Color(1f, 0.88f, 0.75f, 1f);
         light.intensity = 1.8f;
-        light.shadows = LightShadows.None; // 기존에 이미 꺼둔 상태 그대로 유지
+        light.shadows = LightShadows.Soft; // Visual Polish 2단계: 방향광 그림자 ON (점/스팟 그림자는 계속 OFF)
+        light.shadowStrength = ShadowStrength;
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
