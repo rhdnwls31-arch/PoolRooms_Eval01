@@ -22,11 +22,12 @@ public static class IntroMapBuilder
     const float DeckHalfX = 22f;    // 데크 반폭 — 맵 확장(2026-11-10): 기존 소품 배치는 그대로,
                                     // 가장자리에 걸어 다닐 여백을 더 둔다.
     const float DeckHalfZ = 28f;    // 데크 반길이
-    // 2026-11-10: Pool Glow 레퍼런스(사진 같은 라군 분위기)처럼 수영장을 더 크게 — 단, 기존
-    // 데크 가구(가장 안쪽인 Lounger_W/E가 x=±6.6, 가장 가까운 Bench류가 z=±13)와 겹치지
-    // 않는 선까지만. 가구를 옮기지 않고 이 한도 안에서 키운다.
-    const float PoolHalfX = 5.6f;   // 수영장 개구부 반폭 (기존 4.3 — Lounger까지 여유 0.3m)
-    const float PoolHalfZ = 10.5f;  // 수영장 개구부 반길이 (기존 7.3 — Bench까지 여유 1.85m)
+    // 2026-11-10: Pool Glow 레퍼런스(사진 같은 라군 분위기)처럼 수영장을 더 크게.
+    // 2026-11-11: "너비를 조금 더" 요청으로 한 번 더 확장 — Lounger_W/E를 ±6.6→±7.8로
+    // 밀어내 여유를 만들었다(아래 BuildProps). Bench_3(0,17)이 x=0 기준 가장 가까운
+    // 제약이라 PoolHalfZ는 그보다 한참 여유 있게.
+    const float PoolHalfX = 6.8f;   // 수영장 개구부 반폭 (Lounger 안쪽 끝 7.4까지 여유 0.3m)
+    const float PoolHalfZ = 13.0f;  // 수영장 개구부 반길이 (Bench_3 안쪽 끝 16.65까지 여유 3.3m)
     const float PoolDepth = 1.5f;   // 수영장 깊이
     const float WallHeight = 16f;   // 중정 벽 높이 — 지평선을 가릴 만큼 (2026-11-10: 9→16,
                                     // 벽 위쪽 끝과 하늘이 너무 또렷하게 잘려 보이는 문제 완화)
@@ -36,7 +37,7 @@ public static class IntroMapBuilder
     const float DeckThick = 0.4f;
     const float WaterY = -0.12f;    // 수면은 데크보다 살짝 아래 (실제 수영장처럼)
 
-    static Material MatFloor, MatWall, MatWater, MatGlow, MatProp, MatCushion, MatPlant, MatMetal, MatPoolTile, MatTrunk;
+    static Material MatFloor, MatWall, MatWater, MatGlow, MatProp, MatCushion, MatPlant, MatMetal, MatPoolTile, MatTrunk, MatGlowOrb;
 
     [MenuItem("DEPTH 5m/Rebuild Intro Map")]
     public static void Build()
@@ -87,6 +88,8 @@ public static class IntroMapBuilder
         MatPlant = MakeMat("Assets/Materials/Env/Env_Court_Plant.mat", new Color(0.30f, 0.52f, 0.28f), 0.15f);
         MatMetal = MakeMat("Assets/Materials/Env/Env_Court_Metal.mat", new Color(0.82f, 0.84f, 0.86f), 0.80f);
         MatTrunk = MakeMat("Assets/Materials/Env/Env_Court_Trunk.mat", new Color(0.45f, 0.32f, 0.22f), 0.10f);
+        // 2026-11-11: Pool Glow 레퍼런스의 반복 모티프 — 물 위에 뜬 발광 구체. 톤은 하늘색.
+        MatGlowOrb = MakeEmissiveMat("Assets/Materials/Env/Env_GlowOrb.mat", new Color(0.65f, 0.85f, 1f), 2.2f);
     }
 
     static Material Load(string p)
@@ -104,6 +107,21 @@ public static class IntroMapBuilder
         m = new Material(sh);
         m.SetColor("_BaseColor", c);
         m.SetFloat("_Smoothness", smoothness);
+        AssetDatabase.CreateAsset(m, path);
+        return m;
+    }
+
+    // 발광 소품용 — Emission을 켜서 Bloom이 잡아먹도록 한다.
+    static Material MakeEmissiveMat(string path, Color color, float intensity)
+    {
+        var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (m != null) return m;
+        var sh = Shader.Find("Universal Render Pipeline/Lit");
+        m = new Material(sh);
+        m.SetColor("_BaseColor", color);
+        m.SetColor("_EmissionColor", color * intensity);
+        m.EnableKeyword("_EMISSION");
+        m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
         AssetDatabase.CreateAsset(m, path);
         return m;
     }
@@ -287,11 +305,21 @@ public static class IntroMapBuilder
         BigPillar(d, "Prop_BigPillar_1", new Vector3(-4.0f, 0, 1.0f), 5.5f);
         BigPillar(d, "Prop_BigPillar_2", new Vector3(4.0f, 0, 3.0f), 5.0f);
 
+        // 야자수 밑동마다 한두 개씩 군집 + 수영장 가운데 몇 개 — 사진 속 반복 모티프.
+        GlowOrb(d, "Prop_GlowOrb_1", new Vector3(-3.0f, 0, -4.3f), 0.35f);
+        GlowOrb(d, "Prop_GlowOrb_2", new Vector3(-4.0f, 0, -4.6f), 0.28f);
+        GlowOrb(d, "Prop_GlowOrb_3", new Vector3(3.0f, 0, -1.8f), 0.32f);
+        GlowOrb(d, "Prop_GlowOrb_4", new Vector3(-2.5f, 0, 4.3f), 0.30f);
+        GlowOrb(d, "Prop_GlowOrb_5", new Vector3(3.0f, 0, 6.3f), 0.34f);
+        GlowOrb(d, "Prop_GlowOrb_6", new Vector3(0f, 0, -4.0f), 0.40f);
+        GlowOrb(d, "Prop_GlowOrb_7", new Vector3(1.0f, 0, 4.0f), 0.38f);
+
         float[] rowZ = { -4.5f, 0f, 4.5f };
         for (int i = 0; i < rowZ.Length; i++)
         {
-            Lounger(d, "Prop_Lounger_W" + (i + 1), new Vector3(-6.6f, 0, rowZ[i]), 90f);
-            Lounger(d, "Prop_Lounger_E" + (i + 1), new Vector3(6.6f, 0, rowZ[i]), -90f);
+            // 2026-11-11: 수영장이 커지면서 ±6.6은 새 PoolHalfX(6.8)와 겹친다 — ±7.8로 밀어냄.
+            Lounger(d, "Prop_Lounger_W" + (i + 1), new Vector3(-7.8f, 0, rowZ[i]), 90f);
+            Lounger(d, "Prop_Lounger_E" + (i + 1), new Vector3(7.8f, 0, rowZ[i]), -90f);
         }
         SideTable(d, "Prop_SideTable_1", new Vector3(-8f, 0, -2f));
         SideTable(d, "Prop_SideTable_2", new Vector3(-8f, 0, 2.5f));
@@ -460,6 +488,19 @@ public static class IntroMapBuilder
 
         // 몸통만 콜라이더 — 수영장 안에서도 부딪히는 느낌(잎은 스치고 지나감).
         GroupCollider(g, new Vector3(0, trunkCenterY, 0), new Vector3(0.5f, trunkHeight, 0.5f));
+    }
+
+    // Pool Glow 레퍼런스의 반복 모티프 — 수면에 반쯤 잠긴 채 뜬 발광 구체. 콜라이더 없음
+    // (장식용, 부딪히지 않고 스치고 지나간다).
+    static void GlowOrb(Transform p, string name, Vector3 pos, float radius)
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        go.name = name;
+        Object.DestroyImmediate(go.GetComponent<Collider>());
+        go.transform.SetParent(p, false);
+        go.transform.localPosition = new Vector3(pos.x, WaterY, pos.z);
+        go.transform.localScale = Vector3.one * radius * 2f;
+        go.GetComponent<MeshRenderer>().sharedMaterial = MatGlowOrb;
     }
 
     // Pool Glow 레퍼런스 — 수영장 한가운데 서 있는 큰 흰 기둥.
