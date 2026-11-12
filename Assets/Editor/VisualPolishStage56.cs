@@ -58,7 +58,9 @@ public static class VisualPolishStage56
         var tile = AssetDatabase.LoadAssetAtPath<Texture2D>(TilePath);
         if (tile == null) { Debug.LogError("[VisualPolish] tile_pool.png 없음"); return; }
 
-        SetTile("Assets/Materials/Env/Env_Court_Deck.mat", tile);
+        // 데크는 조정 1에서 만든 옅은 줄눈 텍스처가 있으면 그걸 쓴다(재실행해도 줄눈이 진해지지 않게).
+        var deckTile = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/Env/tile_deck_soft.png");
+        SetTile("Assets/Materials/Env/Env_Court_Deck.mat", deckTile != null ? deckTile : tile);
         SetTile("Assets/Materials/Env/Env_Court_PoolTile.mat", tile);
 
         // 거칠기 차이: 무광 콘크리트(데크/벽) < 도색 금속 < 유약 타일.

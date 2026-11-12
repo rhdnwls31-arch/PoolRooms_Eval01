@@ -47,8 +47,44 @@ public static class VisualPolishCapture
         if (Application.isBatchMode) EditorApplication.Exit(0);
     }
 
-    static void Capture(string scenePath, string prefix, Shot[] shots)
+
+    // 2026-11-12 인트로 확장판 점검용. 저장: production/qa/evidence/intro-expansion/
+    const string ExpansionDir = "production/qa/evidence/intro-expansion";
+
+    [MenuItem("DEPTH 5m/Visual Polish/Capture Intro Expansion Shots")]
+    public static void CaptureIntroExpansion()
     {
+        try
+        {
+            Capture("Assets/Scenes/Scene_Intro.unity", "x", new[]
+            {
+                new Shot { name = "01_spawn",        pos = new Vector3(0, 1.6f, 22f),   lookAt = new Vector3(0, 2.5f, -20f) },
+                new Shot { name = "02_pool_stairs",  pos = new Vector3(0, 1.6f, 17f),   lookAt = new Vector3(0, -0.5f, 8f) },
+                new Shot { name = "03_in_pool",      pos = new Vector3(0, 0.7f, 6f),    lookAt = new Vector3(0, 1.5f, -25f) },
+                new Shot { name = "04_east_door",    pos = new Vector3(14f, 1.6f, 6f),  lookAt = new Vector3(22f, 2f, 0f) },
+                new Shot { name = "05_channel_hall", pos = new Vector3(24f, 1.6f, 0f),  lookAt = new Vector3(46f, 2f, 0f) },
+                new Shot { name = "06_channel_side", pos = new Vector3(36f, 1.6f, 10f), lookAt = new Vector3(36f, 1.5f, -8f) },
+                new Shot { name = "07_west_door",    pos = new Vector3(-14f, 1.6f, 6f), lookAt = new Vector3(-22f, 2f, 0f) },
+                new Shot { name = "08_lagoon",       pos = new Vector3(-26f, 1.6f, 10f), lookAt = new Vector3(-38f, 0f, -2f) },
+                new Shot { name = "09_north_door",   pos = new Vector3(0, 1.6f, -20f),  lookAt = new Vector3(0, 2f, -40f) },
+                new Shot { name = "10_tunnel",       pos = new Vector3(0, 1.6f, -32f),  lookAt = new Vector3(0, 1.6f, -48f) },
+                new Shot { name = "11_goal_room",    pos = new Vector3(0, 1.6f, -50f),  lookAt = new Vector3(0, 1.5f, -60f) },
+                new Shot { name = "12_aerial_top",   pos = new Vector3(0, 120f, -10f),  lookAt = new Vector3(0, 0f, -12f) },
+                new Shot { name = "13_aerial_angle", pos = new Vector3(0, 70f, 62f),    lookAt = new Vector3(0, 0f, -15f) },
+            }, ExpansionDir);
+            Debug.Log("[VisualPolishCapture] 확장판 캡처 완료 → " + ExpansionDir);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError("[VisualPolishCapture] 실패: " + e);
+            if (Application.isBatchMode) EditorApplication.Exit(1);
+        }
+        if (Application.isBatchMode) EditorApplication.Exit(0);
+    }
+
+    static void Capture(string scenePath, string prefix, Shot[] shots, string outDir = OutDir)
+    {
+        Directory.CreateDirectory(outDir);
         var scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
 
         var go = new GameObject("__CaptureCam");
@@ -77,7 +113,7 @@ public static class VisualPolishCapture
             tex.ReadPixels(new Rect(0, 0, Width, Height), 0, 0);
             tex.Apply();
             RenderTexture.active = null;
-            File.WriteAllBytes($"{OutDir}/{prefix}_{s.name}.png", tex.EncodeToPNG());
+            File.WriteAllBytes($"{outDir}/{prefix}_{s.name}.png", tex.EncodeToPNG());
             Debug.Log($"[VisualPolishCapture] {prefix}_{s.name}.png");
         }
 
