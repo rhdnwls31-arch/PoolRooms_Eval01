@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.Universal;
+using UnityEngine.Rendering.HighDefinition;
 using UnityEngine.SceneManagement;
 
 // Story 007: 화면 전환 연출 (노이즈 증가 → 암전 → 씬 전환).

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.Universal;
+using UnityEngine.Rendering.HighDefinition;
 
 /// <summary>
 /// 사용자 설정(화면/프레임/음량/모션 블러/밝기/마우스 감도)의 저장과 적용.
@@ -88,8 +88,8 @@ public static class GameSettings
         {
             bool changed = Mathf.Abs(Brightness01 - DefaultBrightness) > 0.01f;
             colorAdjustments.postExposure.overrideState = changed;
-            // 기본 밝기에서는 오버라이드를 끄고(씬 프로파일 그대로), 바꿨을 때만 -0.2(씬 기본 노출) 기준으로 가감.
-            colorAdjustments.postExposure.value = -0.2f + (Brightness01 - DefaultBrightness) * 2f * BrightnessRangeEv;
+            // 기본 밝기에서는 오버라이드를 끄고(씬 프로파일 그대로), 바꿨을 때만 기준 노출에서 ±EV로 가감.
+            colorAdjustments.postExposure.value = (Brightness01 - DefaultBrightness) * 2f * BrightnessRangeEv;
         }
         if (motionBlur != null)
         {

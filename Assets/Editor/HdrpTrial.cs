@@ -128,6 +128,9 @@ public static class HdrpTrial
         var tm = Persist(profile, profile.Add<Tonemapping>(true));
         tm.mode.Override(TonemappingMode.ACES);
 
+        var mb = Persist(profile, profile.Add<MotionBlur>(true));
+        mb.intensity.Override(0.25f); // 설정의 모션 블러 끔은 런타임 SettingsVolume이 0으로 덮는다
+
         var bloom = Persist(profile, profile.Add<Bloom>(true));
         bloom.intensity.Override(0.35f);
         bloom.threshold.Override(0.9f);
@@ -164,7 +167,7 @@ public static class HdrpTrial
         return profile;
     }
 
-    static void ApplyToIntro()
+    internal static void ApplyToIntro()
     {
         var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
         var profile = BuildProfile();

@@ -1,5 +1,5 @@
 using UnityEngine;
-using UnityEngine.Rendering.Universal;
+using UnityEngine.Rendering.HighDefinition;
 
 [ExecuteAlways]
 [RequireComponent(typeof(DecalProjector))]

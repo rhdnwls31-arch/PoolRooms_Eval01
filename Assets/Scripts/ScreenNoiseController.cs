@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.Universal;
+using UnityEngine.Rendering.HighDefinition;
 
 // Story 010 — "평소 / 근접 / 전환" 세 단계 화면 노이즈 통합 관리.
 //

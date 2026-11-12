@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;        // R 키 입력용
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.Universal;
+using UnityEngine.Rendering.HighDefinition;
 using UnityEngine.SceneManagement;    // 씬 다시 불러오기(재시작)용
 using UnityEngine.UI;                 // 결과 글자(Text)용
 

@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.Universal;
+using UnityEngine.Rendering.HighDefinition;
 using UnityEngine.SceneManagement;
 
 // 도입부에서 플레이어가 자유롭게 돌아다니다 "의식을 잃는" 연출.

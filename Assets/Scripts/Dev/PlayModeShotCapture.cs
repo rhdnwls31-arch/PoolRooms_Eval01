@@ -37,10 +37,22 @@ public class PlayModeShotCapture : MonoBehaviour
         var player = FindFirstObjectByType<PlayerController>();
         if (player != null) player.enabled = false;
 
+        // -playHere: 씬 시작 시 카메라 위치에서 방향만 돌려 3장(정면/오른쪽/왼쪽)을 찍는다(복도, Pool Hall 등 지점을 모르는 씬용).
+        var shots = Shots;
+        if (System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-playHere") >= 0)
+        {
+            var p0 = cam.transform.position; var f = cam.transform.forward; f.y = 0f; f.Normalize();
+            var r = Quaternion.Euler(0, 90, 0) * f;
+            shots = new (string, Vector3, Vector3)[]
+            {
+                ("here_front", p0, p0 + f * 10f), ("here_right", p0, p0 + r * 10f), ("here_left", p0, p0 - r * 10f),
+            };
+        }
+
         const int W = 1600, H = 900;
         var rt = new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32);
         var tex = new Texture2D(W, H, TextureFormat.RGB24, false);
-        foreach (var s in Shots)
+        foreach (var s in shots)
         {
             cam.transform.position = s.pos; cam.transform.LookAt(s.look);
             for (int f = 0; f < 20; f++) yield return null;
