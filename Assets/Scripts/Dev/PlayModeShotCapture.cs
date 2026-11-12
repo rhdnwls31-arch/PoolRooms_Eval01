@@ -56,7 +56,7 @@ public class PlayModeShotCapture : MonoBehaviour
         {
             cam.transform.position = s.pos; cam.transform.LookAt(s.look);
             for (int f = 0; f < 20; f++) yield return null;
-            cam.targetTexture = rt; cam.Render(); cam.targetTexture = null;
+            cam.targetTexture = rt; for (int k = 0; k < 3; k++) cam.Render(); cam.targetTexture = null; // 모션 블러/노출 이력이 새 위치로 안정되게 여러 번
             RenderTexture.active = rt;
             tex.ReadPixels(new Rect(0, 0, W, H), 0, 0); tex.Apply();
             RenderTexture.active = null;
