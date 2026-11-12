@@ -30,7 +30,7 @@ public class PlayerController : MonoBehaviour
     // 마우스로 시점 돌리기
     void Look()
     {
-        Vector2 mouseDelta = Mouse.current.delta.ReadValue() * mouseSensitivity;
+        Vector2 mouseDelta = Mouse.current.delta.ReadValue() * mouseSensitivity * GameSettings.MouseSensitivityMultiplier; // 설정 메뉴의 감도 배율
 
         // 좌우: 플레이어 몸 전체를 회전
         transform.Rotate(0f, mouseDelta.x, 0f);
