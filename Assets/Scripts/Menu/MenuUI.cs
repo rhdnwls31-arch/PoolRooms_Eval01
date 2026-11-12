@@ -122,7 +122,6 @@ public static class MenuUIFactory
         bgImg.raycastTarget = true; // 일시정지 중 뒤 UI가 클릭되지 않게
         refs.root = bg;
 
-        if (mode == MenuMode.Main) AddNoise(bg);
         if (mode == MenuMode.Main) BuildMainLayout(bg, refs);
         else BuildPauseLayout(bg, refs);
 
@@ -135,17 +134,6 @@ public static class MenuUIFactory
         trt.pivot = new Vector2(0.5f, 0f); trt.anchoredPosition = new Vector2(0, 60); trt.sizeDelta = new Vector2(900, 50);
         refs.toast.raycastTarget = false;
         return refs;
-    }
-
-    // 메인 화면의 옅은 필름 노이즈(작은 랜덤 텍스처를 늘려 깔고, 몇 프레임마다 다시 뽑는다)
-    static void AddNoise(RectTransform parent)
-    {
-        var rt = NewRect("Noise", parent);
-        Stretch(rt);
-        var raw = rt.gameObject.AddComponent<RawImage>();
-        raw.raycastTarget = false;
-        raw.color = new Color(1, 1, 1, 0.035f);
-        var nf = rt.gameObject.AddComponent<NoiseFlicker>(); nf.target = raw; nf.Prime();
     }
 
     // ---- 메인: 오른쪽 위 메뉴, 왼쪽 아래 제목 ---------------------------------
