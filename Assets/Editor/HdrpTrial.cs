@@ -15,7 +15,7 @@ public static class HdrpTrial
     const string ProfilePath = "Assets/Settings/HDRP_Intro_Profile.asset";
     const string OutDir = "production/qa/evidence/hdrp-trial";
     const float EmissiveScale = 6000f;   // URP 발광 색 → HDRP 니트 환산(시각 조정)
-    const float ExposureEV = 9.5f;
+    const float ExposureEV = 8.7f;
 
     [MenuItem("DEPTH 5m/HDRP Trial/Run")]
     public static void Run()
@@ -132,9 +132,12 @@ public static class HdrpTrial
 
         var fog = profile.Add<Fog>(true);
         fog.enabled.Override(true);
-        fog.meanFreePath.Override(120f);
-        fog.albedo.Override(new Color(0.95f, 0.78f, 0.78f));
+        fog.meanFreePath.Override(90f);
+        fog.albedo.Override(new Color(1f, 0.74f, 0.84f));
         fog.enableVolumetricFog.Override(true);
+
+        var wr = profile.Add<WaterRendering>(true); // 이게 없으면 Water Surface가 그려지지 않는다
+        wr.enable.Override(true);
 
         var vig = profile.Add<Vignette>(true);
         vig.intensity.Override(0.25f);
@@ -178,11 +181,44 @@ public static class HdrpTrial
             if (go != null) go.SetActive(false);
         }
 
+        TuneLook();
+        EnsureHdCameras();
         ApplyWater(scene);
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
         Debug.Log("[HdrpTrial] 인트로 씬 적용 완료");
+    }
+
+    // 씬의 실제 카메라(Main Camera 등)에 HDAdditionalCameraData가 없으면 Volume이 적용되지 않아
+    // 캡처용 임시 카메라와 Game 화면이 다르게 나온다. 모든 카메라에 붙이고 Volume 마스크를 전체로 둔다.
+    static void EnsureHdCameras()
+    {
+        foreach (var cam in Object.FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            if (cam.name.StartsWith("__")) continue;
+            var hd = cam.GetComponent<HDAdditionalCameraData>() ?? cam.gameObject.AddComponent<HDAdditionalCameraData>();
+            hd.volumeLayerMask = ~0;
+            hd.antialiasing = HDAdditionalCameraData.AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+            hd.clearColorMode = HDAdditionalCameraData.ClearColorMode.Sky;
+            EditorUtility.SetDirty(cam);
+            Debug.Log("[HdrpTrial] HD 카메라 데이터: " + cam.name);
+        }
+    }
+
+    // 레퍼런스(풀코어)의 분홍 파스텔 톤으로: 구체는 분홍빛 흰색, 안개와 햇빛은 분홍 쪽으로.
+    static void TuneLook()
+    {
+        var orb = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Env/Env_GlowOrb.mat");
+        if (orb != null)
+        {
+            orb.SetColor("_BaseColor", new Color(1f, 0.80f, 0.92f));
+            orb.SetColor("_EmissiveColor", new Color(1f, 0.74f, 0.92f) * 2600f);
+            HDShaderUtils.ResetMaterialKeywords(orb);
+            EditorUtility.SetDirty(orb);
+        }
+        foreach (var l in Object.FindObjectsByType<Light>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            if (l.type == LightType.Directional) l.color = new Color(1f, 0.80f, 0.78f);
     }
 
     static float PointLumens(string n)
@@ -225,6 +261,14 @@ public static class HdrpTrial
             ws.surfaceType = WaterSurfaceType.Pool;
             ws.geometryType = WaterGeometryType.Quad;
             go.transform.localScale = new Vector3(b.size.x, 1f, b.size.z);
+            // 수영장 느낌: 맑고 얕은 청록, 잔잔한 물결
+            ws.refractionColor = new Color(0.55f, 0.92f, 0.98f);
+            ws.scatteringColor = new Color(0.25f, 0.72f, 0.78f);
+            ws.absorptionDistance = 8f;
+            ws.maxRefractionDistance = 1.5f;
+            ws.ripplesWindSpeed = 2.5f;
+            ws.ripplesChaos = 0.6f;
+            ws.causticsIntensity = 1.0f;
             Debug.Log($"[HdrpTrial] 물 {name}: center={b.center} size={b.size}");
         }
     }
@@ -233,12 +277,14 @@ public static class HdrpTrial
     static void Capture()
     {
         Directory.CreateDirectory(OutDir);
-        var scene = SceneManager.GetActiveScene();
-        var go = new GameObject("__HdrpCam");
-        var cam = go.AddComponent<Camera>();
-        cam.fieldOfView = 70f; cam.nearClipPlane = 0.05f; cam.farClipPlane = 300f; cam.clearFlags = CameraClearFlags.Skybox;
-        var hdCam = go.AddComponent<HDAdditionalCameraData>();
-        hdCam.antialiasing = HDAdditionalCameraData.AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+        // 캡처는 게임이 실제로 쓰는 Main Camera로 찍는다(임시 카메라와 설정이 달라 결과가 달랐던 문제 방지).
+        var cam = Camera.main;
+        if (cam == null) throw new System.Exception("Main Camera 없음");
+        var go = cam.gameObject;
+        var savedPos = go.transform.position; var savedRot = go.transform.rotation;
+        var savedTarget = cam.targetTexture;
+        var player = Object.FindFirstObjectByType<PlayerController>();
+        if (player != null) player.enabled = false;
 
         const int W = 1600, H = 900;
         var rt = new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32);
@@ -249,6 +295,9 @@ public static class HdrpTrial
             ("01_spawn", new Vector3(0, 1.6f, 22f), new Vector3(0, 2.5f, -20f)),
             ("02_pool_stairs", new Vector3(0, 1.6f, 17f), new Vector3(0, -0.5f, 8f)),
             ("03_in_pool", new Vector3(0, 0.7f, 6f), new Vector3(0, 1.5f, -25f)),
+            ("04_channel_hall", new Vector3(24f, 1.6f, 0f), new Vector3(46f, 2f, 0f)),
+            ("05_tunnel", new Vector3(0, 1.6f, -32f), new Vector3(0, 1.6f, -48f)),
+            ("06_goal_room", new Vector3(0, 1.6f, -50f), new Vector3(0, 1.5f, -60f)),
         };
         foreach (var (name, pos, look) in shots)
         {
@@ -260,7 +309,10 @@ public static class HdrpTrial
             File.WriteAllBytes($"{OutDir}/{name}.png", tex.EncodeToPNG());
             Debug.Log("[HdrpTrial] " + name + ".png");
         }
-        cam.targetTexture = null;
-        Object.DestroyImmediate(rt); Object.DestroyImmediate(tex); Object.DestroyImmediate(go);
+        cam.targetTexture = savedTarget;
+        go.transform.SetPositionAndRotation(savedPos, savedRot);
+        if (player != null) player.enabled = true;
+        Object.DestroyImmediate(rt); Object.DestroyImmediate(tex);
+        EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
     }
 }
