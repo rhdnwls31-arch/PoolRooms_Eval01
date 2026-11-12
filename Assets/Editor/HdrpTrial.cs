@@ -98,6 +98,15 @@ public static class HdrpTrial
     }
 
     // ---- 인트로 씬: Volume/조명/카메라 교체 --------------------------------------------------
+    // profile.Add로 만든 컴포넌트는 에셋의 하위 오브젝트로 저장해야 디스크에 남는다.
+    // (안 하면 같은 세션에서만 보이고, 에디터를 다시 열어 Play하면 설정이 전부 비어 화면이 깨진다.)
+    static T Persist<T>(VolumeProfile profile, T component) where T : VolumeComponent
+    {
+        component.hideFlags = HideFlags.HideInInspector | HideFlags.HideInHierarchy;
+        AssetDatabase.AddObjectToAsset(component, profile);
+        return component;
+    }
+
     static VolumeProfile BuildProfile()
     {
         var existing = AssetDatabase.LoadAssetAtPath<VolumeProfile>(ProfilePath);
@@ -105,52 +114,53 @@ public static class HdrpTrial
         var profile = ScriptableObject.CreateInstance<VolumeProfile>();
         AssetDatabase.CreateAsset(profile, ProfilePath);
 
-        var env = profile.Add<VisualEnvironment>(true);
+        var env = Persist(profile, profile.Add<VisualEnvironment>(true));
         env.skyType.Override((int)SkyType.PhysicallyBased);
         env.skyAmbientMode.Override(SkyAmbientMode.Dynamic);
 
-        var pbs = profile.Add<PhysicallyBasedSky>(true);
+        var pbs = Persist(profile, profile.Add<PhysicallyBasedSky>(true));
         pbs.groundTint.Override(new Color(0.62f, 0.54f, 0.5f));
 
-        var exp = profile.Add<Exposure>(true);
+        var exp = Persist(profile, profile.Add<Exposure>(true));
         exp.mode.Override(ExposureMode.Fixed);
         exp.fixedExposure.Override(ExposureEV);
 
-        var tm = profile.Add<Tonemapping>(true);
+        var tm = Persist(profile, profile.Add<Tonemapping>(true));
         tm.mode.Override(TonemappingMode.ACES);
 
-        var bloom = profile.Add<Bloom>(true);
+        var bloom = Persist(profile, profile.Add<Bloom>(true));
         bloom.intensity.Override(0.35f);
         bloom.threshold.Override(0.9f);
         bloom.scatter.Override(0.7f);
 
-        var ssao = profile.Add<ScreenSpaceAmbientOcclusion>(true);
+        var ssao = Persist(profile, profile.Add<ScreenSpaceAmbientOcclusion>(true));
         ssao.intensity.Override(0.9f);
 
-        var ssr = profile.Add<ScreenSpaceReflection>(true);
+        var ssr = Persist(profile, profile.Add<ScreenSpaceReflection>(true));
         ssr.enabled.Override(true);
 
-        var fog = profile.Add<Fog>(true);
+        var fog = Persist(profile, profile.Add<Fog>(true));
         fog.enabled.Override(true);
         fog.meanFreePath.Override(90f);
         fog.albedo.Override(new Color(1f, 0.74f, 0.84f));
         fog.enableVolumetricFog.Override(true);
 
-        var wr = profile.Add<WaterRendering>(true); // 이게 없으면 Water Surface가 그려지지 않는다
+        var wr = Persist(profile, profile.Add<WaterRendering>(true)); // 이게 없으면 Water Surface가 그려지지 않는다
         wr.enable.Override(true);
 
-        var vig = profile.Add<Vignette>(true);
+        var vig = Persist(profile, profile.Add<Vignette>(true));
         vig.intensity.Override(0.25f);
 
-        var grain = profile.Add<FilmGrain>(true);
+        var grain = Persist(profile, profile.Add<FilmGrain>(true));
         grain.type.Override(FilmGrainLookup.Thin1);
         grain.intensity.Override(0.15f);
 
-        var ca = profile.Add<ChromaticAberration>(true);
+        var ca = Persist(profile, profile.Add<ChromaticAberration>(true));
         ca.intensity.Override(0.12f);
 
         EditorUtility.SetDirty(profile);
         AssetDatabase.SaveAssets();
+        AssetDatabase.ImportAsset(ProfilePath, ImportAssetOptions.ForceUpdate);
         return profile;
     }
 
