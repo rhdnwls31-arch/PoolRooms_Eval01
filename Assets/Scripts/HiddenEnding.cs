@@ -7,7 +7,8 @@ using UnityEngine.UI;
 /// 수영장 앞까지 와서 마네킹을 응시하면(<see cref="GazeTarget"/>, 거리로 "멀리서"는 막는다):
 /// 1) 조작이 멈추고 시선이 마네킹에 붙잡힌다. 마네킹이 천천히 돌아서 플레이어를 노려본다.
 /// 2) 시야각이 점점 좁아지고 가장자리가 조여 들어와 마네킹 얼굴로 빨려 들어간다(카메라는 움직이지 않는다).
-/// 3) 화면이 하얗게 터지고, 다시 밝아지면 마네킹은 없고 튜브가 떠 있다. 그리고 하얗게 깨어나며 엔딩 화면.
+/// 3) 화면이 하얗게 터진다(showTubeReveal이면 다시 밝아질 때 마네킹 자리에 튜브가 떠 있다. 지금은 끔).
+/// 4) 하얀 화면 사이로 지금까지 지나온 방들이 3초씩 하나씩 떠올랐다가 사라지고, 마지막 방이 검게 사라지며 끝난다(문구 없음).
 /// 기본 엔딩 DemoEndTrigger 스크립트는 고치지 않는다. 찾는 순간 그 콜라이더만 끈다.
 /// </summary>
 public class HiddenEnding : MonoBehaviour
@@ -27,9 +28,9 @@ public class HiddenEnding : MonoBehaviour
 
     [Header("노려보기")]
     [Tooltip("시선이 마네킹 쪽으로 끌려가는 시간(초).")]
-    public float lockOnTime = 1.2f;
+    public float lockOnTime = 0.8f;
     [Tooltip("마네킹이 돌아서는 시간(초).")]
-    public float turnTime = 2.8f;
+    public float turnTime = 1.3f;   // 2026-11-18 플레이 피드백: 2.8초는 느렸다
     [Tooltip("다 돌아선 뒤 마주 보고 있는 시간(초).")]
     public float stareHold = 1.2f;
 
@@ -42,12 +43,26 @@ public class HiddenEnding : MonoBehaviour
     public float flashTime = 0.35f;
 
     [Header("깨어나기")]
+    [Tooltip("하얗게 터진 뒤 튜브가 떠 있는 수영장을 보여 줄지. 2026-11-18 사용자 요청으로 끔(바로 지나온 방 돌아보기로 간다).")]
+    public bool showTubeReveal = false;
     [Tooltip("하얀 화면에서 튜브가 있는 수영장이 보이기까지(초).")]
     public float revealTime = 2.5f;
     [Tooltip("튜브를 보고 있는 시간(초).")]
     public float tubeHold = 3f;
     [Tooltip("마지막으로 하얗게 밝아지는 시간(초).")]
-    public float wakeFadeTime = 3f;
+    public float wakeFadeTime = 1.2f;   // 2026-11-18 플레이 피드백: 튜브 뒤 하얀 디졸브 3초는 길었다
+
+    [Header("지나온 방 돌아보기")]
+    [Tooltip("깨어난 뒤 차례로 보여 줄 카메라 자리(지나온 방 순서).")]
+    public Transform[] montageShots = new Transform[0];
+    [Tooltip("방 하나를 보여 주는 시간(초). 페이드 포함.")]
+    public float shotTime = 3f;
+    [Tooltip("방 사이 하얗게 넘어가는 시간(초).")]
+    public float shotFade = 0.5f;
+    [Tooltip("마지막 방에서 검게 사라지는 시간(초).")]
+    public float finalFadeTime = 2.5f;
+    [Tooltip("끝에 엔딩 문구 화면을 띄울지. 2026-11-18 사용자 요청으로 끔(문구 없이 검은 화면으로 끝난다).")]
+    public bool showEndPanel = false;
 
     /// <summary>지금 단계. 0 = 아직 못 찾음, 1 = 연출 중, 2 = 끝남.</summary>
     public int Stage { get; private set; }
@@ -55,6 +70,9 @@ public class HiddenEnding : MonoBehaviour
     Quaternion mannequinStartRot;
     Camera cam;
     float camFov;
+    Vector3 camLocalPos;
+    Quaternion camLocalRot;
+    bool camSaved;
     Image vignette;
     Texture2D vignetteTex;
     const int VigSize = 96;
@@ -75,6 +93,7 @@ public class HiddenEnding : MonoBehaviour
         if (tube != null) tube.SetActive(false);
         if (endPanel != null) endPanel.SetActive(false);
         if (cam != null && camFov > 0f) cam.fieldOfView = camFov;
+        if (cam != null && camSaved) { cam.transform.localPosition = camLocalPos; cam.transform.localRotation = camLocalRot; }
         SetVignette(0f);
     }
 
@@ -93,6 +112,7 @@ public class HiddenEnding : MonoBehaviour
         cam = Camera.main;
         if (cam == null || mannequin == null) yield break;
         camFov = cam.fieldOfView;
+        camLocalPos = cam.transform.localPosition; camLocalRot = cam.transform.localRotation; camSaved = true;
         if (player != null) player.enabled = false;
         EnsureVignette();
 
@@ -145,12 +165,31 @@ public class HiddenEnding : MonoBehaviour
         cam.transform.rotation = Quaternion.LookRotation(spot - cam.transform.position);
         yield return new WaitForSeconds(0.8f);
 
-        if (fader != null) yield return StartCoroutine(fader.FadeIn(revealTime));
-        yield return new WaitForSeconds(tubeHold);
+        if (showTubeReveal)
+        {
+            if (fader != null) yield return StartCoroutine(fader.FadeIn(revealTime));
+            yield return new WaitForSeconds(tubeHold);
+            // 6) 깨어난다.
+            if (fader != null) yield return StartCoroutine(fader.FadeOut(wakeFadeTime));
+        }
 
-        // 6) 깨어난다.
-        if (fader != null) yield return StartCoroutine(fader.FadeOut(wakeFadeTime));
-        if (endPanel != null) endPanel.SetActive(true);
+        // 7) 지나온 방들이 하나씩 떠올랐다 사라진다(하얀 화면 사이로).
+        for (int i = 0; i < montageShots.Length; i++)
+        {
+            var shot = montageShots[i];
+            if (shot == null) continue;
+            bool last = i == montageShots.Length - 1;
+            cam.transform.SetPositionAndRotation(shot.position, shot.rotation);
+            if (fader != null) yield return StartCoroutine(fader.FadeIn(shotFade));
+            yield return new WaitForSeconds(Mathf.Max(0f, shotTime - shotFade * 2f));
+            if (fader == null) continue;
+            // 마지막 방은 하얗게가 아니라 검게, 천천히 사라진다(화면이 보이는 동안 색을 바꾸므로 튀지 않는다).
+            if (last) fader.SetColor(Color.black);
+            yield return StartCoroutine(fader.FadeOut(last ? finalFadeTime : shotFade));
+        }
+        if (fader != null && montageShots.Length == 0) { fader.SetColor(Color.black); yield return StartCoroutine(fader.FadeOut(finalFadeTime)); }
+        // 8) 문구 없이 검은 화면으로 끝난다(showEndPanel이면 예전 엔딩 문구 화면).
+        if (showEndPanel && endPanel != null) endPanel.SetActive(true);
         Stage = 2;
     }
 

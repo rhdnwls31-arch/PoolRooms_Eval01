@@ -22,13 +22,15 @@ public static partial class GreyboxGraphicsPass
     // 거실
     const float LvX0 = 38.75f, LvX1 = 50f, LvZ0 = -124f, LvZ1 = -110.5f, LvH = 2.8f;
     const float LvInZ = -112.4f;         // 노란 방 → 거실 구멍 가운데 z (폭 1.8, 높이 2.4)
-    const float LvOutZ = -121.4f;        // 거실 → 천사 방 구멍 가운데 z (폭 2.0, 높이 2.6)
+    // 거실의 출구는 서쪽 벽(천사 방)에서 남쪽 벽(파란 침실, BdInX)으로 옮겼다(2026-11-18).
 
     static void ApplyNewRooms()
     {
         RewireOldPassages();
         BuildShower();
         BuildLiving();
+        BuildBedroom();
+        BuildComputer(); // 2026-11-18 컴퓨터 속 맵(침실 → 컴퓨터 속 → 천사 방, Computer.cs)
     }
 
     // ---------------------------------------------------------------- 길 다시 잇기
@@ -49,7 +51,16 @@ public static partial class GreyboxGraphicsPass
         SplitSceneWall(Find("GB_02_Crack/Wall_North_0"), crackGen, (ShInX - 0.6f, ShInX + 0.6f, 2.2f));
         SplitSceneWall(Find("GB_03_Yellow/Wall_West_1"), yellowGen, (ShOutZ - 0.9f, ShOutZ + 0.9f, 2.4f));
         SplitSceneWall(Find("GB_03_Yellow/Wall_East_0"), yellowGen, (LvInZ - 0.9f, LvInZ + 0.9f, 2.4f));
-        SplitSceneWall(Find("GB_04_Angel/Wall_East_0"), angelGen, (LvOutZ - 1f, LvOutZ + 1f, 2.6f));
+        // 천사 방 동쪽 벽에는 이제 구멍이 없다. 파란 침실 복도 끝 문을 지나면 이 벽 앞으로 순간이동한다(§6-3d, BlueGimmick.cs).
+        // 예전에 구멍을 내며 꺼 둔 원래 벽을 다시 켠다.
+        var angelEast = Find("GB_04_Angel/Wall_East_0");
+        angelEast.gameObject.SetActive(true);
+        EditorUtility.SetDirty(angelEast.gameObject);
+        foreach (var stale in new[] { "Wall_East_0_Cut", "Seal_BedroomToAngel" })
+        {
+            var old = angelGen.Find(stale);
+            if (old != null) Object.DestroyImmediate(old.gameObject);
+        }
 
         // 노란 방 서쪽 벽의 액자(z -111.6)는 그대로 두고, 동쪽 벽 TV(35.1, -112.4)는 새 통로를 막지 않게 북쪽으로 옮긴다.
         var yProps = Root("GB_03_Yellow").transform.Find("Placeholder_Props/" + PropsName);
@@ -250,17 +261,17 @@ public static partial class GreyboxGraphicsPass
         Box(shell, "Floor", new Vector3(cx, -0.15f, cz), new Vector3(sx, 0.3f, sz), floor, LLiving, true);
         Box(shell, "Ceiling", new Vector3(cx, LvH + 0.15f, cz), new Vector3(sx, 0.3f, sz), ceil, LLiving);
         WallWithHoles(shell, "West", false, 38.6f, 0.3f, -124.3f, -110.2f, 0f, LvH,
-            new[] { (LvOutZ - 1f, LvOutZ + 1f, 2.6f), (LvInZ - 0.9f, LvInZ + 0.9f, 2.4f) }, wall, LLiving);
+            new[] { (LvInZ - 0.9f, LvInZ + 0.9f, 2.4f) }, wall, LLiving);
         WallWithHoles(shell, "East", false, 50.15f, 0.3f, -124.3f, -110.2f, 0f, LvH, new (float, float, float)[0], wall, LLiving);
         WallWithHoles(shell, "North", true, -110.35f, 0.3f, 38.45f, 50.3f, 0f, LvH, new (float, float, float)[0], wall, LLiving);
-        WallWithHoles(shell, "South", true, -124.15f, 0.3f, 38.45f, 50.3f, 0f, LvH, new (float, float, float)[0], wall, LLiving);
+        WallWithHoles(shell, "South", true, -124.15f, 0.3f, 38.45f, 50.3f, 0f, LvH, new[] { (BdInX - 0.9f, BdInX + 0.9f, 2.4f) }, wall, LLiving);
         // 걸레받이
-        // 서쪽 벽은 문이 둘이라 두 번에 나눈다(Cover는 문 하나만 비운다).
-        Cover(Group(gen, "Baseboard"), "W", false, LvX0 + 0.02f, LvZ0, LvInZ - 0.9f, 0.1f, LvOutZ - 1f, LvOutZ + 1f, 0.1f, trim, LLiving);
+        // 서쪽 벽은 노란 방 문(LvInZ)을 기준으로 두 번에 나눈다.
+        Cover(Group(gen, "Baseboard"), "W", false, LvX0 + 0.02f, LvZ0, LvInZ - 0.9f, 0.1f, LvZ0, LvZ0, 0.1f, trim, LLiving);
         Cover(gen.Find("Baseboard"), "W2", false, LvX0 + 0.02f, LvInZ + 0.9f, LvZ1, 0.1f, LvInZ + 0.9f, LvInZ + 0.9f, 0.1f, trim, LLiving);
         Cover(gen.Find("Baseboard"), "N", true, LvZ1 - 0.02f, LvX0, LvX1, 0.1f, LvX0, LvX0, 0.1f, trim, LLiving);
         Cover(gen.Find("Baseboard"), "E", false, LvX1 - 0.02f, LvZ0, LvZ1, 0.1f, LvZ0, LvZ0, 0.1f, trim, LLiving);
-        Cover(gen.Find("Baseboard"), "S", true, LvZ0 + 0.02f, LvX0, LvX1, 0.1f, LvX0, LvX0, 0.1f, trim, LLiving);
+        Cover(gen.Find("Baseboard"), "S", true, LvZ0 + 0.02f, LvX0, LvX1, 0.1f, BdInX - 0.9f, BdInX + 0.9f, 0.1f, trim, LLiving);
 
         // 노란 방 동쪽 벽(36.45) → 거실 서쪽 벽(38.45) 사이 짧은 통로. 벽은 거실 벽지로, 들어서면 분위기가 바뀐다.
         var pass = Group(gen, "Passage_FromYellow");
@@ -350,9 +361,11 @@ public static partial class GreyboxGraphicsPass
         var profile = RoomProfile("Living", 7.4f, 0.01f, 0.04f, new Color(0.7f, 0.55f, 0.42f), 40f, new Color(0.02f, 0.015f, 0.01f), 8f, 0f);
         LocalVolume(gen, "LocalVolume", new Vector3((LvX0 + LvX1) / 2, LvH / 2, (LvZ0 + LvZ1) / 2), new Vector3(LvX1 - LvX0, LvH, LvZ1 - LvZ0), 1f, 125f, profile);
 
-        // 찾기 규칙: TV 속 소파에 사람이 앉아 있는데 진짜 소파는 비어 있다. TV를 바라보면 화면이 깜빡이고 사람이 사라지며, TV 옆 벽(출구)이 열린다.
+        // 찾기 규칙: TV 속 소파에 사람이 앉아 있는데 진짜 소파는 비어 있다. TV를 바라보면 화면이 깜빡이고 사람이 사라지며,
+        // TV 옆 모서리의 남쪽 벽(출구, 파란 침실로)이 열린다.
         var gate = FindGate(gen, "FindGate_Living", 5, "LivingTV",
-            new Bounds(new Vector3(38.6f, 1.3f, LvOutZ), new Vector3(0.3f, 2.6f, 2f)), "GB_03b_Living/GFX_Generated/Shell/West/Seg_0");
+            new Bounds(new Vector3(BdInX, 1.2f, -124.15f), new Vector3(1.8f, 2.4f, 0.3f)), "GB_03b_Living/GFX_Generated/Shell/South/Seg_0");
+        Box(gate.wall.transform, "Baseboard", new Vector3(BdInX, 0.05f, LvZ0 + 0.02f), new Vector3(1.8f, 0.1f, 0.04f), trim, LLiving);
         var gz = AddGaze(tv.gameObject, "LivingTV", gate, new Bounds(new Vector3((LvX0 + LvX1) / 2, LvH / 2, (LvZ0 + LvZ1) / 2), new Vector3(LvX1 - LvX0, LvH, LvZ1 - LvZ0)));
         gz.hideOnFound = new[] { ghost.gameObject };
         gz.blinkRenderers = new[] { screen.GetComponent<Renderer>() };
@@ -386,8 +399,10 @@ public static partial class GreyboxGraphicsPass
         Seal("Seal_YellowToLiving", "GB_03b_Living", "GB_03b_Living/GFX_Generated/Shell/West/Seg_0", Vector3.right,
             new Vector3(38.6f, 1.2f, LvInZ), new Vector3(0.3f, 2.4f, 1.8f),
             new Vector3(LvX0 + 0.6f + 1.5f, 1.5f, LvInZ), new Vector3(3f, 3f, 3.6f), null);
-        Seal("Seal_LivingToAngel", "GB_04_Angel", "GB_04_Angel/GFX_Generated/Wall_East_0_Cut/Seg_0", Vector3.left,
-            new Vector3(38.3f, 1.3f, LvOutZ), new Vector3(0.3f, 2.6f, 2f),
-            new Vector3(38.15f - 0.6f - 1.5f, 2f, LvOutZ), new Vector3(3f, 4f, 6f), null);
+        // 거실 → 파란 침실: 막힘 판은 침실 쪽 덧판 면(z -124.34)까지 두껍게 해 테두리가 보이지 않게 한다.
+        Seal("Seal_LivingToBedroom", "GB_03c_Bedroom", "GB_03c_Bedroom/GFX_Generated/Shell/West/Seg_0", Vector3.back,
+            new Vector3(BdInX, 1.2f, -124.17f), new Vector3(1.8f, 2.4f, 0.34f),
+            new Vector3(BdInX, 1.5f, BdZ1 - 0.6f - 1.5f), new Vector3(3.6f, 3f, 3f), null);
+        // 침실 → 천사 방은 통로가 아니라 복도 끝 문의 순간이동이다. 뒤에 남은 문은 BlueRoomDoor가 지운다(§6-3d).
     }
 }

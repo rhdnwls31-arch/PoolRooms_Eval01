@@ -45,7 +45,8 @@ public static partial class GreyboxGraphicsPass
         new Vector2(4.5f, -56), new Vector2(4.5f, -66), new Vector2(0, -68.5f), new Vector2(0, -78), new Vector2(0, -84.8f),
         new Vector2(5.4f, -85.6f), new Vector2(5.4f, -105.2f), new Vector2(5.4f, -106.7f), new Vector2(9.5f, -106.7f), new Vector2(9.5f, -100f), // 복도 → 샤워실
         new Vector2(18.5f, -101.5f), new Vector2(21.5f, -101.5f), new Vector2(25f, -106f), new Vector2(34f, -112.4f), new Vector2(40f, -112.4f), // → 노란 방 → 거실
-        new Vector2(40f, -121.4f), new Vector2(36.5f, -121.4f), new Vector2(31.5f, -128), new Vector2(28.15f, -141), new Vector2(28.15f, -146.5f), // → 천사 방
+        new Vector2(40.6f, -121.5f), new Vector2(40.6f, -127f), new Vector2(47.7f, -128.5f), new Vector2(47.7f, -134.7f), new Vector2(65.2f, -134.7f), // → 파란 침실 → 복도 끝 문(열려 있어야 지나간다, 순간이동)
+        new Vector2(36.5f, -133.4f), new Vector2(31.5f, -133f), new Vector2(28.15f, -141), new Vector2(28.15f, -146.5f), // → 천사 방
         new Vector2(28.15f, -171.5f), // 하늘 계단(경사로로 올라간다)
         new Vector2(32.5f, -150 + SkyShift), new Vector2(32.5f, -160 + SkyShift), new Vector2(28.15f, -166 + SkyShift), new Vector2(28.15f, -189 + SkyShift), new Vector2(19.75f, -195.5f + SkyShift),
         new Vector2(19.75f, -234.5f + SkyShift), new Vector2(28.15f, -237 + SkyShift),

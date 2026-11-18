@@ -1,4 +1,6 @@
-# Game Brief: DEPTH 5m
+# Game Brief: DEPTH
+
+> 2026-11-18: 제목을 "DEPTH 5m"에서 **DEPTH**로 바꿨다(방 수가 늘어 숫자가 맞지 않음). 설정 한 줄은 `design/quick-designs/weirdcore-door-descent-v2.md` §1-1. 아래 본문의 옛 이름은 기록으로 남긴다.
 
 **One-sentence pitch:** 평온하고 아름다운 꿈속 수영장을 걷다가 서서히 악몽으로 변해가는, 점프 스케어 없는 드림코어 서브틀 호러.
 

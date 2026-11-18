@@ -181,7 +181,7 @@ public static partial class GreyboxGraphicsPass
     {
         var gen = Root("GB_04_Angel").transform.Find(GenName);
         var room = new Bounds(new Vector3(28.15f, 6f, -128.85f), new Vector3(20.6f, 12f, 28.3f));
-        var gate = FindGate(gen, "FindGate_Angel", 6, "AngelOddEye",
+        var gate = FindGate(gen, "FindGate_Angel", 8, "AngelOddEye",
             new Bounds(new Vector3(28.15f, 2.15f, -142.85f), new Vector3(3f, 4.3f, 0.3f)), "GB_04_Angel/Wall_South_0");
 
         // 날개 달린 눈 8개는 모두 플레이어를 따라 돈다. 이 하나만 멈춰서 출구 자리를 본다.

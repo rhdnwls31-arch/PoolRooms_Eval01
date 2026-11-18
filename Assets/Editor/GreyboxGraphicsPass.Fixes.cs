@@ -31,6 +31,7 @@ public static partial class GreyboxGraphicsPass
         ApplySeals();
         ApplyIntroExitCue();
         ApplyFindRooms(); // 2026-11-18 찾기 규칙(기획서 §4-1): 이상한 점을 응시해야 출구가 열린다(Find.cs)
+        PatchDoorwayTrims(); // 2026-11-18 문 자리를 채우는 판마다 끊긴 걸레받이를 잇는다(Trims.cs). 항상 마지막에 둔다.
     }
 
     // ---------------------------------------------------------------- 1번: 인트로 출구 안내
