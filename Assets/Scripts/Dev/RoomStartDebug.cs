@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// 개발용(에디터에서만): 그레이박스 맵의 원하는 방에서 바로 시작하거나, Play 중 F1~F7로 방을 옮긴다.
+/// 개발용(에디터에서만): 그레이박스 맵의 원하는 방에서 바로 시작하거나, Play 중 F1~F9로 방을 옮긴다.
 /// 처음부터 다시 걷지 않고 방마다 확인하기 위한 도구(2026-11-18 사용자 요청). 빌드에는 들어가지 않는다.
 /// 방을 옮기면 그 방까지 지나왔어야 할 통로는 실제로 지나온 것처럼 막고(SealBehindPassage.Seal),
 /// 그 뒤 통로는 처음 상태로 되돌린다(ResetSeal). 앞 방들의 잠긴 출구(RevealWhenExplored)는 열어 두고, 이 방부터는 다시 잠근다.
@@ -19,8 +19,8 @@ public class RoomStartDebug : MonoBehaviour
     public const string SceneName = "Scene_DescentGreybox";
 
     /// <summary>방 이름(메뉴와 F키 순서). 0번은 처음 시작 자리, 나머지는 그 방으로 들어가는 통로 막힘 이름과 짝이다.</summary>
-    public static readonly string[] RoomNames = { "인트로 메인", "수영장 홀", "금 간 복도", "노란 방", "천사 방", "하늘 계단", "마지막 수영장" };
-    static readonly string[] EntrySeals = { null, "Seal_IntroToHall", "Seal_HallToCrack", "Seal_CrackToYellow", "Seal_YellowToAngel", "Seal_AngelToStairs", "Seal_StairsToSame" };
+    public static readonly string[] RoomNames = { "인트로 메인", "수영장 홀", "금 간 복도", "잠긴 샤워실", "노란 방", "밤의 거실", "천사 방", "하늘 계단", "마지막 수영장" };
+    static readonly string[] EntrySeals = { null, "Seal_IntroToHall", "Seal_HallToCrack", "Seal_CrackToShower", "Seal_ShowerToYellow", "Seal_YellowToLiving", "Seal_LivingToAngel", "Seal_AngelToStairs", "Seal_StairsToSame" };
 
     /// <summary>통로 막힘 판 면에서 방 안쪽으로 이만큼 들어간 곳에 선다(미터). 보이지 않는 벽(0.45m)보다 충분히 멀어야 한다.</summary>
     const float SpawnDepth = 2f;
@@ -65,7 +65,7 @@ public class RoomStartDebug : MonoBehaviour
         if (instance != null) instance.GoTo(room);
     }
 
-    /// <summary>방 번호(0~6)로 옮긴다. 앞 통로는 막고, 그 뒤 통로는 풀고, 방 입구에 방 안쪽을 보고 선다.</summary>
+    /// <summary>방 번호(0~8)로 옮긴다. 앞 통로는 막고, 그 뒤 통로는 풀고, 방 입구에 방 안쪽을 보고 선다.</summary>
     public void GoTo(int room)
     {
         if (player == null || room < 0 || room >= RoomNames.Length) return;

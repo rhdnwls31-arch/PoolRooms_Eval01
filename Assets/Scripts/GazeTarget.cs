@@ -20,6 +20,8 @@ public class GazeTarget : MonoBehaviour
     public float dwellTime = 1.5f;
     [Tooltip("판정용 범위를 렌더러 범위보다 이만큼(미터) 넓힌다. 작은 표지도 겨누기 쉽게.")]
     public float boundsPadding = 0.1f;
+    [Tooltip("비워 두면 자식 렌더러 전체로 판정한다. 채우면 이것들만 겨눠야 찾은 것이다(천사 눈: 날개 말고 눈알).")]
+    public Renderer[] gazeRenderers = new Renderer[0];
 
     [Header("힌트")]
     [Tooltip("이 방의 범위. 플레이어가 안에 있는 동안만 힌트 시간을 센다.")]
@@ -50,6 +52,10 @@ public class GazeTarget : MonoBehaviour
     [Tooltip("찾으면 바닥으로 떨어지는 것(열쇠 등).")]
     public Transform dropTarget;
     public float dropToY;
+    [Tooltip("찾은 뒤 hideOnFound/showOnFound를 바꾸기까지 기다리는 시간(초). 섬뜩한 것이 바로 사라지지 않게.")]
+    public float hideDelay = 0f;
+    [Tooltip("찾은 뒤 출구에 알리기까지 기다리는 시간(초).")]
+    public float notifyDelay = 0f;
 
     /// <summary>찾았는지.</summary>
     public bool Found { get; private set; }
@@ -126,8 +132,10 @@ public class GazeTarget : MonoBehaviour
     Bounds CurrentBounds()
     {
         Bounds b = default; bool any = false;
-        foreach (var r in GetComponentsInChildren<Renderer>(false))
+        var rs = gazeRenderers.Length > 0 ? gazeRenderers : GetComponentsInChildren<Renderer>(false);
+        foreach (var r in rs)
         {
+            if (r == null || !r.gameObject.activeInHierarchy) continue;
             if (!any) { b = r.bounds; any = true; } else b.Encapsulate(r.bounds);
         }
         if (any) b.Expand(boundsPadding * 2f);
@@ -161,9 +169,9 @@ public class GazeTarget : MonoBehaviour
     IEnumerator OnFound()
     {
         Found = true;
-        foreach (var go in hideOnFound) if (go != null) go.SetActive(false);
-        foreach (var go in showOnFound) if (go != null) go.SetActive(true);
-        if (gate != null) gate.MarkVisited(id);
+        float start = Time.time;
+        if (hideDelay <= 0f) ApplyState(Swapped, true);
+        if (notifyDelay <= 0f && gate != null) gate.MarkVisited(id);
 
         if (dropTarget != null)
         {
@@ -182,6 +190,16 @@ public class GazeTarget : MonoBehaviour
             yield return new WaitForSeconds(blinkOff);
             foreach (var r in blinkRenderers) if (r != null) r.enabled = true;
             yield return new WaitForSeconds(blinkOff * 1.5f);
+        }
+        if (hideDelay > 0f)
+        {
+            while (Time.time - start < hideDelay) yield return null;
+            ApplyState(Swapped, true);
+        }
+        if (notifyDelay > 0f)
+        {
+            while (Time.time - start < notifyDelay) yield return null;
+            if (gate != null) gate.MarkVisited(id);
         }
     }
 

@@ -22,7 +22,10 @@ public static partial class GreyboxGraphicsPass
         var refWall = Find(refWallPath).GetComponent<MeshRenderer>();
         var go = new GameObject(name);
         go.transform.SetParent(gen, true);
-        var wall = Box(go.transform, "Wall", b.center, b.size, refWall.sharedMaterial, refWall.renderingLayerMask, true);
+        // 벽은 빈 묶음 아래에 둔다. 걸레받이 같은 덧붙이를 크기가 늘어난 상자 아래에 붙이면 같이 늘어나 버린다(2026-11-18 노란 방).
+        var wall = new GameObject("Wall");
+        wall.transform.SetParent(go.transform, false);
+        Box(wall.transform, "Box", b.center, b.size, refWall.sharedMaterial, refWall.renderingLayerMask, true);
         var gate = go.AddComponent<RevealWhenExplored>();
         gate.wall = wall;
         gate.wallBounds = b;
@@ -92,8 +95,9 @@ public static partial class GreyboxGraphicsPass
     {
         var gen = Root("GB_02_Crack").transform.Find(GenName);
         var room = new Bounds(new Vector3(13f, 2f, -106.7f), new Vector3(13.6f, 4f, 6f));
+        // 2026-11-18: 출구는 북쪽 벽(샤워실로 가는 구멍, x 8.9~10.1). 복도 벽 + 샤워실 남쪽 벽 두께를 채운다.
         var gate = FindGate(gen, "FindGate_Crack", 2, "CrackDepth",
-            new Bounds(new Vector3(19.98f, 1.3f, -106.7f), new Vector3(0.34f, 2.6f, 2f)), "GB_02_Crack/GFX_Generated/WallCovers/East_A");
+            new Bounds(new Vector3(ShInX, 1.1f, -103.4f), new Vector3(1.2f, 2.2f, 0.6f)), "GB_02_Crack/Wall_North_0");
 
         var t12 = SignTexture("GB_Find_Depth_1_2m", 512, 256, new Color(0.93f, 0.94f, 0.92f), new Color(0.1f, 0.18f, 0.42f), TextGlyph("1.2m"));
         var t5 = SignTexture("GB_Find_Depth_5m", 512, 256, new Color(0.93f, 0.94f, 0.92f), new Color(0.1f, 0.18f, 0.42f), TextGlyph("5m"));
@@ -101,11 +105,11 @@ public static partial class GreyboxGraphicsPass
         var m5 = Lit("GB_Find_Depth_5m", m => { Plain(m, Color.white, 0.6f); m.SetTexture("_BaseColorMap", t5); });
         var back = Lit("GB_Find_SignBack", m => Plain(m, new Color(0.85f, 0.86f, 0.84f), 0.5f));
 
-        // 남쪽 벽(z -109.7) 1.5m 높이에 차례로. 첫 표지는 사물함(x 8.25~9.75, 높이 1.8m) 옆이다. 마지막(5m)은 출구 벽 바로 옆이다.
+        // 북쪽 벽(z -103.7) 1.5m 높이. 5m 표지는 출구(x 9.5) 바로 옆, 나머지 1.2m는 마네킹(x 15)을 사이에 두고 동쪽으로.
         var signs = new GameObject("DepthSigns"); signs.transform.SetParent(gen, true);
-        foreach (float x in new[] { 10.8f, 13.3f, 15.8f })
-            WallSign(signs.transform, $"Depth_1_2m_{x:F0}", new Vector3(x, 1.5f, -109.7f), Vector3.forward, 0.5f, 0.25f, m12, back, LCrack);
-        var odd = WallSign(gen, "Oddity_Depth_5m", new Vector3(18.4f, 1.5f, -109.7f), Vector3.forward, 0.5f, 0.25f, m5, back, LCrack);
+        foreach (float x in new[] { 12.8f, 16.1f, 18.9f })
+            WallSign(signs.transform, $"Depth_1_2m_{x:F0}", new Vector3(x, 1.5f, -103.7f), Vector3.back, 0.5f, 0.25f, m12, back, LCrack);
+        var odd = WallSign(gen, "Oddity_Depth_5m", new Vector3(10.95f, 1.5f, -103.7f), Vector3.back, 0.5f, 0.25f, m5, back, LCrack);
         var g = AddGaze(odd, "CrackDepth", gate, room);
         g.blinkRenderers = new[] { odd.transform.Find("Face").GetComponent<Renderer>() };
         g.blinkCount = 2;
@@ -116,11 +120,12 @@ public static partial class GreyboxGraphicsPass
     {
         var gen = Root("GB_03_Yellow").transform.Find(GenName);
         var room = new Bounds(new Vector3(28.15f, 1.5f, -106.4f), new Vector3(16f, 3f, 16f));
-        var gate = FindGate(gen, "FindGate_Yellow", 3, "YellowClown",
-            new Bounds(new Vector3(28.15f, 1.3f, -114.53f), new Vector3(2f, 2.6f, 0.34f)), "GB_03_Yellow/GFX_Generated/WallCovers/South_A");
-        var trim = gen.Find("Baseboard/S_A");
+        // 2026-11-18: 출구는 동쪽 벽(거실로 가는 구멍, z -113.3~-111.5).
+        var gate = FindGate(gen, "FindGate_Yellow", 4, "YellowClown",
+            new Bounds(new Vector3(36.3f, 1.2f, LvInZ), new Vector3(0.3f, 2.4f, 1.8f)), "GB_03_Yellow/Wall_East_0");
+        var trim = gen.Find("Baseboard/E_A");
         if (trim != null && trim.TryGetComponent<MeshRenderer>(out var tr))
-            Box(gate.wall.transform, "Baseboard", new Vector3(28.15f, 0.05f, -114.34f), new Vector3(2f, 0.1f, 0.04f), tr.sharedMaterial, tr.renderingLayerMask);
+            Box(gate.wall.transform, "Baseboard", new Vector3(36.13f, 0.05f, LvInZ), new Vector3(0.04f, 0.1f, 1.8f), tr.sharedMaterial, tr.renderingLayerMask);
 
         var white = Lit("GB_Find_Clown_Face", m => Plain(m, new Color(0.95f, 0.93f, 0.9f), 0.35f));
         var red = Lit("GB_Find_Clown_Red", m => Plain(m, new Color(0.78f, 0.08f, 0.08f), 0.45f));
@@ -128,9 +133,9 @@ public static partial class GreyboxGraphicsPass
         var gold = Lit("GB_Find_Key_Gold", m => Plain(m, new Color(0.85f, 0.68f, 0.25f), 0.7f, 1f));
         var dark = Lit("GB_Find_Clown_Dark", m => Plain(m, new Color(0.05f, 0.05f, 0.06f), 0.3f));
 
-        // 방 남동쪽, 출구(28.15, -114.4)를 바라본다. 서쪽 입구로 들어오면 앞 오른쪽에 보인다. 키 약 1m.
+        // 방 남동쪽, 출구(동쪽 벽 z -112.4)를 바라본다. 북서쪽 입구로 들어오면 대각선 건너편에 보인다. 키 약 1m.
         var pos = new Vector3(32f, 0f, -109.5f);
-        var exit = new Vector3(28.15f, 0f, -114.4f);
+        var exit = new Vector3(36.15f, 0f, LvInZ);
         var doll = new GameObject("Oddity_Clown").transform;
         doll.SetParent(gen, true);
         doll.SetPositionAndRotation(pos, Quaternion.LookRotation(exit - pos));
@@ -175,7 +180,7 @@ public static partial class GreyboxGraphicsPass
     {
         var gen = Root("GB_04_Angel").transform.Find(GenName);
         var room = new Bounds(new Vector3(28.15f, 6f, -128.85f), new Vector3(20.6f, 12f, 28.3f));
-        var gate = FindGate(gen, "FindGate_Angel", 4, "AngelOddEye",
+        var gate = FindGate(gen, "FindGate_Angel", 6, "AngelOddEye",
             new Bounds(new Vector3(28.15f, 2.15f, -142.85f), new Vector3(3f, 4.3f, 0.3f)), "GB_04_Angel/Wall_South_0");
 
         // 날개 달린 눈 8개는 모두 플레이어를 따라 돈다. 이 하나만 멈춰서 출구 자리를 본다.
@@ -185,6 +190,10 @@ public static partial class GreyboxGraphicsPass
         var g = AddGaze(eye.gameObject, "AngelOddEye", gate, room);
         g.blinkRenderers = new[] { eye.Find("Iris").GetComponent<Renderer>(), eye.Find("Pupil").GetComponent<Renderer>() };
         g.blinkCount = 2; g.blinkOff = 0.3f;
+        // 날개 끝을 봐도 열리던 것을 막는다(2026-11-18 플레이 피드백): 눈알을 정면으로 겨눠야 찾은 것이다.
+        g.gazeRenderers = new[] { eye.Find("Eye").GetComponent<Renderer>(), eye.Find("Iris").GetComponent<Renderer>(), eye.Find("Pupil").GetComponent<Renderer>() };
+        g.boundsPadding = 0f;
+        g.maxDistance = 9f; // 눈이 6.4m 높이에 떠 있어 6m로는 바로 밑에서만 닿는다
     }
 
     // ---------------------------------------------------------------- 표지 텍스처(점 글꼴)

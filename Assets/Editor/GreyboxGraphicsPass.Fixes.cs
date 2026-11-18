@@ -27,6 +27,7 @@ public static partial class GreyboxGraphicsPass
         ApplyHallEntryRoof();
         ApplyHeights();
         FlattenThresholds();
+        ApplyNewRooms(); // 2026-11-18 잠긴 샤워실·밤의 거실, 예전 길 막기(NewRooms.cs). 통로 막기보다 먼저 벽에 구멍을 낸다.
         ApplySeals();
         ApplyIntroExitCue();
         ApplyFindRooms(); // 2026-11-18 찾기 규칙(기획서 §4-1): 이상한 점을 응시해야 출구가 열린다(Find.cs)
@@ -88,17 +89,8 @@ public static partial class GreyboxGraphicsPass
             new Vector3(6.02f, 1.1f, -106.7f), new Vector3(0.34f, 2.2f, 1.2f),
             new Vector3(8.29f, 2f, -106.7f), new Vector3(3f, 4f, 5.8f), FindMarker("GB_02_Crack", -106.7f, 6.15f));
 
-        // 복도 → 노란 방: 노란 방 서쪽 벽(x 19.85~20.15) + 벽지판(~20.20)의 2×2.6m 구멍, 걸레받이 한 토막
-        var yellow = Seal("Seal_CrackToYellow", "GB_03_Yellow", "GB_03_Yellow/GFX_Generated/WallCovers/West_A", Vector3.right,
-            new Vector3(20.025f, 1.3f, -106.7f), new Vector3(0.35f, 2.6f, 2f),
-            new Vector3(22.3f, 1.5f, -106.55f), new Vector3(3f, 3f, 15f), FindMarker("GB_03_Yellow", -106.7f, 20.15f));
-        var trim = Find("GB_03_Yellow/GFX_Generated/Baseboard/W_A").GetComponent<MeshRenderer>();
-        Box(yellow.plug.transform, "Baseboard", new Vector3(20.22f, 0.05f, -106.7f), new Vector3(0.04f, 0.1f, 2f), trim.sharedMaterial, trim.renderingLayerMask);
-
-        // 노란 방 → 천사 방: 천사 방 북쪽 벽(z -114.70~-114.40) + 노란 방 덧판(~-114.36)의 2×2.6m 구멍
-        Seal("Seal_YellowToAngel", "GB_04_Angel", "GB_04_Angel/Wall_North_0", Vector3.back,
-            new Vector3(28.15f, 1.3f, -114.53f), new Vector3(2f, 2.6f, 0.34f),
-            new Vector3(28.15f, 2f, -116.8f), new Vector3(19.5f, 4f, 3f), FindMarker("GB_04_Angel", -114.7f, 28.15f));
+        // 2026-11-18: 복도 → 노란 방, 노란 방 → 천사 방 통로는 없앴다. 새 길(복도 → 샤워실 → 노란 방 → 거실 → 천사 방)의 막기는 NewRooms.cs.
+        NewRoomSeals();
 
         // 천사 방 → 하늘 계단: 계단 구역 북쪽 하늘 벽의 3×4.3m 구멍. 판은 하늘 벽과 같은 면(두께 0.04)에 붙여 테두리가 드러나지 않게 한다.
         var angelToStairs = Seal("Seal_AngelToStairs", StairsRoot, StairsRoot + "/" + GenName + "/Shell/North_W", Vector3.back,

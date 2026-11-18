@@ -57,7 +57,8 @@ public static partial class GreyboxGraphicsPass
         var gen = Fresh(root.transform, GenName);
         var covers = Group(gen, "WallCovers");
         Cover(covers, "West", false, 6.17f, -109.7f, -103.7f, 4f, -107.3f, -106.1f, 2.2f, wallMat, LCrack);
-        Cover(covers, "East", false, 19.83f, -109.7f, -103.7f, 4f, -107.7f, -105.7f, 2.6f, wallMat, LCrack);
+        // 2026-11-18: 복도 → 노란 방 길을 막고 샤워실로 돌렸다(NewRooms.cs). 동쪽 끝 덧판은 문 자리 없이 덮는다.
+        Cover(covers, "East", false, 19.83f, -109.7f, -103.7f, 4f, -107.7f, -107.7f, 2.6f, wallMat, LCrack);
 
         // 창백한 형광등 3개(4300K 근처, 살짝 초록). 깜빡임 없음.
         var lights = Group(gen, "Lights");
@@ -88,17 +89,18 @@ public static partial class GreyboxGraphicsPass
 
         var gen = Fresh(root.transform, GenName);
         var covers = Group(gen, "WallCovers");
-        Cover(covers, "South", true, -114.38f, 20.15f, 36.15f, 3f, 27.15f, 29.15f, 2.6f, wallMat, LYellow); // 천사 방 북쪽 벽의 뒷면을 벽지로 가린다
+        // 2026-11-18: 노란 방 → 천사 방 길을 막고 거실로 돌렸다(NewRooms.cs). 남쪽 덧판은 문 자리 없이, 서쪽 문은 샤워실 쪽(z -101.5)으로 옮겼다.
+        Cover(covers, "South", true, -114.38f, 20.15f, 36.15f, 3f, 27.15f, 27.15f, 2.6f, wallMat, LYellow); // 천사 방 북쪽 벽의 뒷면을 벽지로 가린다
         // 복도 북·남 벽 끝(x=20.15)이 노란 방 서쪽 벽 안쪽 면과 같은 자리라 타일이 세로 줄로 비쳤다. 벽지판으로 덮는다.
-        Cover(covers, "West", false, 20.18f, -114.4f, -98.7f, 3f, -107.7f, -105.7f, 2.6f, wallMat, LYellow);
+        Cover(covers, "West", false, 20.18f, -114.4f, -98.7f, 3f, ShOutZ - 0.9f, ShOutZ + 0.9f, 2.4f, wallMat, LYellow);
 
         // 걸레받이: 벽지와 카펫이 만나는 선
         var trimMat = Lit("GB_Yellow_Trim", m => Plain(m, new Color(0.3f, 0.22f, 0.12f), 0.3f));
         var trim = Group(gen, "Baseboard");
         Cover(trim, "N", true, -98.72f, 20.15f, 36.15f, 0.1f, 20.15f, 20.15f, 0.1f, trimMat, LYellow);
-        Cover(trim, "E", false, 36.13f, -114.4f, -98.7f, 0.1f, -114.4f, -114.4f, 0.1f, trimMat, LYellow);
-        Cover(trim, "S", true, -114.35f, 20.15f, 36.15f, 0.1f, 27.15f, 29.15f, 0.1f, trimMat, LYellow);
-        Cover(trim, "W", false, 20.22f, -114.4f, -98.7f, 0.1f, -107.7f, -105.7f, 0.1f, trimMat, LYellow);
+        Cover(trim, "E", false, 36.13f, -114.4f, -98.7f, 0.1f, LvInZ - 0.9f, LvInZ + 0.9f, 0.1f, trimMat, LYellow);
+        Cover(trim, "S", true, -114.35f, 20.15f, 36.15f, 0.1f, 27.15f, 27.15f, 0.1f, trimMat, LYellow);
+        Cover(trim, "W", false, 20.22f, -114.4f, -98.7f, 0.1f, ShOutZ - 0.9f, ShOutZ + 0.9f, 0.1f, trimMat, LYellow);
 
         // 격자 천장등 9개: 누런 형광 패널(3000K 근처)
         var lights = Group(gen, "Lights");
