@@ -24,7 +24,7 @@ public static partial class GreyboxGraphicsPass
         var root = Group(gen, "BlueCorridor");
 
         // ---- 출구 벽(찾기 규칙). 그림자를 찾아야 열린다. 걸레받이는 PatchDoorwayTrims가 잇는다.
-        var gate = FindGate(gen, "FindGate_Bedroom", 6, "BedroomShadow",
+        var gate = FindGate(gen, "FindGate_Bedroom", 7, "BedroomShadow",
             new Bounds(new Vector3(BdX1 + 0.15f, CrH / 2, CrZ), new Vector3(0.3f, CrH, CrW)), "GB_03c_Bedroom/GFX_Generated/Shell/East/Seg_0");
 
         // ---- 1) 이불 속 사람: 꺼질 때 그림자를 켠다. 출구 벽에 이 id를 남겨도 출구 조건(그림자)에는 상관없다.

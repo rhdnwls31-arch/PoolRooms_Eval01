@@ -72,13 +72,14 @@ public static partial class GreyboxGraphicsPass
         Shot("03_Crack", new Vector3(7.2f, 1.6f, -106.7f), new Vector3(19f, 1.2f, -106.7f));
         Shot("04_Shower", new Vector3(9.5f, 1.6f, -102.2f), new Vector3(15f, 0.9f, -94f));
         Shot("05_Yellow", new Vector3(21.2f, 1.6f, -101.5f), new Vector3(31f, 1.2f, -108f));
-        Shot("06_Living", new Vector3(39.6f, 1.6f, -112.4f), new Vector3(46f, 0.9f, -118f));
-        Shot("07_Bedroom", new Vector3(40.6f, 1.6f, -125.2f), new Vector3(45f, 0.7f, -131.5f));
-        Shot("08_Corridor", new Vector3(49.8f, 1.5f, CrZ), new Vector3(64f, 1.1f, CrZ));
-        Shot("09_Computer", new Vector3(PcCx, 1.65f, PcZ1 - 2f), new Vector3(PcCx, 3.2f, ScrZ));
-        Shot("10_City", new Vector3(CtCx, 1.65f, CtZ1 - 3f), new Vector3(CtCx, 14f, FhFront));
-        Shot("11_Angel", new Vector3(36.3f, 1.65f, BdOutZ), new Vector3(28f, 3.2f, -128f));
-        Shot("12_SkyStairs", new Vector3(28.15f, 1.7f, -146.5f), new Vector3(28.15f, 3.5f, -165f));
+        Shot("06_FloralCorridor", new Vector3(CoX0 + 3f, 1.6f, CoZ), new Vector3(CoX0 + 30f, 1.3f, CoZ));
+        Shot("07_Living", new Vector3(39.6f, 1.6f, -112.4f), new Vector3(46f, 0.9f, -118f));
+        Shot("08_Bedroom", new Vector3(40.6f, 1.6f, -125.2f), new Vector3(45f, 0.7f, -131.5f));
+        Shot("09_Corridor", new Vector3(49.8f, 1.5f, CrZ), new Vector3(64f, 1.1f, CrZ));
+        Shot("10_Computer", new Vector3(PcCx, 1.65f, PcZ1 - 2f), new Vector3(PcCx, 3.2f, ScrZ));
+        Shot("11_City", new Vector3(CtCx, 1.65f, CtZ1 - 3f), new Vector3(CtCx, 14f, FhFront));
+        Shot("12_Angel", new Vector3(36.3f, 1.65f, BdOutZ), new Vector3(28f, 3.2f, -128f));
+        Shot("13_SkyStairs", new Vector3(28.15f, 1.7f, -146.5f), new Vector3(28.15f, 3.5f, -165f));
         he.montageShots = shots.ToArray();
         EditorUtility.SetDirty(he);
     }

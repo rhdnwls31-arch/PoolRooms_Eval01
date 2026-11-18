@@ -125,7 +125,7 @@ public static partial class GreyboxGraphicsPass
         StackHouses(Group(fh, "Stack"), new System.Random(10), new Vector3(FhX, FhH, midZ), 0f, 11, houseMats, roofMats, 0f, false, 1);
 
         // 출구 벽 = 집 문(찾기 규칙). 다 차고 시선을 떼면 열린다.
-        var gate = FindGate(gen, "FindGate_City", 8, "CityFloodedWindow",
+        var gate = FindGate(gen, "FindGate_City", 9, "CityFloodedWindow",
             new Bounds(new Vector3(FhX, FhDoorH / 2, FhFront - 0.15f), new Vector3(FhDoorW, FhDoorH, 0.3f)), "GB_06_SunkenCity/GFX_Generated/FloodedHouse/Over");
         foreach (var r in gate.wall.GetComponentsInChildren<MeshRenderer>()) r.sharedMaterial = door;
         Box(gate.wall.transform, "Knob", new Vector3(dx1 - 0.25f, 1.05f, FhFront + 0.04f), new Vector3(0.08f, 0.08f, 0.08f), rail, LCity);

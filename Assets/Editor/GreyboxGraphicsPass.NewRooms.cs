@@ -29,6 +29,7 @@ public static partial class GreyboxGraphicsPass
         RewireOldPassages();
         BuildShower();
         BuildLiving();
+        BuildCorridor(); // 2026-11-18 꽃무늬 아파트 복도(노란 방 → 복도 → 거실, Corridor.cs)
         BuildBedroom();
         BuildComputer(); // 2026-11-18 컴퓨터 속 맵(침실 → 컴퓨터 속 → 도시, Computer.cs)
         BuildSunkenCity(); // 2026-11-18 가라앉은 집들의 도시(컴퓨터 속 → 도시 → 천사 방, SunkenCity.cs)
@@ -364,7 +365,7 @@ public static partial class GreyboxGraphicsPass
 
         // 찾기 규칙: TV 속 소파에 사람이 앉아 있는데 진짜 소파는 비어 있다. TV를 바라보면 화면이 깜빡이고 사람이 사라지며,
         // TV 옆 모서리의 남쪽 벽(출구, 파란 침실로)이 열린다.
-        var gate = FindGate(gen, "FindGate_Living", 5, "LivingTV",
+        var gate = FindGate(gen, "FindGate_Living", 6, "LivingTV",
             new Bounds(new Vector3(BdInX, 1.2f, -124.15f), new Vector3(1.8f, 2.4f, 0.3f)), "GB_03b_Living/GFX_Generated/Shell/South/Seg_0");
         Box(gate.wall.transform, "Baseboard", new Vector3(BdInX, 0.05f, LvZ0 + 0.02f), new Vector3(1.8f, 0.1f, 0.04f), trim, LLiving);
         var gz = AddGaze(tv.gameObject, "LivingTV", gate, new Bounds(new Vector3((LvX0 + LvX1) / 2, LvH / 2, (LvZ0 + LvZ1) / 2), new Vector3(LvX1 - LvX0, LvH, LvZ1 - LvZ0)));

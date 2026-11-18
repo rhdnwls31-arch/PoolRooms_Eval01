@@ -226,7 +226,7 @@ public static partial class GreyboxGraphicsPass
         LocalVolume(gen, "LocalVolume", roomCenter, roomSize, 2f, 125f, profile);
 
         // ---- 출구: 모니터 화면(찾기 규칙 출구 벽). 재질은 파란 화면으로 바꾼다.
-        var gate = FindGate(gen, "FindGate_Computer", 7, "ComputerCursor",
+        var gate = FindGate(gen, "FindGate_Computer", 8, "ComputerCursor",
             new Bounds(new Vector3(PcCx, ScrH / 2, ScrZ - 0.5f), new Vector3(ScrW, ScrH, 1f)), "GB_03d_Computer/GFX_Generated/GiantMonitor/Bezel_L");
         foreach (var r in gate.wall.GetComponentsInChildren<MeshRenderer>()) r.sharedMaterial = screen;
 
