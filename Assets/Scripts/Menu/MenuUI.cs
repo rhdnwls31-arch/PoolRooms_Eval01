@@ -145,7 +145,7 @@ public static class MenuUIFactory
         refs.settingsButton = MenuItem(parent, "설정", new Vector2(1, 1), new Vector2(right, top - pitch * 2), TextAnchor.MiddleRight, 42, refs);
         refs.quitButton = MenuItem(parent, "종료하기", new Vector2(1, 1), new Vector2(right, top - pitch * 3), TextAnchor.MiddleRight, 42, refs);
 
-        var title = NewText("Title", parent, "DEPTH 5m", 150, Bright, TextAnchor.LowerLeft);
+        var title = NewText("Title", parent, "DEPTH", 150, Bright, TextAnchor.LowerLeft);
         var rt = title.rectTransform;
         rt.anchorMin = rt.anchorMax = new Vector2(0, 0); rt.pivot = new Vector2(0, 0);
         rt.anchoredPosition = new Vector2(120, 110); rt.sizeDelta = new Vector2(1100, 190);

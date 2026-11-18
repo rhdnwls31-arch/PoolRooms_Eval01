@@ -426,7 +426,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MenuController
   mode: 0
-  firstSceneName: Scene_Intro
+  firstSceneName: Scene_DescentGreybox
 --- !u!4 &1175389604
 Transform:
   m_ObjectHideFlags: 0

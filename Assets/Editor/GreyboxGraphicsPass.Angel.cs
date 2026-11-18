@@ -121,7 +121,8 @@ public static partial class GreyboxGraphicsPass
         // 방 범위는 x 18.15~38.15. 나중에 VARCO 구름 모델로 바꿀 때도 이 자리를 쓴다.
         var puffs = Group(props, "CloudBanks");
         var spotsW = new[] { -117.5f, -122.8f, -126.0f, -132.5f, -137.0f, -140.6f };
-        var spotsE = new[] { -118.8f, -124.5f, -129.8f, -133.6f, -139.2f };
+        // 동쪽 벽 z -133.4는 도시에서 넘어오는 문틀 자리(AngelDoorPos). 그 앞(-133.6)의 구름이 문틀을 가려서 뺐다(2026-11-18).
+        var spotsE = new[] { -118.8f, -124.5f, -129.8f, -139.2f };
         for (int i = 0; i < spotsW.Length + spotsE.Length; i++)
         {
             bool west = i < spotsW.Length;
