@@ -30,7 +30,8 @@ public static partial class GreyboxGraphicsPass
         BuildShower();
         BuildLiving();
         BuildBedroom();
-        BuildComputer(); // 2026-11-18 컴퓨터 속 맵(침실 → 컴퓨터 속 → 천사 방, Computer.cs)
+        BuildComputer(); // 2026-11-18 컴퓨터 속 맵(침실 → 컴퓨터 속 → 도시, Computer.cs)
+        BuildSunkenCity(); // 2026-11-18 가라앉은 집들의 도시(컴퓨터 속 → 도시 → 천사 방, SunkenCity.cs)
     }
 
     // ---------------------------------------------------------------- 길 다시 잇기

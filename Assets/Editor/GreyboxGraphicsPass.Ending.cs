@@ -76,8 +76,9 @@ public static partial class GreyboxGraphicsPass
         Shot("07_Bedroom", new Vector3(40.6f, 1.6f, -125.2f), new Vector3(45f, 0.7f, -131.5f));
         Shot("08_Corridor", new Vector3(49.8f, 1.5f, CrZ), new Vector3(64f, 1.1f, CrZ));
         Shot("09_Computer", new Vector3(PcCx, 1.65f, PcZ1 - 2f), new Vector3(PcCx, 3.2f, ScrZ));
-        Shot("10_Angel", new Vector3(36.3f, 1.65f, BdOutZ), new Vector3(28f, 3.2f, -128f));
-        Shot("11_SkyStairs", new Vector3(28.15f, 1.7f, -146.5f), new Vector3(28.15f, 3.5f, -165f));
+        Shot("10_City", new Vector3(CtCx, 1.65f, CtZ1 - 3f), new Vector3(CtCx, 14f, FhFront));
+        Shot("11_Angel", new Vector3(36.3f, 1.65f, BdOutZ), new Vector3(28f, 3.2f, -128f));
+        Shot("12_SkyStairs", new Vector3(28.15f, 1.7f, -146.5f), new Vector3(28.15f, 3.5f, -165f));
         he.montageShots = shots.ToArray();
         EditorUtility.SetDirty(he);
     }

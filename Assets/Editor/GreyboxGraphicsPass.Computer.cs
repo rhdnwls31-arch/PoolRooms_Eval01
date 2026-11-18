@@ -251,30 +251,30 @@ public static partial class GreyboxGraphicsPass
         wc.clickPoint = new Vector3(PcCx - 1.2f, 3.4f, ScrZ + 0.05f);
         EditorUtility.SetDirty(gz); EditorUtility.SetDirty(wc);
 
-        // ---- 화면 속 빛 → 천사 방 동쪽 벽(예전 침실 → 천사 방 구멍 자리). 천사 방에는 잠깐 빛나는 모니터 화면 틀이 남는다.
+        // ---- 화면 속 빛 → 가라앉은 집들의 도시 북쪽 벽(2026-11-18 변경, 그 전에는 천사 방). 도시 벽에는 잠깐 빛나는 모니터 화면 틀이 남는다.
         var from = new GameObject("ScreenAnchor").transform;
         from.SetParent(gen, true);
         from.SetPositionAndRotation(new Vector3(PcCx, 0f, ScrZ - 0.5f), Quaternion.LookRotation(Vector3.back));
-        var to = new GameObject("AngelArrivalAnchor").transform;
+        var to = new GameObject("CityArrivalAnchor").transform;
         to.SetParent(gen, true);
-        to.SetPositionAndRotation(AngelDoorPos, Quaternion.LookRotation(Vector3.left));
+        to.SetPositionAndRotation(CityArrivalPos, Quaternion.LookRotation(Vector3.back));
         var arrival = new GameObject("MonitorArrival").transform;
         arrival.SetParent(to, false);
         Vector3 Wp(Vector3 l) => to.TransformPoint(l);
         var rotE = to.rotation.eulerAngles;
         const float bw = 0.5f, fz = 0.15f;
-        Box(arrival, "Bezel_L", Wp(new Vector3(-(ScrW / 2 + bw / 2), ScrH / 2 + bw / 2, fz + 0.2f)), new Vector3(bw, ScrH + bw, 0.4f), beige, LAngel, false, rotE);
-        Box(arrival, "Bezel_R", Wp(new Vector3(ScrW / 2 + bw / 2, ScrH / 2 + bw / 2, fz + 0.2f)), new Vector3(bw, ScrH + bw, 0.4f), beige, LAngel, false, rotE);
-        Box(arrival, "Bezel_Top", Wp(new Vector3(0f, ScrH + bw / 2, fz + 0.2f)), new Vector3(ScrW, bw, 0.4f), beige, LAngel, false, rotE);
-        Box(arrival, "Glow", Wp(new Vector3(0f, ScrH / 2, fz + 0.01f)), new Vector3(ScrW, ScrH, 0.02f), glow, LAngel, false, rotE);
+        Box(arrival, "Bezel_L", Wp(new Vector3(-(ScrW / 2 + bw / 2), ScrH / 2 + bw / 2, fz + 0.2f)), new Vector3(bw, ScrH + bw, 0.4f), beige, LCity, false, rotE);
+        Box(arrival, "Bezel_R", Wp(new Vector3(ScrW / 2 + bw / 2, ScrH / 2 + bw / 2, fz + 0.2f)), new Vector3(bw, ScrH + bw, 0.4f), beige, LCity, false, rotE);
+        Box(arrival, "Bezel_Top", Wp(new Vector3(0f, ScrH + bw / 2, fz + 0.2f)), new Vector3(ScrW, bw, 0.4f), beige, LCity, false, rotE);
+        Box(arrival, "Glow", Wp(new Vector3(0f, ScrH / 2, fz + 0.01f)), new Vector3(ScrW, ScrH, 0.02f), glow, LCity, false, rotE);
         arrival.gameObject.SetActive(false);
         var tz = gen.gameObject.AddComponent<TeleportZone>();
         tz.zone = new Bounds(new Vector3(PcCx, ScrH / 2, ScrZ - 2.6f), new Vector3(ScrW, ScrH, 2.6f));
         tz.fromAnchor = from; tz.toAnchor = to; tz.arrivalObject = arrival.gameObject;
         EditorUtility.SetDirty(tz);
 
-        // 개발용 방에서 시작(F9 천사 방)의 시작 자리
-        var spawn = new GameObject("Spawn_AngelArrival").transform;
+        // 개발용 방에서 시작(F9 가라앉은 도시)의 시작 자리
+        var spawn = new GameObject("Spawn_CityArrival").transform;
         spawn.SetParent(gen, true);
         spawn.SetPositionAndRotation(to.TransformPoint(new Vector3(0f, 0.05f, 2f)), to.rotation);
     }
