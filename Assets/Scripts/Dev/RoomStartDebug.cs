@@ -88,6 +88,7 @@ public class RoomStartDebug : MonoBehaviour
             if (g.gate != null && g.gate.order < room) g.CompleteSilently();
             else g.ResetGaze();
         }
+        foreach (var he in FindObjectsByType<HiddenEnding>(FindObjectsInactive.Include)) he.ResetEnding();
 
         Vector3 pos = introPos;
         Quaternion rot = introRot;

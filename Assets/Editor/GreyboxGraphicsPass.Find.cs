@@ -14,6 +14,7 @@ public static partial class GreyboxGraphicsPass
         CrackDepthSigns();
         YellowClown();
         AngelOddEye();
+        ApplyHiddenEnding();
     }
 
     // 출구를 막는 벽 + 출구 잠금. 벽 재질과 렌더링 레이어는 떠나는 방의 벽에서 가져온다.
