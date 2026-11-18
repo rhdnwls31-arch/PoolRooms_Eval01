@@ -89,6 +89,19 @@ public class SealBehindPassage : MonoBehaviour
             foreach (var go in hideOnSeal) if (go != null) go.SetActive(false);
     }
 
+    /// <summary>막힘을 모두 풀어 처음 상태로 되돌린다. 떨어져서 앞 방에서 다시 시작할 때 쓴다(FallRespawn).</summary>
+    public void ResetSeal()
+    {
+        Blocked = false;
+        Sealed = false;
+        armed = false;
+        player = null;
+        if (plug != null) plug.SetActive(false);
+        if (blocker != null) blocker.SetActive(false);
+        if (hideOnSeal != null)
+            foreach (var go in hideOnSeal) if (go != null) go.SetActive(true);
+    }
+
     void OnDrawGizmos()
     {
         Gizmos.color = Sealed ? Color.red : Blocked ? new Color(1f, 0.5f, 0f) : Color.magenta;

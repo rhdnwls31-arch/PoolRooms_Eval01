@@ -36,6 +36,7 @@ public static partial class GreyboxGraphicsPass
         ApplyAngel();
         ApplyPropsAndDecals();
         ApplyWaterAndSky();
+        ApplyVhsLook();
         ApplyPlaytestFixes();
         AssetDatabase.SaveAssets();
         EditorSceneManager.MarkSceneDirty(scene);

@@ -10,6 +10,10 @@ public static partial class GreyboxGraphicsPass
     // 방 범위(월드): x 18.15~38.15, z -114.7~-142.7, 천장 12m
     const float AngelCx = 28.15f;
     const float AngelFogNits = 1f; // 안개 색 배율. 캡처를 보고 맞춘다.
+    // 노출: 바깥(전역 8.7)과 같게 둬서, 천사 방에서 다음 방(같은 수영장)을 볼 때 어둡게 보이지 않게 한다(2026-11-18 피드백).
+    // 처음에는 EV 10에 맞춰 밝기를 정했으므로, 빛과 발광 값에 2^(EV-10)을 곱해 화면 밝기는 그대로 둔다.
+    const float AngelEV = 8.7f;
+    static float AngelK => Mathf.Pow(2f, AngelEV - 10f);
 
     static void ApplyAngel()
     {
@@ -25,7 +29,7 @@ public static partial class GreyboxGraphicsPass
             m.SetFloat("_Smoothness", 0f);
             m.SetTexture("_EmissiveColorMap", m.GetTexture("_BaseColorMap"));
             m.SetFloat("_UVEmissive", 6f); // 기본 맵과 같은 좌표(월드 Triplanar)
-            m.SetColor("_EmissiveColor", Color.white * 900f);
+            m.SetColor("_EmissiveColor", Color.white * (900f * AngelK));
             m.SetFloat("_UseEmissiveIntensity", 0f);
             m.SetFloat("_EmissiveExposureWeight", 1f);
         });
@@ -35,14 +39,15 @@ public static partial class GreyboxGraphicsPass
             Textured(m, CloudFloorSet(), 9f, Color.white, 0.4f);
             m.SetTexture("_EmissiveColorMap", m.GetTexture("_BaseColorMap"));
             m.SetFloat("_UVEmissive", 6f);
-            m.SetColor("_EmissiveColor", Color.white * 220f);
+            m.SetColor("_EmissiveColor", Color.white * (220f * AngelK));
             m.SetFloat("_UseEmissiveIntensity", 0f);
             m.SetFloat("_EmissiveExposureWeight", 1f);
         });
         SetStructureMaterials(root.transform, cloudMat, skyMat, skyMat);
-        // 출구 통로: 다음 방(같은 수영장)의 흰 벽 재질로 맞춘다. 검은 통로는 깨진 구멍처럼 보였다(2026-11-18 피드백).
-        var nextWall = Root("GB_05_SameIntro").transform.Find("Goal_Wall_North_0").GetComponent<MeshRenderer>().sharedMaterial;
-        SetStructureMaterials(root.transform.Find("Passage_To_SameIntro"), nextWall, nextWall, nextWall);
+        // 출구 통로: 다음 구역(하늘 계단)과 같은 하늘 재질. 검은 통로는 깨진 구멍처럼 보였다(2026-11-18 피드백).
+        SetStructureMaterials(root.transform.Find("Passage_To_SameIntro"), cloudMat, skyMat, skyMat);
+        // 출구 문턱 표시(검은 판)도 구름 바닥으로 칠한다. 바닥 틈을 덮고 있어 끄지 않는다.
+        FindMarker("GB_04_Angel", -142.7f, AngelCx).GetComponent<MeshRenderer>().sharedMaterial = cloudMat;
 
         var gen = Fresh(root.transform, GenName);
         var lights = Group(gen, "Lights");
@@ -54,12 +59,12 @@ public static partial class GreyboxGraphicsPass
         var sun = sunGo.AddComponent<Light>();
         sun.type = LightType.Directional; sun.color = new Color(1f, 0.98f, 0.94f); sun.shadows = LightShadows.None;
         var sunHd = sunGo.AddComponent<HDAdditionalLightData>();
-        sunHd.SetIntensity(2600f, LightUnit.Lux);
+        sunHd.SetIntensity(2600f * AngelK, LightUnit.Lux);
         sunHd.affectsVolumetric = false;
         sunHd.lightlayersMask = (UnityEngine.Rendering.HighDefinition.RenderingLayerMask)LAngel;
         // 아래에서 올라오는 구름 반사광: 날개 아랫면이 검게 뭉개지지 않게
         foreach (float z in new[] { -121f, -129f, -137f })
-            MakeLight(lights, "CloudBounce", LightType.Point, new Vector3(AngelCx, 0.6f, z), Vector3.zero, new Color(0.86f, 0.92f, 1f), 400000f, 16f, LAngel, false, false);
+            MakeLight(lights, "CloudBounce", LightType.Point, new Vector3(AngelCx, 0.6f, z), Vector3.zero, new Color(0.86f, 0.92f, 1f), 400000f * AngelK, 16f, LAngel, false, false);
 
         // 노란 방 바닥·천장·벽 끝이 북쪽 벽을 0.3m 뚫고 나온 자리를 덮는 띠(이전과 같은 자리, 재질만 하늘)
         var caps = Group(gen, "NorthWallTrim");
@@ -70,7 +75,7 @@ public static partial class GreyboxGraphicsPass
         Box(caps, "Floor", new Vector3(AngelCx, 0.006f, -114.87f), new Vector3(17f, 0.012f, 0.36f), cloudMat, LAngel);
 
         // 밝은 하늘: 노출을 올리고, 흰 안개를 옅게 깔아 벽 모서리가 멀리 흐려지게 한다.
-        var profile = RoomProfile("Angel", 10f, 0.25f, 0.1f, new Color(0.92f, 0.95f, 1f), 40f, new Color(0.75f, 0.84f, 1f), 0f, 0f);
+        var profile = RoomProfile("Angel", AngelEV, 0.25f, 0.1f, new Color(0.92f, 0.95f, 1f), 40f, new Color(0.75f, 0.84f, 1f), 0f, 0f);
         // 볼류메트릭 안개는 빛이 없으면 회색으로 탁해진다. 이 방은 일반 안개(하늘색 상수)만 쓴다.
         if (profile.TryGet<Fog>(out var fog))
         {

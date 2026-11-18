@@ -25,14 +25,17 @@ public static partial class GreyboxGraphicsPass
         new Shot("05-angel-room",         new Vector3(28.15f, 1.6f, -116.5f), new Vector3(28.15f, 2.2f, -142f)),
         new Shot("05b-angel-close",       new Vector3(30f, 1.6f, -130f),      new Vector3(24.15f, 3.2f, -138.7f)),
         new Shot("05c-angel-back",        new Vector3(28.15f, 1.6f, -139f),   new Vector3(28.15f, 3f, -114f)),
-        new Shot("06-same-intro-arrive",  new Vector3(28.15f, 1.6f, -190f),   new Vector3(28.15f, 1.5f, -230f)),
-        new Shot("07-same-intro-mannequin", new Vector3(27.35f, 1.6f, -214f), new Vector3(27.35f, -0.3f, -221f)),
+        new Shot("06-same-intro-arrive",  new Vector3(28.15f, 1.6f, -190f) + SameOffset, new Vector3(28.15f, 1.5f, -230f) + SameOffset),
+        new Shot("07-same-intro-mannequin", new Vector3(27.35f, 1.6f, -214f) + SameOffset, new Vector3(27.35f, -0.3f, -221f) + SameOffset),
+        new Shot("08-sky-stairs",         new Vector3(28.15f, 1.6f, -145.5f), new Vector3(28.15f, 8f, -168f)),
+        new Shot("08b-sky-stairs-top",    new Vector3(28.15f, SkyRise + 1.6f, -169.5f), new Vector3(28.15f, SkyRise + 2f, -175f)),
+        new Shot("08c-sky-stairs-down",   new Vector3(28.6f, SkyRise - 0.2f, -166f), new Vector3(26f, -30f, -155f)),
         // 방 사이 경계(A-6): 양쪽 방향
         new Shot("10-door-hall-to-crack", new Vector3(3.6f, 1.6f, -104.5f),   new Vector3(12f, 1.4f, -106.7f)),
         new Shot("11-door-crack-to-hall", new Vector3(11f, 1.6f, -106.7f),    new Vector3(0f, 1.2f, -106.7f)),
         new Shot("12-door-yellow-to-angel", new Vector3(28.15f, 1.6f, -109f), new Vector3(27f, 2.5f, -135f)),
-        new Shot("13-door-angel-to-same", new Vector3(28.15f, 1.6f, -137f),   new Vector3(28.15f, 1.6f, -150f)),
-        new Shot("14-door-same-back-to-angel", new Vector3(28.15f, 1.6f, -150f), new Vector3(28.15f, 1.8f, -135f)),
+        new Shot("13-door-angel-to-stairs", new Vector3(28.15f, 1.6f, -137f), new Vector3(28.15f, 1.6f, -150f)),
+        new Shot("14-door-same-back-to-stairs", new Vector3(28.15f, 1.6f, -150f) + SameOffset, new Vector3(28.15f, 1.8f, -135f) + SameOffset),
     };
 
     // 처음부터 끝까지 걸어가는 길(발 위치 x,z). 인트로 시작점 → 종료 트리거.
@@ -42,8 +45,9 @@ public static partial class GreyboxGraphicsPass
         new Vector2(4.5f, -56), new Vector2(4.5f, -66), new Vector2(0, -68.5f), new Vector2(0, -78), new Vector2(0, -84.8f),
         new Vector2(5.4f, -85.6f), new Vector2(5.4f, -105.2f), new Vector2(5.4f, -106.7f), new Vector2(12, -106.7f), new Vector2(21, -106.7f),
         new Vector2(28.15f, -108), new Vector2(28.15f, -116), new Vector2(31.5f, -128), new Vector2(28.15f, -141), new Vector2(28.15f, -146.5f),
-        new Vector2(32.5f, -150), new Vector2(32.5f, -160), new Vector2(28.15f, -166), new Vector2(28.15f, -189), new Vector2(19.75f, -195.5f),
-        new Vector2(19.75f, -234.5f), new Vector2(28.15f, -237),
+        new Vector2(28.15f, -171.5f), // 하늘 계단(경사로로 올라간다)
+        new Vector2(32.5f, -150 + SkyShift), new Vector2(32.5f, -160 + SkyShift), new Vector2(28.15f, -166 + SkyShift), new Vector2(28.15f, -189 + SkyShift), new Vector2(19.75f, -195.5f + SkyShift),
+        new Vector2(19.75f, -234.5f + SkyShift), new Vector2(28.15f, -237 + SkyShift),
     };
 
     static string capDir; static HashSet<string> capOnly; static bool capWalk;
@@ -179,7 +183,7 @@ public static partial class GreyboxGraphicsPass
         else if (name == "hue")
         {
             var go = new GameObject("__A5_HueVolume") { layer = 2 };
-            go.transform.position = new Vector3(28.15f, 7.65f, -194f);
+            go.transform.position = new Vector3(28.15f, 7.65f, -194f) + SameOffset;
             var bc = go.AddComponent<BoxCollider>(); bc.isTrigger = true; bc.size = new Vector3(104f, 30f, 100f);
             var v = go.AddComponent<UnityEngine.Rendering.Volume>(); v.isGlobal = false; v.blendDistance = 3f; v.priority = 105f;
             var p = ScriptableObject.CreateInstance<UnityEngine.Rendering.VolumeProfile>();
