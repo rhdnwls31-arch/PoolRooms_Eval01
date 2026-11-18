@@ -115,63 +115,6 @@ public static partial class GreyboxGraphicsPass
         LocalVolume(gen, "LocalVolume", new Vector3(28.15f, 1.5f, -106.55f), new Vector3(16f, 3f, 15.7f), 1f, 130f, profile); // 천사 방(125)보다 높다: 노란 방 안에서는 노란 방 값이 이긴다
     }
 
-    // ---------------------------------------------------------------- ④ 천사 방 (A-3, B-4)
-    static void ApplyAngel()
-    {
-        var root = Root("GB_04_Angel");
-        DisableOldLights(root);
-        SetLayers(root, LAngel);
-        AddLayer(root, "Wall_North", LYellow);
-
-        var marble = MarbleSet("GB_Marble", new Color(0.2f, 0.21f, 0.25f), new Color(0.6f, 0.63f, 0.7f), 0.45f);
-        var stone = MarbleSet("GB_Stone", new Color(0.44f, 0.46f, 0.5f), new Color(0.6f, 0.62f, 0.66f), 0.18f);
-        var floorMat = Lit("GB_Angel_MarbleFloor", m => Textured(m, marble, 4f, Color.white, 0.5f));
-        var wallMat = Lit("GB_Angel_Stone", m => { Textured(m, stone, 6f, Color.white, 0.8f); m.SetFloat("_SmoothnessRemapMax", 0.45f); });
-        var ceilMat = Lit("GB_Angel_Ceiling", m => Plain(m, new Color(0.32f, 0.33f, 0.36f), 0.2f));
-        SetStructureMaterials(root.transform, floorMat, wallMat, ceilMat);
-        SetStructureMaterials(root.transform.Find("Passage_To_SameIntro"), floorMat, wallMat, ceilMat);
-
-        var gen = Fresh(root.transform, GenName);
-        var lights = Group(gen, "Lights");
-        var angel = root.transform.Find("Placeholder_Props/Angel").position; // (24.15, 0, -138.7)
-
-        // 주인공: 천장에서 천사에게 떨어지는 스포트라이트 하나. 볼류메트릭으로 빛줄기가 보인다.
-        var spotPos = new Vector3(angel.x + 0.6f, 11.85f, angel.z + 3.2f);
-        var spot = MakeLight(lights, "AngelSpot", LightType.Spot, spotPos, Vector3.zero, new Color(0.86f, 0.93f, 1f), 0f, 22f, LAngel, true);
-        spot.transform.LookAt(angel + Vector3.up * 2.4f);
-        spot.spotAngle = 34f; spot.innerSpotAngle = 20f;
-        var shd = spot.GetComponent<HDAdditionalLightData>();
-        shd.SetIntensity(6e5f, LightUnit.Candela);
-        shd.volumetricDimmer = 1.6f;
-        // 조명 기구(천장의 발광 원반)
-        var lampMat = Lit("GB_Angel_LampGlow", m => Emissive(m, new Color(0.86f, 0.93f, 1f), 6000f));
-        Prim(PrimitiveType.Cylinder, lights, "AngelSpot_Lamp", new Vector3(spotPos.x, 11.97f, spotPos.z), new Vector3(0.7f, 0.03f, 0.7f), lampMat, LAngel);
-
-        // 벽 윤곽만 겨우 보이는 차가운 잔광
-        foreach (float z in new[] { -120.5f, -129f, -137.5f })
-            MakeLight(lights, "DimFill", LightType.Point, new Vector3(28.15f, 5.5f, z), Vector3.zero, new Color(0.45f, 0.56f, 0.9f), 200000f, 30f, LAngel, false, false);
-        // 노란 방의 바닥·천장·벽 끝이 북쪽 벽을 0.3m 뚫고 나와 노란 조명을 받는다. 어두운 방에서 선으로 보여서 돌 띠로 덮는다(콜라이더 없음).
-        var caps = Group(gen, "NorthWallTrim");
-        Box(caps, "Top", new Vector3(28.15f, 3.15f, -114.86f), new Vector3(17f, 0.38f, 0.36f), wallMat, LAngel);
-        Box(caps, "West", new Vector3(20f, 1.67f, -114.86f), new Vector3(0.38f, 3.34f, 0.36f), wallMat, LAngel);
-        Box(caps, "East", new Vector3(36.3f, 1.67f, -114.86f), new Vector3(0.38f, 3.34f, 0.36f), wallMat, LAngel);
-        // 입구: 노란 방에서 흘러 들어온 빛
-        var spill = MakeLight(lights, "EntrySpill", LightType.Spot, new Vector3(28.15f, 2.3f, -113.9f), new Vector3(28f, 180f, 0f), new Color(1f, 0.8f, 0.46f), 0f, 12f, LAngel, false, false);
-        spill.spotAngle = 80f; spill.innerSpotAngle = 30f;
-        spill.GetComponent<HDAdditionalLightData>().SetIntensity(14000f, LightUnit.Candela);
-        // 출구: 어둠 속에서도 문틀이 보이게(기획 원칙 "출구는 보인다")
-        var exitGlow = Lit("GB_Angel_ExitGlow", m => Emissive(m, new Color(0.8f, 0.9f, 1f), 500f));
-        Box(lights, "ExitMarker", new Vector3(28.15f, 4.45f, -142.68f), new Vector3(3f, 0.08f, 0.04f), exitGlow, LAngel);
-        MakeLight(lights, "ExitWash", LightType.Point, new Vector3(28.15f, 3.6f, -141.6f), Vector3.zero, new Color(0.7f, 0.82f, 1f), 12000f, 7f, LAngel, false, false);
-        MakeLight(lights, "PassageLight", LightType.Point, new Vector3(28.15f, 3.6f, -143.85f), Vector3.zero, new Color(0.7f, 0.82f, 1f), 5000f, 4f, LAngel, false, false);
-
-        // B-4 메모: 반사 배율을 1로 올리면 화면 반사가 닿지 않는 바닥에 분홍 하늘이 비친다(방별 하늘 반사만 끄는 설정이 없다).
-        // 반사 프로브(실시간, 검은 큐브맵)로 덮어 보았지만 적용되지 않아, 반사 배율을 낮춰 어두운 바닥을 유지한다.
-        // 어둡게 하되 노출 차이는 작게(출구 밖 햇빛이 화면을 덮지 않게): 조도를 낮춰서 어둡게 만든다.
-        var profile = RoomProfile("Angel", 7.8f, 0f, 0.04f, new Color(0.75f, 0.83f, 1f), 28f, Color.black, -10f, 0f, 0.45f);
-        LocalVolume(gen, "LocalVolume", new Vector3(28.15f, 6f, -128.6f), new Vector3(20f, 12f, 27.8f), 3f, 125f, profile); // 출구 통로를 지나며 3m에 걸쳐 바깥 빛으로 바뀐다
-    }
-
     // ---------------------------------------------------------------- 물과 하늘 (D-1, D-3)
     static void ApplyWaterAndSky()
     {

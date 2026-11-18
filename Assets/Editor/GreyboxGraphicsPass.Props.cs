@@ -318,18 +318,6 @@ public static partial class GreyboxGraphicsPass
             Decal(decals, "Damp_Carpet_A", damp, new Vector3(31.2f, 0.15f, -103.4f), new Vector3(90, 20, 0), 3.2f, 2.4f, 0.45f);
         }
 
-        // ④ 천사 방: 비어 있는 게 연출이다. 천사 발밑 바닥 무늬만. ---------------
-        {
-            var room = Root("GB_04_Angel");
-            var props = PropsRoot(room, LAngel);
-            var a = room.transform.Find("Placeholder_Props/Angel").position;
-            var inlayLight = Lit("GB_Angel_InlayLight", m => Plain(m, new Color(0.62f, 0.64f, 0.68f), 0.85f));
-            var inlayDark = Lit("GB_Angel_InlayDark", m => Plain(m, new Color(0.04f, 0.04f, 0.05f), 0.9f));
-            var g = PropGroup(props, "FloorInlay", a, 0);
-            Part(g, PrimitiveType.Cylinder, "RingOuter", new Vector3(0, 0.003f, 0), new Vector3(6.4f, 0.003f, 6.4f), inlayLight);
-            Part(g, PrimitiveType.Cylinder, "RingInner", new Vector3(0, 0.005f, 0), new Vector3(6.0f, 0.005f, 6.0f), inlayDark);
-            Part(g, PrimitiveType.Cylinder, "Disc", new Vector3(0, 0.007f, 0), new Vector3(3.0f, 0.007f, 3.0f), inlayLight);
-            Part(g, PrimitiveType.Cylinder, "DiscCore", new Vector3(0, 0.009f, 0), new Vector3(2.7f, 0.009f, 2.7f), inlayDark);
-        }
+        // ④ 천사 방 소품(날개 달린 눈, 구름)은 ApplyAngel(GreyboxGraphicsPass.Angel.cs)에서 만든다.
     }
 }

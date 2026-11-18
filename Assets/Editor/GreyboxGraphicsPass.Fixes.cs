@@ -41,6 +41,25 @@ public static partial class GreyboxGraphicsPass
         // 통로 안(바닥 위 2m)에서 양쪽으로 퍼지는 차가운 빛: 마지막 방에서 보면 문 안쪽이 은은하게 밝다.
         MakeLight(gen, "ExitPassageGlow", LightType.Point, new Vector3(0f, 2f, -70.9f), Vector3.zero,
             new Color(0.72f, 0.9f, 1f), 9000f, 6f, LOutdoor, false, false);
+
+        // 2026-11-18 피드백: 흰 통로(폭 3m) 끝의 홀 벽 구멍이 2m라서, 남는 0.5m씩 홀의 타일 벽 겉면이 기둥처럼 보였다.
+        // 사용자 결정(2026-11-18): 홀 구멍을 통로와 같은 3m로 넓힌다. 홀 입구 북쪽 벽 양쪽을 0.5m씩 줄인다(콜라이더도 같이 줄어든다).
+        // GB_01_PoolHall은 180도 돌아 있어서 로컬 x가 월드 x와 반대다. 로컬 -6~-1.5 / 1.5~6 이 남는 벽이다.
+        var hall = Root("GB_01_PoolHall").transform;
+        foreach (var (n, x) in new[] { ("Entry_Wall_North_L", -3.75f), ("Entry_Wall_North_R", 3.75f) })
+        {
+            var w = hall.Find(n);
+            w.localPosition = new Vector3(x, 2f, -6f); w.localScale = new Vector3(4.5f, 4f, 0.3f);
+        }
+        var top = hall.Find("Entry_Wall_North_Top");
+        top.localPosition = new Vector3(0f, 3.5f, -6f); top.localScale = new Vector3(3f, 1f, 0.3f);
+        // 통로 바닥: 홀 입구 바닥과 같은 타일(월드 좌표 Triplanar라 줄눈이 이어진다).
+        // 문턱 표시(어두운 판)는 마당 바닥 끝(z -70)과 통로 바닥 사이 20cm 틈을 덮고 있어서 끄지 않고 같은 타일로 칠한다.
+        var hallTile = hall.Find("Entry_Floor").GetComponent<MeshRenderer>().sharedMaterial;
+        Find("GB_00_IntroExit/Passage_To_Hall/Floor").GetComponent<MeshRenderer>().sharedMaterial = hallTile;
+        var marker = Find("GB_00_IntroExit/DoorSlot_Marker");
+        marker.gameObject.SetActive(true);
+        marker.GetComponent<MeshRenderer>().sharedMaterial = hallTile;
     }
 
     // ---------------------------------------------------------------- 2·8번: 지나온 통로 막기
@@ -50,9 +69,9 @@ public static partial class GreyboxGraphicsPass
     // 판은 벽 구멍을 정확히 채운다(벽면과 겹치지 않게). 재질·렌더링 레이어는 도착한 방의 벽에서 그대로 가져온다.
     static void ApplySeals()
     {
-        // 인트로 → 수영장 홀 입구 방: 입구 방 북쪽 벽(z -71.85~-71.55)의 2×3m 구멍
+        // 인트로 → 수영장 홀 입구 방: 입구 방 북쪽 벽(z -71.85~-71.55)의 3×3m 구멍
         Seal("Seal_IntroToHall", "GB_01_PoolHall", "GB_01_PoolHall/Entry_Wall_North_L", Vector3.back,
-            new Vector3(0f, 1.5f, -71.7f), new Vector3(2f, 3f, 0.3f),
+            new Vector3(0f, 1.5f, -71.7f), new Vector3(3f, 3f, 0.3f), // 구멍을 3m로 넓힘(2026-11-18)
             new Vector3(0f, 1.5f, -73.9f), new Vector3(11f, 3f, 2.9f), null);
 
         // 홀 → 갈라진 복도: 홀 서쪽 벽(x 5.85~6.15) + 복도 덧판(~6.19)의 1.2×2.2m 구멍
