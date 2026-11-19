@@ -65,6 +65,7 @@ public static partial class GreyboxGraphicsPass
     static void FoldingChair(Transform parent, Vector3 pos, float yaw)
     {
         var g = PropGroup(parent, "FoldingChair", pos, yaw, new Vector3(0.45f, 0.85f, 0.45f));
+        if (VarcoInto(g, "PoolHall", "FoldingChair", propLayer)) return;
         PBox(g, "Seat", new Vector3(0, 0.45f, 0), new Vector3(0.42f, 0.03f, 0.4f), pGrey);
         PBox(g, "Back", new Vector3(0, 0.74f, -0.2f), new Vector3(0.42f, 0.22f, 0.025f), pGrey);
         foreach (float x in new[] { -0.2f, 0.2f })
@@ -78,6 +79,7 @@ public static partial class GreyboxGraphicsPass
     {
         const float w = 0.38f, h = 1.8f, d = 0.45f;
         var g = PropGroup(parent, "Lockers", pos, yaw, new Vector3(w * count, h, d));
+        if (VarcoInto(g, "PoolHall", "Lockers", propLayer)) return; // VARCO 사물함은 4칸 한 덩어리(폭 1.38m)
         for (int i = 0; i < count; i++)
         {
             float x = (i - (count - 1) / 2f) * w;
@@ -91,13 +93,22 @@ public static partial class GreyboxGraphicsPass
     static void LifeRing(Transform parent, Vector3 pos, float yaw)
     {
         var g = PropGroup(parent, "LifeRingHolder", pos, yaw);
+        if (VarcoInto(g, "PoolHall", "LifeRingHolder", propLayer)) return;
         PBox(g, "Board", new Vector3(0, 0, 0.012f), new Vector3(0.8f, 0.8f, 0.024f), pWhite);
         Part(g, PrimitiveType.Cylinder, "Ring", new Vector3(0, 0, 0.07f), new Vector3(0.62f, 0.045f, 0.62f), pRed, new Vector3(90, 0, 0));
         Part(g, PrimitiveType.Cylinder, "RingHole", new Vector3(0, 0, 0.072f), new Vector3(0.34f, 0.046f, 0.34f), pWhite, new Vector3(90, 0, 0));
     }
 
-    static void SignBoard(Transform parent, Vector3 pos, float yaw)
+    // VARCO 안전 수칙판은 바닥에 세우는 입간판이다. 바닥에 놓을 자리가 있으면(floorOk) 벽 앞 0.35m 바닥에 세운다.
+    static void SignBoard(Transform parent, Vector3 pos, float yaw, bool floorOk = true)
     {
+        if (floorOk && VarcoPrefab("PoolHall", "SafetySign_Blank") != null)
+        {
+            var fwd = Quaternion.Euler(0, yaw, 0) * Vector3.forward;
+            var fg = PropGroup(parent, "SafetySign_Blank", new Vector3(pos.x, 0f, pos.z) + fwd * 0.35f, yaw, new Vector3(0.6f, 0.85f, 0.48f));
+            VarcoInto(fg, "PoolHall", "SafetySign_Blank", propLayer);
+            return;
+        }
         var g = PropGroup(parent, "SafetySign_Blank", pos, yaw);
         PBox(g, "Board", new Vector3(0, 0, 0.01f), new Vector3(0.6f, 0.8f, 0.02f), pWhite);
         PBox(g, "Header", new Vector3(0, 0.31f, 0.022f), new Vector3(0.6f, 0.16f, 0.004f), pBlue);
@@ -108,6 +119,7 @@ public static partial class GreyboxGraphicsPass
     static void Clock(Transform parent, Vector3 pos, float yaw)
     {
         var g = PropGroup(parent, "WallClock_NoHands", pos, yaw);
+        if (VarcoInto(g, "PoolHall", "WallClock_NoHands", propLayer)) return;
         Part(g, PrimitiveType.Cylinder, "Rim", new Vector3(0, 0, 0.02f), new Vector3(0.4f, 0.02f, 0.4f), pDark, new Vector3(90, 0, 0));
         Part(g, PrimitiveType.Cylinder, "Face", new Vector3(0, 0, 0.03f), new Vector3(0.35f, 0.021f, 0.35f), pWhite, new Vector3(90, 0, 0));
     }
@@ -143,6 +155,14 @@ public static partial class GreyboxGraphicsPass
     static void TvOnStand(Transform parent, Vector3 pos, float yaw)
     {
         var g = PropGroup(parent, "TV_Off", pos, yaw, new Vector3(1.1f, 1.15f, 0.45f));
+        if (VarcoPrefab("LivingRoom", "CRTTV") != null)
+        {
+            // 받침대(더미) 위에 VARCO 브라운관 TV. 콜라이더는 받침대 + TV 높이.
+            PBox(g, "Stand", new Vector3(0, 0.25f, 0), new Vector3(1.1f, 0.5f, 0.7f), pWood);
+            VarcoInto(g, "LivingRoom", "CRTTV", propLayer, new Vector3(0, 0.5f, 0), default, false);
+            var tc = g.GetComponent<BoxCollider>(); tc.size = new Vector3(1.1f, 1.09f, 0.7f); tc.center = new Vector3(0, 0.545f, 0);
+            return;
+        }
         PBox(g, "Stand", new Vector3(0, 0.25f, 0), new Vector3(1.1f, 0.5f, 0.42f), pWood);
         PBox(g, "Body", new Vector3(0, 0.82f, 0), new Vector3(0.9f, 0.6f, 0.34f), pGrey);
         PBox(g, "Screen", new Vector3(0, 0.83f, 0.172f), new Vector3(0.76f, 0.48f, 0.004f), pDark);
@@ -257,7 +277,7 @@ public static partial class GreyboxGraphicsPass
             // 홀: 데크 폭이 좁아(벽과 기둥 사이 0.9m) 바닥에는 얇은 배수구 덮개만, 나머지는 벽걸이
             LifeRing(props, new Vector3(-5.84f, 1.5f, -94.7f), 90);
             LifeRing(props, new Vector3(5.84f, 1.5f, -112.7f), 270);
-            SignBoard(props, new Vector3(-5.84f, 1.6f, -100.7f), 90);
+            SignBoard(props, new Vector3(-5.84f, 1.6f, -100.7f), 90, false); // 데크가 좁아 입간판을 세우면 길을 막는다
             foreach (float z in new[] { -89.7f, -95.7f, -101.7f, -107.7f, -113.7f })
             { Drain(props, new Vector3(3.72f, 0, z)); Drain(props, new Vector3(-3.72f, 0, z)); }
             FoldingChair(props, new Vector3(-4.9f, 0, -122.4f), 20);

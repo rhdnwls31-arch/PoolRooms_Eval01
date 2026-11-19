@@ -176,7 +176,7 @@ public static partial class GreyboxGraphicsPass
         // 발목까지 찬 물(콜라이더 없음). 문 자리의 턱은 문이 있던 티가 나서 없앴다(2026-11-18 플레이 피드백).
         Box(gen, "Water", new Vector3((ShX0 + ShX1) / 2, 0.06f, (ShZ0 + ShZ1) / 2), new Vector3(ShX1 - ShX0, 0.12f, ShZ1 - ShZ0), water, LShower);
 
-        // 샤워기: 북쪽 벽 4개, 동쪽 벽 3개. 동쪽 맨 아래(출구 옆) 하나만 물이 바닥 배수구에서 천장으로 솟는다.
+        // 샤워기: 북쪽 벽 4개, 동쪽 벽 3개. 동쪽 맨 아래(출구 옆) 하나만 물이 바닥 배수구에서 천장으로 솟는다(나머지는 물이 나오지 않는다).
         var showers = Group(gen, "Showers");
         GameObject odd = null;
         void Shower(Vector3 wallPoint, Vector3 n, bool up, string nm)
@@ -191,17 +191,20 @@ public static partial class GreyboxGraphicsPass
                 var r = go.GetComponent<MeshRenderer>(); r.sharedMaterial = m; r.renderingLayerMask = LShower;
                 if (m == stream || m == water) r.shadowCastingMode = ShadowCastingMode.Off;
             }
-            P(PrimitiveType.Cylinder, "Pipe", new Vector3(0, 1.6f, 0.05f), new Vector3(0.035f, 0.55f, 0.035f), metal);
-            P(PrimitiveType.Cylinder, "Arm", new Vector3(0, 2.15f, 0.2f), new Vector3(0.03f, 0.16f, 0.03f), metal, new Vector3(90, 0, 0));
-            P(PrimitiveType.Cylinder, "Head", new Vector3(0, 2.12f, 0.36f), new Vector3(0.18f, 0.025f, 0.18f), metal);
+            // VARCO 샤워기(벽에서 나와 아래로 굽은 팔 + 머리)가 있으면 팔·머리 더미 대신 쓰고, 배관은 그 아래까지 잇는다.
+            if (VarcoInto(g, "Shower", "ShowerHead", LShower, new Vector3(0, 2.32f, 0), default, false))
+                P(PrimitiveType.Cylinder, "Pipe", new Vector3(0, 1.75f, 0.05f), new Vector3(0.035f, 0.65f, 0.035f), metal);
+            else
+            {
+                P(PrimitiveType.Cylinder, "Pipe", new Vector3(0, 1.6f, 0.05f), new Vector3(0.035f, 0.55f, 0.035f), metal);
+                P(PrimitiveType.Cylinder, "Arm", new Vector3(0, 2.15f, 0.2f), new Vector3(0.03f, 0.16f, 0.03f), metal, new Vector3(90, 0, 0));
+                P(PrimitiveType.Cylinder, "Head", new Vector3(0, 2.12f, 0.36f), new Vector3(0.18f, 0.025f, 0.18f), metal);
+            }
             P(PrimitiveType.Sphere, "Valve", new Vector3(0, 1.1f, 0.05f), Vector3.one * 0.09f, metal);
             P(PrimitiveType.Cylinder, "Drain", new Vector3(0, 0.122f, 0.36f), new Vector3(0.16f, 0.002f, 0.16f), drain);
-            if (!up)
-            {
-                P(PrimitiveType.Cylinder, "Stream", new Vector3(0, 1.1f, 0.36f), new Vector3(0.12f, 1.0f, 0.12f), stream);
-                P(PrimitiveType.Sphere, "Splash", new Vector3(0, 0.12f, 0.36f), new Vector3(0.4f, 0.04f, 0.4f), stream);
-            }
-            else
+            // 2026-11-19: 보통 샤워기의 떨어지는 물줄기(흰 원기둥 + 바닥 물보라)는 기둥처럼 보여 비현실적이라 뺐다(사용자 결정).
+            // 물이 나오는 건 이상한 점(솟는 물기둥) 하나뿐이라 더 눈에 띈다.
+            if (up)
             {
                 // 배수구에서 물기둥이 천장까지 솟고, 천장에 물이 고여 번진다. 샤워기 머리에서는 물이 나오지 않는다.
                 P(PrimitiveType.Cylinder, "Stream_Up", new Vector3(0, (0.12f + ShH) / 2, 0.36f), new Vector3(0.12f, (ShH - 0.12f) / 2, 0.12f), stream);
@@ -223,8 +226,21 @@ public static partial class GreyboxGraphicsPass
             Box(parts, $"Part_E_{-z:F0}", new Vector3(ShX1 - 0.55f, 0.95f, z), new Vector3(1.1f, 1.9f, 0.06f), wall, LShower, true);
 
         // 가운데 긴 의자와 서쪽 벽의 김 서린 거울
-        Box(gen, "Bench", new Vector3(12.5f, 0.45f, -98.5f), new Vector3(4.2f, 0.08f, 0.45f), bench, LShower, true);
-        foreach (float x in new[] { 10.7f, 14.3f }) Box(gen, "BenchLeg", new Vector3(x, 0.22f, -98.5f), new Vector3(0.08f, 0.44f, 0.4f), metal, LShower);
+        if (VarcoPrefab("Shower", "Bench") != null)
+        {
+            // VARCO 긴 의자(1.5m) 두 개를 나란히
+            foreach (float x in new[] { 11.65f, 13.35f })
+            {
+                var bg = new GameObject("Bench").transform; bg.SetParent(gen, true); bg.position = new Vector3(x, 0f, -98.5f);
+                bg.gameObject.AddComponent<BoxCollider>();
+                VarcoInto(bg, "Shower", "Bench", LShower);
+            }
+        }
+        else
+        {
+            Box(gen, "Bench", new Vector3(12.5f, 0.45f, -98.5f), new Vector3(4.2f, 0.08f, 0.45f), bench, LShower, true);
+            foreach (float x in new[] { 10.7f, 14.3f }) Box(gen, "BenchLeg", new Vector3(x, 0.22f, -98.5f), new Vector3(0.08f, 0.44f, 0.4f), metal, LShower);
+        }
         Box(gen, "Mirror", new Vector3(ShX0 + 0.015f, 1.6f, -96.5f), new Vector3(0.03f, 0.8f, 4.5f), mirror, LShower);
 
         // 차가운 청록 형광등 2개 + 약한 보조광
@@ -288,8 +304,19 @@ public static partial class GreyboxGraphicsPass
         var tvPos = new Vector3(LvX0 + 0.35f, 0f, -118.6f);
         var tv = new GameObject("Oddity_TV").transform; tv.SetParent(props, true);
         tv.SetPositionAndRotation(tvPos, Quaternion.LookRotation(Vector3.right));
-        PBox(tv, "Stand", new Vector3(0, 0.25f, 0), new Vector3(1.1f, 0.5f, 0.45f), wood);
-        PBox(tv, "Body", new Vector3(0, 0.84f, -0.02f), new Vector3(0.82f, 0.62f, 0.5f), dark);
+        // VARCO 브라운관 TV가 있으면 받침대 위에 올리고, TV 카메라 화면(Quad)을 브라운관 유리 위에 맞춘다.
+        // 유리 = 모델 로컬 x +0.05, 높이 0.33 가운데, 폭 0.58 · 높이 0.44(둥근 모서리라 조금 작게 덮는다), 앞면 z 0.35.
+        bool crt = VarcoPrefab("LivingRoom", "CRTTV") != null;
+        if (crt)
+        {
+            PBox(tv, "Stand", new Vector3(0, 0.25f, 0), new Vector3(1.1f, 0.5f, 0.7f), wood);
+            VarcoInto(tv, "LivingRoom", "CRTTV", LLiving, new Vector3(0, 0.5f, 0), default, false);
+        }
+        else
+        {
+            PBox(tv, "Stand", new Vector3(0, 0.25f, 0), new Vector3(1.1f, 0.5f, 0.45f), wood);
+            PBox(tv, "Body", new Vector3(0, 0.84f, -0.02f), new Vector3(0.82f, 0.62f, 0.5f), dark);
+        }
         var rt = TvRenderTexture();
         var screenMat = Lit("GB_Living_TVScreen", m =>
         {
@@ -297,7 +324,9 @@ public static partial class GreyboxGraphicsPass
             m.SetTexture("_EmissiveColorMap", rt); m.SetColor("_EmissiveColor", Color.white * 90f);
             m.SetFloat("_UseEmissiveIntensity", 0f); m.SetFloat("_EmissiveExposureWeight", 1f);
         });
-        var screen = Prim(PrimitiveType.Quad, tv, "Screen", tvPos + new Vector3(0.235f, 0.86f, 0), new Vector3(0.62f, 0.46f, 1f), screenMat, LLiving);
+        var screen = crt
+            ? Prim(PrimitiveType.Quad, tv, "Screen", tv.TransformPoint(new Vector3(0.05f, 0.83f, 0.353f)), new Vector3(0.53f, 0.4f, 1f), screenMat, LLiving)
+            : Prim(PrimitiveType.Quad, tv, "Screen", tvPos + new Vector3(0.235f, 0.86f, 0), new Vector3(0.62f, 0.46f, 1f), screenMat, LLiving);
         screen.transform.rotation = Quaternion.LookRotation(Vector3.left); // 보이는 면(-Z)이 방 쪽(+x)
 
         var sofaPos = new Vector3(47.4f, 0f, -118.6f);

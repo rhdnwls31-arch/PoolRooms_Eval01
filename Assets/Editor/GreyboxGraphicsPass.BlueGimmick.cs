@@ -35,6 +35,8 @@ public static partial class GreyboxGraphicsPass
         var parts = new GameObject[lump.childCount];
         for (int i = 0; i < parts.Length; i++) parts[i] = lump.GetChild(i).gameObject;
         gz.hideOnFound = parts;
+        var emptyBed = lump.parent.Find("Bed_Empty"); // VARCO 침대일 때만 있다: 사람이 사라지면 빈 침대로 바꾼다
+        if (emptyBed != null) gz.showOnFound = new[] { emptyBed.gameObject };
         gz.hideDelay = 1.6f;   // 꿈틀한 뒤 꺼지고, 같은 순간 벽에 그림자가 생긴다
 
         // ---- 2) 벽의 그림자: 출구 벽의 방 쪽 면에 붙인 반투명 실루엣. 발끝이 바닥에 닿아 있다.
@@ -126,7 +128,7 @@ public static partial class GreyboxGraphicsPass
         // ---- 도어뷰어: 컴퓨터 속 쪽 문 바로 앞에서 방 안쪽을 넓게 찍는 카메라 + 문 앞에 서서 렌즈를 들여다보는 인외.
         var camGo = new GameObject("PeepCamera");
         camGo.transform.SetParent(root, true);
-        camGo.transform.SetPositionAndRotation(to.TransformPoint(new Vector3(0f, 1.55f, 0.22f)), to.rotation);
+        camGo.transform.SetPositionAndRotation(to.TransformPoint(new Vector3(0f, 1.55f, 0.22f)), to.rotation * Quaternion.Euler(-PeepCamPitch, 0f, 0f));
         var pcam = camGo.AddComponent<Camera>();
         camGo.AddComponent<HDAdditionalCameraData>();
         pcam.fieldOfView = 105f; pcam.nearClipPlane = 0.03f; pcam.farClipPlane = 300f;
@@ -196,8 +198,32 @@ public static partial class GreyboxGraphicsPass
     /// 도어뷰어로 보이는 인외: 얼굴 없는 흰 형체, 아주 긴 팔다리. 문 앞에 서서 상체를 문 쪽으로 깊이 숙여 렌즈를 들여다본다.
     /// 한 손은 렌즈 옆 문틀을 짚고 있다. 좌표는 도착 쪽 앵커 기준(forward = 방 안쪽, 렌즈는 z 0.22·높이 1.55).
     /// </summary>
+    // 2026-11-19 VARCO 모델(사용자 제작). 프리팹이 있으면 더미 대신 이것을 쓴다. 기준점 = 발밑 가운데, 정면 = +Z, 키 2.4m(허리를 숙인 자세).
+    const string PeepFigurePrefab = "Assets/VARCO/BlueCorridor/Prefabs/VAR_BlueCorridor_PeepholeFigure.prefab"; // VARCO는 방별 폴더(Models/Textures/Materials/Prefabs)
+    // 2026-11-19 사용자 요청: 얼굴이 렌즈 가운데, 바로 앞에 오게. 프리팹(숙인 키 2.4m)의 얼굴은 키의 94%(2.26m) 높이, 발보다 0.42m 앞.
+    // 이 모델은 고개를 푹 숙여 발밑을 본다. 얼굴을 렌즈 높이에 맞추면(키 1.7m) 정수리만 보였다.
+    // 그래서 얼굴을 렌즈보다 조금 위(키 2.0m → 얼굴 약 1.88m)·렌즈 앞 약 0.5m에 두고, 렌즈 카메라를 위로 PeepCamPitch만큼 들어
+    // 숙인 얼굴이 렌즈 가운데에서 이쪽을 내려다보게 한다(플레이어는 렌즈 방향을 알 수 없다).
+    const float PeepFigureHeight = 2.0f, PeepFigurePrefabHeight = 2.4f;
+    // 2026-11-19 사용자 요청 "조금만 더 가까이": 발 1.1 → 0.85(얼굴이 렌즈 앞 약 0.3m). 얼굴이 더 위로 올라가 보여서 렌즈를 30 → 40도 든다.
+    const float PeepFigureFeetZ = 0.85f;
+    const float PeepCamPitch = 40f;
+
     static GameObject BuildPeepFigure(Transform parent, Transform anchor)
     {
+        var varco = AssetDatabase.LoadAssetAtPath<GameObject>(PeepFigurePrefab);
+        if (varco != null)
+        {
+            var inst = (GameObject)PrefabUtility.InstantiatePrefab(varco);
+            inst.name = "Peephole_Figure";
+            inst.transform.SetParent(parent, true);
+            // 렌즈 쪽(앵커 뒤쪽)을 보고 선다.
+            inst.transform.SetPositionAndRotation(anchor.TransformPoint(new Vector3(0f, 0f, PeepFigureFeetZ)), anchor.rotation * Quaternion.Euler(0f, 180f, 0f));
+            inst.transform.localScale = Vector3.one * (PeepFigureHeight / PeepFigurePrefabHeight);
+            foreach (var r in inst.GetComponentsInChildren<Renderer>(true)) r.renderingLayerMask = LComputer; // 컴퓨터 속 조명만 받게(프리팹 위의 덮어쓰기)
+            return inst;
+        }
+
         // 2026-11-19: 흰색이면 밝은 컴퓨터 속 하늘과 섞여 알 모양 덩어리로만 보였다. 거의 검게 해서 하늘·풀밭 앞의 실루엣으로 읽히게 한다.
         var skin = Lit("GB_Peep_Figure", m => Plain(m, new Color(0.035f, 0.035f, 0.045f), 0.15f));
         var g = new GameObject("Peephole_Figure").transform;

@@ -59,6 +59,18 @@ public static partial class GreyboxGraphicsPass
         float bz = BdOutZ, bx0 = 42.4f, bx1 = 44.6f;
         var bed = new GameObject("Bed").transform; bed.SetParent(props, true); bed.position = new Vector3((bx0 + bx1) / 2, 0f, bz);
         var bc = bed.gameObject.AddComponent<BoxCollider>(); bc.size = new Vector3(bx1 - bx0, 0.62f, 1.6f); bc.center = new Vector3(0, 0.31f, 0);
+        Transform lump;
+        if (VarcoPrefab("Bedroom", "Bed_BlanketFigure") != null && VarcoPrefab("Bedroom", "Bed_Empty") != null)
+        {
+            // 2026-11-19 VARCO 침대: 모델은 머리(헤드보드)가 -Z라 90도 돌려 머리를 서쪽(-X)으로.
+            // 사람이 든 침대는 Oddity_BlanketFigure 아래(찾으면 꺼진다), 빈 침대는 처음엔 꺼 두고 찾은 순간 켠다(BuildBlueGimmick의 showOnFound).
+            lump = new GameObject("Oddity_BlanketFigure").transform; lump.SetParent(bed, false);
+            VarcoInto(lump, "Bedroom", "Bed_BlanketFigure", LBedroom, default, new Vector3(0, 90, 0), false);
+            var empty = VarcoInto(bed, "Bedroom", "Bed_Empty", LBedroom, default, new Vector3(0, 90, 0), true);
+            empty.SetActive(false);
+        }
+        else
+        {
         PBox(bed, "Frame", new Vector3(0, 0.22f, 0), new Vector3(bx1 - bx0, 0.24f, 1.6f), deep);
         PBox(bed, "Mattress", new Vector3(0.05f, 0.43f, 0), new Vector3(bx1 - bx0 - 0.1f, 0.2f, 1.5f), furn);
         PBox(bed, "Headboard", new Vector3(-(bx1 - bx0) / 2 + 0.04f, 0.55f, 0), new Vector3(0.08f, 1.1f, 1.6f), deep);
@@ -68,7 +80,7 @@ public static partial class GreyboxGraphicsPass
                 PBox(bed, "Leg", new Vector3(lx * ((bx1 - bx0) / 2 - 0.06f), 0.05f, lz * 0.74f), new Vector3(0.08f, 0.1f, 0.08f), deep);
         // 이불 속 사람: 머리끝까지 이불을 덮어쓴 사람 모양. 베개 위의 둥근 머리, 넓은 어깨, 몸통, 갈라진 두 다리와 솟은 발끝.
         // 처음 플레이 확인에서 베개 여러 개처럼 보여서(2026-11-18) 머리를 베개 위에 올리고 어깨·다리 갈래를 또렷하게 했다.
-        var lump = new GameObject("Oddity_BlanketFigure").transform; lump.SetParent(bed, false);
+        lump = new GameObject("Oddity_BlanketFigure").transform; lump.SetParent(bed, false);
         Part(lump, PrimitiveType.Sphere, "Head", new Vector3(-0.76f, 0.78f, 0f), new Vector3(0.3f, 0.3f, 0.28f), bedding);
         Part(lump, PrimitiveType.Sphere, "Shoulders", new Vector3(-0.42f, 0.66f, 0f), new Vector3(0.34f, 0.3f, 0.62f), bedding);
         Part(lump, PrimitiveType.Sphere, "Body", new Vector3(-0.05f, 0.64f, 0f), new Vector3(0.8f, 0.26f, 0.52f), bedding);
@@ -76,6 +88,7 @@ public static partial class GreyboxGraphicsPass
         Part(lump, PrimitiveType.Capsule, "Leg_R", new Vector3(0.55f, 0.6f, -0.12f), new Vector3(0.18f, 0.38f, 0.18f), bedding, new Vector3(0, 0, 90));
         Part(lump, PrimitiveType.Sphere, "Toes_L", new Vector3(0.92f, 0.7f, 0.12f), new Vector3(0.12f, 0.22f, 0.14f), bedding);
         Part(lump, PrimitiveType.Sphere, "Toes_R", new Vector3(0.92f, 0.7f, -0.12f), new Vector3(0.12f, 0.22f, 0.14f), bedding);
+        }
 
         // ---- 북쪽 벽: 책상(모니터, 책 더미, 의자), 키 큰 책장
         var desk = new GameObject("Desk").transform; desk.SetParent(props, true); desk.position = new Vector3(45.6f, 0f, BdZ1 - 0.4f);

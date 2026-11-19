@@ -30,7 +30,7 @@ public class BlueRoomDoor : MonoBehaviour
     [Tooltip("문밖에 서 있는 인외. 처음 들여다볼 때만 보인다.")]
     public GameObject figure;
     [Tooltip("들여다보는 동안 인외의 머리가 천천히 갸웃거리는 각도(도). 0이면 가만히 있다.")]
-    public float headTiltAngle = 22f;
+    public float headTiltAngle = 0f; // 2026-11-19 사용자 결정: 숨 쉬듯 움직이면 이상해서 끔. 가만히 바라보기만 한다.
     [Tooltip("갸웃거림 한 번 왕복에 걸리는 시간(초).")]
     public float headTiltPeriod = 3.2f;
 
@@ -108,18 +108,33 @@ public class BlueRoomDoor : MonoBehaviour
     }
 
     // 2026-11-19: 멈춰 있으면 마네킹 같아서, 보고 있는 동안 머리가 렌즈 앞에서 천천히 갸웃거린다(살아 있다는 느낌).
+    // 2026-11-19 VARCO 모델은 머리가 따로 없는 한 덩어리라, 머리 대신 몸 전체가 발을 축으로 렌즈 쪽으로 살짝 숨 쉬듯 기운다.
+    [Tooltip("머리가 따로 없는 모델일 때, 몸 전체가 렌즈 쪽으로 기우는 각도(도).")]
+    public float bodyLeanAngle = 0f;
     Transform head;
     Quaternion headRest;
+    Vector3 bodyRestPos;
+    Quaternion bodyRestRot;
+    bool bodyMode, tiltInit;
     void TiltHead()
     {
         if (figure == null || !figure.activeInHierarchy || headTiltAngle <= 0f) return;
-        if (head == null)
-        {
-            head = figure.transform.Find("Head");
-            if (head == null) return;
-            headRest = head.rotation;
-        }
         float k = Mathf.Sin((Time.time - peekStart) * Mathf.PI * 2f / Mathf.Max(0.1f, headTiltPeriod));
+        if (!tiltInit)
+        {
+            tiltInit = true;
+            head = figure.transform.Find("Head");
+            if (head != null) headRest = head.rotation;
+            else { bodyMode = true; bodyRestPos = figure.transform.position; bodyRestRot = figure.transform.rotation; }
+        }
+        if (bodyMode)
+        {
+            var t = figure.transform;
+            t.SetPositionAndRotation(bodyRestPos, bodyRestRot);
+            t.RotateAround(bodyRestPos, bodyRestRot * Vector3.right, (k * 0.5f + 0.5f) * bodyLeanAngle); // 앞으로만 기울었다 돌아온다
+            return;
+        }
+        if (head == null) return;
         // 렌즈 너머를 찍는 카메라와 머리를 잇는 축으로 돌려서, 렌즈 쪽에서 보면 고개를 좌우로 기울이는 것처럼 보이게 한다.
         Vector3 axis = peepCamera != null ? (head.position - peepCamera.transform.position).normalized : figure.transform.forward;
         head.rotation = Quaternion.AngleAxis(k * headTiltAngle, axis) * headRest;

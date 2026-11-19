@@ -116,7 +116,10 @@ public static partial class GreyboxGraphicsPass
         g.blinkCount = 2;
     }
 
-    // ---------------------------------------------------------------- 노란 방: 화면 밖에서 풍선이 열쇠로 바뀌는 삐에로 인형
+    // ---------------------------------------------------------------- 노란 방: 풍선을 든 키다리 삐에로
+    // 2026-11-19: 풍선 → 열쇠 장치는 잘 안 보여서 뺐다(사용자 결정).
+    // 삐에로는 입구(서쪽 벽, 샤워실에서 오는 구멍)를 보고 서 있다. 가까이 다가가 바라보면 풍선이 손을 떠나
+    // 천장을 타고 출구 벽까지 흘러가고, 도착할 즈음 출구가 열린다(2026-11-19 사용자 결정: 다가가면 날아간다, 처음엔 기울지 않는다).
     static void YellowClown()
     {
         var gen = Root("GB_03_Yellow").transform.Find(GenName);
@@ -131,16 +134,16 @@ public static partial class GreyboxGraphicsPass
         var white = Lit("GB_Find_Clown_Face", m => Plain(m, new Color(0.95f, 0.93f, 0.9f), 0.35f));
         var red = Lit("GB_Find_Clown_Red", m => Plain(m, new Color(0.78f, 0.08f, 0.08f), 0.45f));
         var suit = Lit("GB_Find_Clown_Suit", m => Plain(m, new Color(0.25f, 0.55f, 0.85f), 0.3f));
-        var gold = Lit("GB_Find_Key_Gold", m => Plain(m, new Color(0.85f, 0.68f, 0.25f), 0.7f, 1f));
         var dark = Lit("GB_Find_Clown_Dark", m => Plain(m, new Color(0.05f, 0.05f, 0.06f), 0.3f));
 
-        // 방 남동쪽, 출구(동쪽 벽 z -112.4)를 바라본다. 북서쪽 입구로 들어오면 대각선 건너편에 보인다. 키 약 1m.
+        // 방 남동쪽에 서서 입구(서쪽 벽 x 20.15, z ShOutZ)를 바라본다. 들어오자마자 대각선 건너편에서 마주 본다.
         var pos = new Vector3(32f, 0f, -109.5f);
-        var exit = new Vector3(36.15f, 0f, LvInZ);
+        var entry = new Vector3(20.15f, 0f, ShOutZ);
         var doll = new GameObject("Oddity_Clown").transform;
         doll.SetParent(gen, true);
-        doll.SetPositionAndRotation(pos, Quaternion.LookRotation(exit - pos));
+        doll.SetPositionAndRotation(pos, Quaternion.LookRotation(entry - pos));
         var bc = doll.gameObject.AddComponent<BoxCollider>(); bc.size = new Vector3(0.5f, 1.05f, 0.4f); bc.center = new Vector3(0, 0.52f, 0);
+        Transform balloon; Vector3 handLocal;
         void P(PrimitiveType t, Transform p, string n, Vector3 lc, Vector3 s, Material m, Vector3? e = null)
         {
             var go = GameObject.CreatePrimitive(t); go.name = n; Object.DestroyImmediate(go.GetComponent<Collider>());
@@ -148,6 +151,17 @@ public static partial class GreyboxGraphicsPass
             if (e.HasValue) go.transform.localRotation = Quaternion.Euler(e.Value);
             var r = go.GetComponent<MeshRenderer>(); r.sharedMaterial = m; r.renderingLayerMask = LYellow;
         }
+        if (PierrotParts(out var pBody, out var pBalloon, out var pMat))
+        {
+            // 2026-11-19 VARCO 키다리 삐에로: 플레이어(1.8m)보다 커서 올려다보게, 모자·풍선 끝까지 2.7m(천장 3m).
+            const float s = 2.7f / 2.1f;
+            MeshPart(doll, "Body", pBody, pMat, LYellow, s);
+            balloon = MeshPart(doll, "Balloon", pBalloon, pMat, LYellow, s).transform;
+            handLocal = PierrotHand * s;
+            bc.size = new Vector3(0.75f, 2.1f, 0.73f) * s; bc.center = new Vector3(0, 1.05f * s, 0);
+        }
+        else
+        {
         P(PrimitiveType.Capsule, doll, "Body", new Vector3(0, 0.42f, 0), new Vector3(0.36f, 0.32f, 0.3f), suit);
         P(PrimitiveType.Sphere, doll, "Ruff", new Vector3(0, 0.7f, 0), new Vector3(0.36f, 0.08f, 0.36f), white);
         P(PrimitiveType.Sphere, doll, "Head", new Vector3(0, 0.85f, 0), new Vector3(0.26f, 0.28f, 0.26f), white);
@@ -161,19 +175,27 @@ public static partial class GreyboxGraphicsPass
         P(PrimitiveType.Capsule, doll, "Leg_R", new Vector3(0.08f, 0.12f, 0), new Vector3(0.11f, 0.12f, 0.11f), suit);
 
         var hand = new Vector3(0.24f, 0.62f, 0.22f);
-        var balloon = new GameObject("Balloon").transform; balloon.SetParent(doll, false);
+        handLocal = hand;
+        balloon = new GameObject("Balloon").transform; balloon.SetParent(doll, false);
         P(PrimitiveType.Cylinder, balloon, "String", hand + new Vector3(0, 0.35f, 0), new Vector3(0.006f, 0.35f, 0.006f), dark);
         P(PrimitiveType.Sphere, balloon, "Ball", hand + new Vector3(0, 0.85f, 0), new Vector3(0.28f, 0.34f, 0.28f), red);
-        // 열쇠는 멀리서도 풍선 대신 들려 있는 게 보이게 실제보다 크게(약 30cm) 만든다.
-        var key = new GameObject("Key").transform; key.SetParent(doll, false); key.localPosition = hand; key.localScale = Vector3.one * 2.2f;
-        P(PrimitiveType.Cylinder, key, "Ring", new Vector3(0, 0.06f, 0), new Vector3(0.07f, 0.008f, 0.07f), gold, new Vector3(90, 0, 0));
-        P(PrimitiveType.Cube, key, "Shaft", new Vector3(0, -0.03f, 0), new Vector3(0.018f, 0.12f, 0.012f), gold);
-        P(PrimitiveType.Cube, key, "Bit", new Vector3(0.02f, -0.075f, 0), new Vector3(0.03f, 0.025f, 0.012f), gold);
-        key.gameObject.SetActive(false);
+        }
+        // 풍선 축: 손 위치. 풍선 메쉬를 그 아래로 옮겨(월드 위치 유지) 손을 중심으로 기울고 날아간다.
+        var pivot = new GameObject("BalloonPivot").transform;
+        pivot.SetParent(doll, false); pivot.localPosition = handLocal;
+        balloon.SetParent(pivot, true);
+        var release = new GameObject("BalloonRelease"); release.transform.SetParent(doll, false); release.SetActive(false);
+        var flight = pivot.gameObject.AddComponent<BalloonFlight>();
+        flight.releaseSignal = release;
+        flight.idleLean = 0f;                                // 처음에는 기울지 않는다(문 쪽을 미리 알려 주지 않게)
+        flight.riseToY = 2.1f;                               // 풍선 끝 ≈ 2.94m(천장 3m 바로 아래)
+        flight.stopAt = new Vector3(35.75f, 2.1f, LvInZ);    // 출구(동쪽 벽 36.15) 문 위, 풍선이 벽에 닿기 직전
+        EditorUtility.SetDirty(flight);
 
         var g = AddGaze(doll.gameObject, "YellowClown", gate, room);
-        g.swapOut = new[] { balloon.gameObject }; g.swapIn = new[] { key.gameObject };
-        g.dropTarget = key; g.dropToY = 0.2f; // 크게 만든 열쇠(아래 끝이 중심에서 약 0.19m)가 바닥에 닿는 높이
+        g.showOnFound = new[] { release };
+        g.maxDistance = 3f; g.dwellTime = 0.4f;               // 가까이(3m 안) 다가가 바라보면 바로 날아간다
+        g.notifyDelay = flight.riseTime + flight.driftTime - 0.3f; // 풍선이 문 위에 닿을 즈음 열린다
     }
 
     // ---------------------------------------------------------------- 천사 방: 혼자 출구 쪽 벽을 보는 눈
