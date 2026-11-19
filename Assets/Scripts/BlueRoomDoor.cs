@@ -29,6 +29,10 @@ public class BlueRoomDoor : MonoBehaviour
     public Camera peepCamera;
     [Tooltip("문밖에 서 있는 인외. 처음 들여다볼 때만 보인다.")]
     public GameObject figure;
+    [Tooltip("들여다보는 동안 인외의 머리가 천천히 갸웃거리는 각도(도). 0이면 가만히 있다.")]
+    public float headTiltAngle = 22f;
+    [Tooltip("갸웃거림 한 번 왕복에 걸리는 시간(초).")]
+    public float headTiltPeriod = 3.2f;
 
     [Header("문")]
     [Tooltip("문짝의 경첩. 열리면 y축으로 openAngle만큼 돈다.")]
@@ -100,6 +104,25 @@ public class BlueRoomDoor : MonoBehaviour
         if (overlay != null) overlay.alpha = overlayAlpha;
         if (peepCamera != null) peepCamera.enabled = overlayAlpha > 0f;
         if (!Peeking && overlayAlpha <= 0f && figure != null && figure.activeSelf) figure.SetActive(false);
+        TiltHead();
+    }
+
+    // 2026-11-19: 멈춰 있으면 마네킹 같아서, 보고 있는 동안 머리가 렌즈 앞에서 천천히 갸웃거린다(살아 있다는 느낌).
+    Transform head;
+    Quaternion headRest;
+    void TiltHead()
+    {
+        if (figure == null || !figure.activeInHierarchy || headTiltAngle <= 0f) return;
+        if (head == null)
+        {
+            head = figure.transform.Find("Head");
+            if (head == null) return;
+            headRest = head.rotation;
+        }
+        float k = Mathf.Sin((Time.time - peekStart) * Mathf.PI * 2f / Mathf.Max(0.1f, headTiltPeriod));
+        // 렌즈 너머를 찍는 카메라와 머리를 잇는 축으로 돌려서, 렌즈 쪽에서 보면 고개를 좌우로 기울이는 것처럼 보이게 한다.
+        Vector3 axis = peepCamera != null ? (head.position - peepCamera.transform.position).normalized : figure.transform.forward;
+        head.rotation = Quaternion.AngleAxis(k * headTiltAngle, axis) * headRest;
     }
 
     void UpdatePeek()

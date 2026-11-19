@@ -47,12 +47,14 @@ public static partial class GreyboxGraphicsPass
         panel.SetActive(false);
 
         var go = Fresh(gen, "HiddenEnding").gameObject;
-        var nb = normalEnd.GetComponent<BoxCollider>();
+        // 2026-11-19 사용자 결정: 기본 엔딩은 뺀다. 마네킹을 바라봐야만 끝난다. DemoEndTrigger 스크립트는 그대로 두고 오브젝트만 끈다.
+        normalEnd.gameObject.SetActive(false);
+        EditorUtility.SetDirty(normalEnd.gameObject);
         var he = go.AddComponent<HiddenEnding>();
         he.gaze = g;
         he.mannequin = mannequin;
         he.tube = tube;
-        he.normalEndTrigger = nb;
+        he.normalEndTrigger = null;
         he.endPanel = panel;
         he.fader = Object.FindAnyObjectByType<ScreenFader>(FindObjectsInactive.Include);
         he.player = Object.FindAnyObjectByType<PlayerController>(FindObjectsInactive.Include);
@@ -82,5 +84,14 @@ public static partial class GreyboxGraphicsPass
         Shot("13_SkyStairs", new Vector3(28.15f, 1.7f, -146.5f), new Vector3(28.15f, 3.5f, -165f));
         he.montageShots = shots.ToArray();
         EditorUtility.SetDirty(he);
+
+        // 2026-11-19 첫 장면: 검은 화면에서 밝아지며 "Where... am I?" 자막. 바로 밝아지던 IntroFadeIn은 끈다.
+        var fadeCanvas = he.fader.gameObject;
+        foreach (var f in fadeCanvas.GetComponents<IntroFadeIn>()) { f.enabled = false; EditorUtility.SetDirty(f); }
+        foreach (var old in fadeCanvas.GetComponents<IntroMonologue>()) Object.DestroyImmediate(old);
+        var im = fadeCanvas.AddComponent<IntroMonologue>();
+        im.fader = he.fader;
+        im.player = he.player;
+        EditorUtility.SetDirty(im);
     }
 }

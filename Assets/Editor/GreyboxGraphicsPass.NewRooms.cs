@@ -331,7 +331,8 @@ public static partial class GreyboxGraphicsPass
         camGo.transform.position = tvPos + new Vector3(0.3f, 1.25f, 0f);
         camGo.transform.rotation = Quaternion.LookRotation(sofaPos + Vector3.up * 0.7f - camGo.transform.position);
         var tvCam = camGo.AddComponent<Camera>();
-        tvCam.targetTexture = rt; tvCam.fieldOfView = 26f; // 소파와 앉은 사람이 화면을 채우게 좁게 tvCam.nearClipPlane = 0.1f; tvCam.farClipPlane = 30f; tvCam.depth = -10;
+        tvCam.targetTexture = rt; tvCam.fieldOfView = 26f; // 소파와 앉은 사람이 화면을 채우게 좁게
+        tvCam.nearClipPlane = 0.1f; tvCam.farClipPlane = 30f; tvCam.depth = -10;
         tvCam.cullingMask = ~0;
         if (camGo.GetComponent<HDAdditionalCameraData>() == null) camGo.AddComponent<HDAdditionalCameraData>();
 
@@ -356,11 +357,13 @@ public static partial class GreyboxGraphicsPass
         Box(props, "Curtain_R", new Vector3(LvX1 - 0.08f, 1.45f, -117.4f), new Vector3(0.06f, 1.9f, 0.5f), AssetDatabase.LoadAssetAtPath<Material>($"{MatDir}/GB_Living_Curtain.mat"), LLiving);
 
         var lights = Group(gen, "Lights");
-        // 밤의 방이지만 가구와 벽이 겨우 읽힐 만큼은 밝힌다(노출 7.4 기준).
-        MakeLight(lights, "Lamp", LightType.Point, lampPos + new Vector3(0, 1.45f, 0), Vector3.zero, new Color(1f, 0.62f, 0.32f), 60000f, 11f, LLiving, true);
+        // 밤의 방이지만 가구와 벽이 읽혀야 한다. 2026-11-19: 방 모음 사진에서 거의 검게 보여서 노출 7.4 → 6.8(파란 침실과 같게),
+        // 스탠드를 키워 소파 쪽에 주황빛이 고이게 하고, 바닥 아래 있던 채움 빛을 방 한가운데 높이로 올려 벽과 사진이 어렴풋이 보이게 했다.
+        // (천장 바로 밑에 두면 등이 없는 천장에 빛 얼룩이 생긴다.)
+        MakeLight(lights, "Lamp", LightType.Point, lampPos + new Vector3(0, 1.45f, 0), Vector3.zero, new Color(1f, 0.62f, 0.32f), 110000f, 14f, LLiving, true);
         MakeLight(lights, "TV_Glow", LightType.Point, tvPos + new Vector3(0.7f, 0.9f, 0), Vector3.zero, new Color(0.6f, 0.72f, 1f), 10000f, 6f, LLiving, false, false);
-        MakeLight(lights, "Fill", LightType.Point, new Vector3(44.4f, -2.5f, -117f), Vector3.zero, new Color(0.9f, 0.7f, 0.5f), 40000f, 14f, LLiving, false, false);
-        var profile = RoomProfile("Living", 7.4f, 0.01f, 0.04f, new Color(0.7f, 0.55f, 0.42f), 40f, new Color(0.02f, 0.015f, 0.01f), 8f, 0f);
+        MakeLight(lights, "Fill", LightType.Point, new Vector3(44.4f, 1.4f, -117f), Vector3.zero, new Color(0.9f, 0.7f, 0.5f), 20000f, 12f, LLiving, false, false);
+        var profile = RoomProfile("Living", 6.8f, 0.01f, 0.04f, new Color(0.7f, 0.55f, 0.42f), 40f, new Color(0.02f, 0.015f, 0.01f), 8f, 0f);
         LocalVolume(gen, "LocalVolume", new Vector3((LvX0 + LvX1) / 2, LvH / 2, (LvZ0 + LvZ1) / 2), new Vector3(LvX1 - LvX0, LvH, LvZ1 - LvZ0), 1f, 125f, profile);
 
         // 찾기 규칙: TV 속 소파에 사람이 앉아 있는데 진짜 소파는 비어 있다. TV를 바라보면 화면이 깜빡이고 사람이 사라지며,

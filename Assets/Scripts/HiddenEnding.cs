@@ -8,8 +8,9 @@ using UnityEngine.UI;
 /// 1) 조작이 멈추고 시선이 마네킹에 붙잡힌다. 마네킹이 천천히 돌아서 플레이어를 노려본다.
 /// 2) 시야각이 점점 좁아지고 가장자리가 조여 들어와 마네킹 얼굴로 빨려 들어간다(카메라는 움직이지 않는다).
 /// 3) 화면이 하얗게 터진다(showTubeReveal이면 다시 밝아질 때 마네킹 자리에 튜브가 떠 있다. 지금은 끔).
-/// 4) 하얀 화면 사이로 지금까지 지나온 방들이 3초씩 하나씩 떠올랐다가 사라지고, 마지막 방이 검게 사라지며 끝난다(문구 없음).
-/// 기본 엔딩 DemoEndTrigger 스크립트는 고치지 않는다. 찾는 순간 그 콜라이더만 끈다.
+/// 4) 지금까지 지나온 방들이 3초씩 하나씩 나온다. vhsMontage(기본)면 검은 화면 가운데 4:3 옛날 TV에 튼 비디오테이프처럼
+///    노이즈·주사선·흔들림과 함께, 방 사이는 지지직 노이즈로 넘어간다. 마지막 방이 검게 사라지면 "It was all a dream...?" 자막으로 끝난다.
+/// 2026-11-19 기본 엔딩(수영장 끝 DemoEndTrigger)은 씬에서 꺼서 이 엔딩 하나만 남았다. 스크립트는 고치지 않는다.
 /// </summary>
 public class HiddenEnding : MonoBehaviour
 {
@@ -64,6 +65,24 @@ public class HiddenEnding : MonoBehaviour
     [Tooltip("끝에 엔딩 문구 화면을 띄울지. 2026-11-18 사용자 요청으로 끔(문구 없이 검은 화면으로 끝난다).")]
     public bool showEndPanel = false;
 
+    [Header("비디오테이프 돌아보기(2026-11-19)")]
+    [Tooltip("지나온 방들을 옛날 TV(4:3, 노이즈, 주사선)에 튼 비디오테이프처럼 보여 준다.")]
+    public bool vhsMontage = true;
+    [Tooltip("TV 화면 높이(화면 높이 대비).")]
+    public float tvHeight = 0.82f;
+    [Tooltip("평소 노이즈 세기(0~1).")]
+    public float noiseBase = 0.3f;
+    [Tooltip("방 사이 지지직 넘어가는 시간(초).")]
+    public float staticTime = 0.45f;
+    [Tooltip("마지막 방이 검게 사라지는 시간(초).")]
+    public float tvFinalFade = 2.5f;
+    [Tooltip("검게 된 뒤 주인공의 마지막 혼잣말(영어 자막). 2026-11-19 사용자 결정: 꿈이었다고 믿고 싶지만 스스로 의심하는 말투.")]
+    public string finalLine = "It was all a dream...?";
+    [Tooltip("나중에 넣을 목소리. 비어 있으면 자막만 나온다.")]
+    public AudioClip finalVoice;
+    [Tooltip("마지막 자막을 보여 주는 시간(초).")]
+    public float finalLineHold = 3f;
+
     /// <summary>지금 단계. 0 = 아직 못 찾음, 1 = 연출 중, 2 = 끝남.</summary>
     public int Stage { get; private set; }
 
@@ -95,7 +114,138 @@ public class HiddenEnding : MonoBehaviour
         if (cam != null && camFov > 0f) cam.fieldOfView = camFov;
         if (cam != null && camSaved) { cam.transform.localPosition = camLocalPos; cam.transform.localRotation = camLocalRot; }
         SetVignette(0f);
+        if (tvCanvas != null) Destroy(tvCanvas);
+        if (cam != null && cam.targetTexture == tvRt) cam.targetTexture = null;
+        if (tvRt != null) { tvRt.Release(); Destroy(tvRt); tvRt = null; }
     }
+
+    // ---------------------------------------------------------------- 비디오테이프 돌아보기
+    GameObject tvCanvas;
+    RenderTexture tvRt;
+    RawImage tvScreen, tvNoise, tvBand;
+    Image tvBlack;
+    Text tvCounter;
+    Texture2D noiseTex;
+    float noiseAmount, tapeTime, bandY;
+    const int NoiseW = 320, NoiseH = 240;
+
+    IEnumerator VhsMontage()
+    {
+        BuildTv();
+        noiseAmount = 1f; // 하얗게 터진 화면에서 바로 지지직거리는 TV로 넘어간다
+        tvBlack.color = new Color(0f, 0f, 0f, 0f);
+        var ticker = StartCoroutine(TvTick());
+        for (int i = 0; i < montageShots.Length; i++)
+        {
+            var shot = montageShots[i];
+            if (shot == null) continue;
+            cam.transform.SetPositionAndRotation(shot.position, shot.rotation);
+            // 지지직 → 화면
+            yield return Ramp(v => noiseAmount = v, 1f, noiseBase, staticTime);
+            yield return new WaitForSeconds(Mathf.Max(0f, shotTime - staticTime * 2f));
+            if (i == montageShots.Length - 1) break;
+            // 화면 → 지지직(다음 방)
+            yield return Ramp(v => noiseAmount = v, noiseBase, 1f, staticTime);
+        }
+        // 마지막 방은 검게 천천히 사라진다. 노이즈도 같이 꺼진다.
+        // UI는 선형 색공간에서 섞이므로 보이는 밝기가 고르게 줄도록 알파 = 1 - (1-v)^2.2.
+        yield return Ramp(v => { tvBlack.color = new Color(0f, 0f, 0f, 1f - Mathf.Pow(1f - v, 2.2f)); noiseAmount = noiseBase * (1f - v); }, 0f, 1f, tvFinalFade);
+        StopCoroutine(ticker);
+        tvScreen.enabled = false; tvNoise.enabled = false; tvBand.enabled = false; tvCounter.enabled = false;
+        yield return new WaitForSeconds(0.8f);
+        var text = Subtitle.Create(tvCanvas.transform, "FinalSubtitle");
+        Subtitle.PlayVoice(finalVoice, cam.transform);
+        yield return Subtitle.Show(text, finalLine, 0.8f, finalLineHold);
+    }
+
+    IEnumerator Ramp(System.Action<float> set, float from, float to, float time)
+    {
+        for (float t = 0f; t < time; t += Time.deltaTime) { set(Mathf.Lerp(from, to, t / time)); yield return null; }
+        set(to);
+    }
+
+    // 매 프레임: 노이즈를 새로 뿌리고, 화면을 살짝 흔들고, 트래킹 띠를 내리고, 테이프 카운터를 올린다.
+    IEnumerator TvTick()
+    {
+        var px = new Color32[NoiseW * NoiseH];
+        var screenRt = (RectTransform)tvScreen.transform;
+        while (true)
+        {
+            // UI는 선형 색공간에서 섞여 흰 점이 실제보다 훨씬 밝게 보인다. 보이는 세기(p)를 알파 = p^2.2로 바꿔 넣는다.
+            float amount = Mathf.Clamp01(noiseAmount);
+            for (int i = 0; i < px.Length; i++)
+            {
+                float g = Random.value;
+                byte gb = (byte)(g * 255f);
+                px[i] = new Color32(gb, gb, gb, (byte)(Mathf.Pow(amount * (0.3f + 0.7f * g), 2.2f) * 255f));
+            }
+            noiseTex.SetPixels32(px); noiseTex.Apply(false);
+            float jitter = Random.value < 0.08f ? Random.Range(-6f, 6f) : Random.Range(-1f, 1f);
+            screenRt.anchoredPosition = new Vector2(jitter, 0f);
+            bandY = Mathf.Repeat(bandY + Time.deltaTime * 0.12f, 1.3f);
+            var band = (RectTransform)tvBand.transform;
+            band.anchorMin = new Vector2(0f, Mathf.Clamp01(1.1f - bandY)); band.anchorMax = new Vector2(1f, Mathf.Clamp01(1.18f - bandY));
+            band.offsetMin = band.offsetMax = Vector2.zero; // TV 화면 밖으로 삐져나오지 않게
+            tvBand.uvRect = new Rect(Random.value, Random.value, 1f, 0.1f);
+            tapeTime += Time.deltaTime;
+            int s = (int)tapeTime;
+            tvCounter.text = $"PLAY\n{s / 3600}:{s / 60 % 60:00}:{s % 60:00}";
+            yield return null;
+        }
+    }
+
+    void BuildTv()
+    {
+        tvCanvas = new GameObject("VhsTvCanvas", typeof(RectTransform));
+        var canvas = tvCanvas.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 200; // 페이드 화면(100) 위
+        var scaler = tvCanvas.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920, 1080); scaler.matchWidthOrHeight = 1f;
+
+        var bg = NewUi<Image>("Black", tvCanvas.transform);
+        Stretch(bg.rectTransform); bg.color = Color.black;
+
+        // 4:3 TV 화면(가운데). 크기는 화면 높이 기준.
+        var frame = new GameObject("Tv", typeof(RectTransform)).GetComponent<RectTransform>();
+        frame.SetParent(tvCanvas.transform, false);
+        frame.anchorMin = frame.anchorMax = new Vector2(0.5f, 0.5f);
+        float h = 1080f * tvHeight; frame.sizeDelta = new Vector2(h * 4f / 3f, h);
+
+        tvRt = new RenderTexture(640, 480, 24) { name = "VhsTv" };
+        cam.targetTexture = tvRt;
+        tvScreen = NewUi<RawImage>("Screen", frame); Stretch(tvScreen.rectTransform);
+        tvScreen.texture = tvRt; tvScreen.color = new Color(0.93f, 0.95f, 1f);
+
+        // 주사선: 1x4 텍스처를 세로로 240번 반복
+        var scan = new Texture2D(1, 4, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Repeat, filterMode = FilterMode.Point };
+        scan.SetPixels32(new[] { new Color32(0, 0, 0, 0), new Color32(0, 0, 0, 0), new Color32(0, 0, 0, 90), new Color32(0, 0, 0, 90) }); scan.Apply();
+        var lines = NewUi<RawImage>("Scanlines", frame); Stretch(lines.rectTransform);
+        lines.texture = scan; lines.uvRect = new Rect(0, 0, 1, 240);
+
+        noiseTex = new Texture2D(NoiseW, NoiseH, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Repeat };
+        tvNoise = NewUi<RawImage>("Noise", frame); Stretch(tvNoise.rectTransform); tvNoise.texture = noiseTex;
+        tvBand = NewUi<RawImage>("TrackingBand", frame); tvBand.texture = noiseTex; tvBand.color = new Color(1f, 1f, 1f, 0.6f);
+
+        tvCounter = NewUi<Text>("Counter", frame);
+        var cr = tvCounter.rectTransform; cr.anchorMin = new Vector2(0.05f, 0.75f); cr.anchorMax = new Vector2(0.5f, 0.95f); cr.offsetMin = cr.offsetMax = Vector2.zero;
+        tvCounter.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        tvCounter.fontSize = 34; tvCounter.alignment = TextAnchor.UpperLeft; tvCounter.color = new Color(0.9f, 0.95f, 0.9f, 0.85f);
+        tvCounter.verticalOverflow = VerticalWrapMode.Overflow;
+
+        tvBlack = NewUi<Image>("FadeToBlack", frame); Stretch(tvBlack.rectTransform);
+    }
+
+    static T NewUi<T>(string name, Transform parent) where T : Graphic
+    {
+        var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(T));
+        go.transform.SetParent(parent, false);
+        var g = go.GetComponent<T>(); g.raycastTarget = false;
+        return g;
+    }
+
+    static void Stretch(RectTransform rt) { rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one; rt.offsetMin = rt.offsetMax = Vector2.zero; }
 
     void Update()
     {
@@ -173,7 +323,13 @@ public class HiddenEnding : MonoBehaviour
             if (fader != null) yield return StartCoroutine(fader.FadeOut(wakeFadeTime));
         }
 
-        // 7) 지나온 방들이 하나씩 떠올랐다 사라진다(하얀 화면 사이로).
+        // 7) 지나온 방들. 비디오테이프 모드면 옛날 TV 화면으로, 아니면 하얀 화면 사이로 하나씩.
+        if (vhsMontage)
+        {
+            yield return StartCoroutine(VhsMontage());
+            Stage = 2;
+            yield break;
+        }
         for (int i = 0; i < montageShots.Length; i++)
         {
             var shot = montageShots[i];

@@ -198,7 +198,8 @@ public static partial class GreyboxGraphicsPass
     /// </summary>
     static GameObject BuildPeepFigure(Transform parent, Transform anchor)
     {
-        var skin = Lit("GB_Peep_Figure", m => Plain(m, new Color(0.93f, 0.93f, 0.95f), 0.32f));
+        // 2026-11-19: 흰색이면 밝은 컴퓨터 속 하늘과 섞여 알 모양 덩어리로만 보였다. 거의 검게 해서 하늘·풀밭 앞의 실루엣으로 읽히게 한다.
+        var skin = Lit("GB_Peep_Figure", m => Plain(m, new Color(0.035f, 0.035f, 0.045f), 0.15f));
         var g = new GameObject("Peephole_Figure").transform;
         g.SetParent(parent, true);
         g.SetPositionAndRotation(anchor.position, anchor.rotation);
@@ -214,7 +215,7 @@ public static partial class GreyboxGraphicsPass
             var go = Prim(PrimitiveType.Sphere, g, n, W(c), s, skin, LComputer);
             go.transform.rotation = anchor.rotation * Quaternion.Euler(euler);
         }
-        Vector3 hip = new Vector3(0f, 2.2f, 2.0f), chest = new Vector3(0f, 1.98f, 1.3f), neck = new Vector3(0.05f, 1.76f, 1.08f);
+        Vector3 hip = new Vector3(0f, 2.2f, 2.0f), chest = new Vector3(0f, 1.98f, 1.3f), neck = new Vector3(0.05f, 1.8f, 1.2f);
         // 다리: 문에서 2m 떨어져 선 아주 긴 두 다리
         Limb("Leg_L", new Vector3(-0.2f, 0.05f, 2.15f), hip + new Vector3(-0.12f, 0f, 0f), 0.11f);
         Limb("Leg_R", new Vector3(0.2f, 0.05f, 2.05f), hip + new Vector3(0.12f, 0f, 0f), 0.11f);
@@ -223,8 +224,9 @@ public static partial class GreyboxGraphicsPass
         Limb("Torso", hip, chest, 0.3f);
         Ball("Chest", chest, new Vector3(0.46f, 0.3f, 0.3f), new Vector3(-40f, 0f, 0f));
         Limb("Neck", chest, neck, 0.08f);
-        // 머리: 얼굴 없는 길쭉한 머리, 렌즈 앞 약 0.7m에서 고개를 갸웃한다(너무 붙이면 렌즈를 가린 얼룩으로만 보였다)
-        Ball("Head", new Vector3(0.1f, 1.6f, 0.95f), new Vector3(0.27f, 0.4f, 0.29f), new Vector3(-25f, 0f, 18f));
+        // 머리: 얼굴 없는 길쭉한 머리, 렌즈 앞 약 0.95m에서 고개를 갸웃한다(너무 붙이면 렌즈를 가린 얼룩으로만 보였다).
+        // 2026-11-19 실루엣으로 바꾼 뒤 0.7m에서는 화면 가운데를 큰 알처럼 가려서, 조금 뒤로 빼고 작게 해 어깨·팔이 같이 보이게 했다.
+        Ball("Head", new Vector3(0.1f, 1.66f, 1.17f), new Vector3(0.22f, 0.34f, 0.24f), new Vector3(-25f, 0f, 18f));
         // 왼팔: 무릎 아래까지 늘어진다
         Vector3 shL = chest + new Vector3(-0.26f, 0.02f, 0.02f), elL = new Vector3(-0.45f, 1.1f, 1.4f), haL = new Vector3(-0.4f, 0.3f, 1.35f);
         Limb("Arm_L_Upper", shL, elL, 0.075f);
