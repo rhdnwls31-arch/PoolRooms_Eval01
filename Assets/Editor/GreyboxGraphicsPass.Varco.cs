@@ -51,6 +51,68 @@ public static partial class GreyboxGraphicsPass
         return true;
     }
 
+    // ---------------------------------------------------------------- 볼록렌즈 인외의 윗몸(가라앉은 도시 창 안)
+    // 프리팹 원점(발밑) 기준으로 굽고, 꼭짓점이 모두 y > 1.35m인 삼각형만 남긴다(머리·어깨·윗팔). 노멀맵도 돌려준다.
+    static UnityEngine.Mesh PeepFigureBust(out Texture normal)
+    {
+        normal = null;
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PeepFigurePrefab);
+        if (prefab == null) return null;
+        var mf = prefab.GetComponentInChildren<MeshFilter>();
+        var srcMat = mf.GetComponent<MeshRenderer>().sharedMaterial;
+        if (srcMat != null && srcMat.HasProperty("_NormalMap")) normal = srcMat.GetTexture("_NormalMap");
+        const string path = "Assets/VARCO/BlueCorridor/Models/VAR_BlueCorridor_PeepholeFigure_Bust.asset";
+        var cached = AssetDatabase.LoadAssetAtPath<UnityEngine.Mesh>(path);
+        if (cached != null) return cached;
+
+        var src = mf.sharedMesh;
+        var M = prefab.transform.worldToLocalMatrix * mf.transform.localToWorldMatrix;
+        var v = src.vertices; var n = src.normals; var t = src.tangents;
+        for (int i = 0; i < v.Length; i++) v[i] = M.MultiplyPoint3x4(v[i]);
+        for (int i = 0; i < n.Length; i++) n[i] = M.MultiplyVector(n[i]).normalized;
+        for (int i = 0; i < t.Length; i++) { var d = M.MultiplyVector(t[i]).normalized; t[i] = new Vector4(d.x, d.y, d.z, t[i].w); }
+        var tri = src.triangles; var keep = new System.Collections.Generic.List<int>();
+        for (int i = 0; i < tri.Length; i += 3)
+            if (v[tri[i]].y > 1.35f && v[tri[i + 1]].y > 1.35f && v[tri[i + 2]].y > 1.35f) keep.AddRange(new[] { tri[i], tri[i + 1], tri[i + 2] });
+        var m = new UnityEngine.Mesh { name = "VAR_BlueCorridor_PeepholeFigure_Bust", indexFormat = src.indexFormat };
+        m.vertices = v; m.normals = n; m.tangents = t; m.uv = src.uv;
+        m.SetTriangles(keep, 0); m.RecalculateBounds();
+        AssetDatabase.CreateAsset(m, path); AssetDatabase.SaveAssets();
+        return m;
+    }
+
+    // 윗몸 하나를 뼈 두 개(몸통 = 원점, 머리 = 목 PeepNeck)로 감싼 스킨 메쉬. 2026-11-19: 삼각형을 잘라 머리를 떼니
+    // 가슴·목 쪽에 구멍이 보였다(사용자 피드백) → 자르지 않고, 목을 따라 머리 뼈 가중치를 0 → 1로 부드럽게 올려 목만 휘게 한다.
+    // 이 모델은 허리를 숙여 머리가 앞으로 매달려 있다(정수리 = +Z, 얼굴 = -Y). 가중치: z 0.22 → 0.36에서 0 → 1(목·머리만).
+    // 목 = 머리와 몸통이 맞닿는 꼭짓점들의 가운데(측정값).
+    public static readonly Vector3 PeepNeck = new Vector3(-0.02f, 2.171f, 0.227f);
+    static UnityEngine.Mesh PeepFigureSkinnedBust(out Texture normal)
+    {
+        var bust = PeepFigureBust(out normal);
+        if (bust == null) return null;
+        const string path = "Assets/VARCO/BlueCorridor/Models/VAR_BlueCorridor_PeepholeFigure_BustSkinned.asset";
+        var cached = AssetDatabase.LoadAssetAtPath<UnityEngine.Mesh>(path);
+        if (cached != null) return cached;
+
+        var v = bust.vertices;
+        var m = new UnityEngine.Mesh { name = "VAR_BlueCorridor_PeepholeFigure_BustSkinned", indexFormat = bust.indexFormat };
+        m.vertices = v; m.normals = bust.normals; m.tangents = bust.tangents; m.uv = bust.uv;
+        m.SetTriangles(bust.triangles, 0);
+        var bw = new BoneWeight[v.Length];
+        for (int i = 0; i < v.Length; i++)
+        {
+            float t = Mathf.Clamp01((v[i].z - 0.22f) / 0.14f);
+            float w = v[i].y > 1.95f ? t * t * (3f - 2f * t) : 0f;
+            bw[i] = new BoneWeight { boneIndex0 = 0, weight0 = 1f - w, boneIndex1 = 1, weight1 = w };
+        }
+        m.boneWeights = bw;
+        // 뼈 0 = 메쉬와 같은 자리(단위 행렬), 뼈 1 = 목. 메쉬 좌표 = 인외 원점(발밑) 기준.
+        m.bindposes = new[] { Matrix4x4.identity, Matrix4x4.Translate(-PeepNeck) };
+        m.RecalculateBounds();
+        AssetDatabase.CreateAsset(m, path); AssetDatabase.SaveAssets();
+        return m;
+    }
+
     // ---------------------------------------------------------------- 브라운관 TV 화면: 유리 모양을 따라 만든 메쉬
     // 평평한 네모 판을 유리 앞에 띄우면 모서리가 테두리 위로 튀어나와 티가 났다(2026-11-19 사용자 피드백).
     // 그래서 모델 유리를 앞(+Z)에서 쏘아 표면을 따라가는 둥근 모서리 메쉬를 만든다(유리 위 4mm). CRTTV 프리팹 원점 기준.

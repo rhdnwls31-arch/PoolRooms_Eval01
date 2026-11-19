@@ -6,7 +6,7 @@ using UnityEngine.Rendering.HighDefinition;
 // 2026-11-18 가라앉은 집들의 도시(사용자 요청): 컴퓨터 속 → 도시 → 천사 방.
 // 컴퓨터 화면 속으로 들어가면, 마른 수영장 타일로 지은 거대한 도시(바닥 60×60m, 높이 80m)다.
 // 옅은 하늘색 타일 집들이 삐뚤게 쌓여 탑이 되고, 위는 격자 유리 채광창이다. 처음엔 물이 한 방울도 없다.
-// 이상한 점(§4-1): 바닥층 집 하나의 창 안만 천장까지 물이 차 있고, 플라밍고 튜브가 그 천장에 눌려 떠 있다.
+// 이상한 점(§4-1): 바닥층 집 하나의 창 안만 천장까지 물이 차 있고, 그 물속에서 검은 인외가 이쪽을 내려다본다(2026-11-19, 예전엔 플라밍고 튜브).
 // 찾으면 배수구에서 물이 차올라(FloodRise) 도시 전체가 물 밑이 된다. 다 차고 그 집을 안 볼 때 집 문이 열리고,
 // 문 안의 빛으로 들어가면 천사 방(하늘)으로 옮겨진다. 다른 게임의 맵은 따라 하지 않고 분위기와 장치만 빌렸다.
 // 모두 그레이박스 더미다. 나중에 VARCO 3D 모델로 바꾼다.
@@ -54,8 +54,6 @@ public static partial class GreyboxGraphicsPass
         var waterIn = Lit("GB_City_WindowWaterBack", m => Emissive(m, new Color(0.25f, 0.7f, 0.82f), 160f * K));
         var waterFront = Transparent("GB_City_WindowWater", new Color(0.35f, 0.78f, 0.9f, 0.45f), 0.97f, 40f * K);
         var water = Transparent("GB_City_Water", new Color(0.3f, 0.7f, 0.8f, 0.55f), 0.97f, 20f * K);
-        var pink = Lit("GB_City_Flamingo", m => Plain(m, new Color(1f, 0.55f, 0.68f), 0.5f));
-        var beak = Lit("GB_City_FlamingoBeak", m => Plain(m, new Color(0.15f, 0.15f, 0.15f), 0.4f));
 
         // ---- 껍데기: 타일 벽 네 개(80m) + 바닥 + 격자 유리 채광창
         var shell = Group(gen, "Shell");
@@ -142,24 +140,79 @@ public static partial class GreyboxGraphicsPass
         Box(odd, "Frame_L", O(-bw / 2 - 0.06f, 0f, bd / 2), new Vector3(0.12f, bh, bd), ctTrim, LCity);
         Box(odd, "Frame_R", O(bw / 2 + 0.06f, 0f, bd / 2), new Vector3(0.12f, bh, bd), ctTrim, LCity);
         Box(odd, "Sill", O(0f, -bh / 2 - 0.16f, bd / 2 + 0.08f), new Vector3(bw + 0.4f, 0.08f, bd + 0.16f), ctTrim, LCity);
-        // 플라밍고 튜브(창 안 천장에 눌림, 고개는 아래로)
-        var fl = new GameObject("Flamingo").transform;
-        fl.SetParent(odd, true);
-        fl.position = O(0.1f, bh / 2 - 0.2f, 0.3f);
-        Prim(PrimitiveType.Sphere, fl, "Ring", O(0.1f, bh / 2 - 0.18f, 0.3f), new Vector3(0.95f, 0.26f, 0.42f), pink, LCity);
-        Prim(PrimitiveType.Cylinder, fl, "Neck", O(-0.42f, bh / 2 - 0.42f, 0.3f), new Vector3(0.09f, 0.22f, 0.09f), pink, LCity, false, new Vector3(0f, 0f, -20f));
-        Prim(PrimitiveType.Sphere, fl, "Head", O(-0.5f, bh / 2 - 0.66f, 0.3f), new Vector3(0.2f, 0.18f, 0.18f), pink, LCity);
-        Box(fl, "Beak", O(-0.6f, bh / 2 - 0.74f, 0.3f), new Vector3(0.12f, 0.05f, 0.05f), beak, LCity, false, new Vector3(0f, 0f, 30f));
+        // 2026-11-19 사용자 요청: 플라밍고 튜브 대신 볼록렌즈를 들여다보던 검은 인외(VARCO PeepholeFigure)가 물 찬 창 안에서 이쪽을 내려다본다.
+        // 집(Left)은 속이 찬 상자라 인외는 벽 안에 서 있고, 앞으로 10도 숙인 윗몸만 창 안 물속으로 나온다(아랫몸은 벽에 가려진다).
+        // 프리팹: 키 2.4m(숙인 자세), 얼굴은 발보다 0.42m 앞·2.26m 높이, 가장 앞은 0.58m. 숙이면 가장 앞이 발보다 약 0.95m 앞.
+        // 첫 시도(통째로 벽 안에 세우기)는 고개를 숙여 정수리만 보였고 모델이 밝은 회색이었다 →
+        // 윗몸(어깨 위)만 떼어 뒤로 젖혀 얼굴이 창 밖을 보게 하고, 거의 검은 재질로 밝은 물 앞의 실루엣이 되게 한다.
+        var bust = PeepFigureBust(out var peepNormal);
+        if (bust != null)
+        {
+            var figMat = Lit("GB_City_WindowFigure", m =>
+            {
+                Plain(m, new Color(0.03f, 0.03f, 0.035f), 0.35f);
+                if (peepNormal != null) { m.SetTexture("_NormalMap", peepNormal); m.EnableKeyword("_NORMALMAP"); }
+            });
+            // 2026-11-19 사용자 요청 "창틀을 뚫고 나온 건": 창 안에 갇혀 있던 자세(-28도 젖힘) → 앞으로 숙여(+figPitch)
+            // 두 손으로 창턱(유리 밖)을 짚고 머리·어깨가 물 밖으로 쑥 나와 아래의 플레이어를 내려다본다. 물 면이 몸을 가로지른다.
+            // 이 모델은 머리가 손보다 1m쯤 앞에 있어서, 손을 창턱에 두면 머리는 유리 밖 약 1m에 온다.
+            // 2026-11-19 "조금만 더 올리자": 손은 창턱에 둔 채 덜 숙여(20 → 5도) 등이 창 위쪽까지 올라오게 한다.
+            const float figScale = 1.25f, figPitch = 5f;
+            var rot = Quaternion.Euler(figPitch, 0f, 0f);
+            var bv = bust.vertices; // 메쉬는 몸 전체 꼭짓점을 그대로 갖고 있어서 삼각형이 쓰는 것만 센다
+            float minY = float.PositiveInfinity, minX = float.PositiveInfinity, maxX = float.NegativeInfinity;
+            foreach (int i in bust.triangles) { var p = rot * (bv[i] * figScale); minY = Mathf.Min(minY, p.y); minX = Mathf.Min(minX, p.x); maxX = Mathf.Max(maxX, p.x); }
+            float handZ = float.NegativeInfinity; // 손(가장 낮은 12cm)의 가장 앞
+            foreach (int i in bust.triangles) { var p = rot * (bv[i] * figScale); if (p.y < minY + 0.12f) handZ = Mathf.Max(handZ, p.z); }
+            float sillTop = -bh / 2 - 0.12f;
+            var fig = new GameObject("Window_Figure").transform;
+            fig.SetParent(odd, false);
+            fig.localScale = Vector3.one * figScale;
+            fig.rotation = rot;
+            fig.position = O(-0.1f - (minX + maxX) / 2, sillTop + 0.01f - minY, bd + 0.1f - handZ);
+            // 머리만 목을 축으로 플레이어를 쳐다보게 한다(LookAtPlayer). 자르지 않은 스킨 메쉬라 목이 휘기만 하고 몸에 구멍이 나지 않는다.
+            var skinned = PeepFigureSkinnedBust(out _);
+            if (skinned != null)
+            {
+                var pivot = new GameObject("HeadPivot").transform; // 머리 뼈
+                pivot.SetParent(fig, false);
+                pivot.localPosition = PeepNeck;
+                var body = new GameObject("Body");
+                body.transform.SetParent(fig, false);
+                var smr = body.AddComponent<SkinnedMeshRenderer>();
+                smr.sharedMesh = skinned; smr.sharedMaterial = figMat; smr.renderingLayerMask = LCity;
+                smr.bones = new[] { fig, pivot }; smr.rootBone = fig;
+                smr.localBounds = new Bounds(skinned.bounds.center, skinned.bounds.size + Vector3.one * 0.6f); // 머리가 돌아도 잘리지 않게
+                smr.shadowCastingMode = ShadowCastingMode.Off;
+                var look = pivot.gameObject.AddComponent<LookAtPlayer>();
+                look.faceAxis = Vector3.down; look.maxAngle = 60f; look.range = 18f; // 스킨이라 목이 휘기만 해서 60도까지 돌려도 갈라지지 않는다 look.turnSpeed = 1.6f;
+            }
+            else MeshPart(fig, "Body", bust, figMat, LCity, 1f).GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+        }
+        else
+        {
+            // 프리팹이 없으면 예전 플라밍고 튜브(창 안 천장에 눌림, 고개는 아래로)
+            var pink = Lit("GB_City_Flamingo", m => Plain(m, new Color(1f, 0.55f, 0.68f), 0.5f));
+            var beak = Lit("GB_City_FlamingoBeak", m => Plain(m, new Color(0.15f, 0.15f, 0.15f), 0.4f));
+            var fl = new GameObject("Flamingo").transform;
+            fl.SetParent(odd, true);
+            fl.position = O(0.1f, bh / 2 - 0.2f, 0.3f);
+            Prim(PrimitiveType.Sphere, fl, "Ring", O(0.1f, bh / 2 - 0.18f, 0.3f), new Vector3(0.95f, 0.26f, 0.42f), pink, LCity);
+            Prim(PrimitiveType.Cylinder, fl, "Neck", O(-0.42f, bh / 2 - 0.42f, 0.3f), new Vector3(0.09f, 0.22f, 0.09f), pink, LCity, false, new Vector3(0f, 0f, -20f));
+            Prim(PrimitiveType.Sphere, fl, "Head", O(-0.5f, bh / 2 - 0.66f, 0.3f), new Vector3(0.2f, 0.18f, 0.18f), pink, LCity);
+            Box(fl, "Beak", O(-0.6f, bh / 2 - 0.74f, 0.3f), new Vector3(0.12f, 0.05f, 0.05f), beak, LCity, false, new Vector3(0f, 0f, 30f));
+        }
         // 물 기포 몇 개
         for (int i = 0; i < 5; i++)
             Prim(PrimitiveType.Sphere, odd, "Bubble", O(-0.6f + i * 0.3f, -0.5f + (i % 3) * 0.28f, 0.25f), Vector3.one * (0.05f + (i % 2) * 0.03f), waterFront, LCity);
         var front = Box(odd, "WaterFront", O(0f, 0f, bd - 0.02f), new Vector3(bw, bh, 0.03f), waterFront, LCity);
         var room = new Bounds(new Vector3(CtCx, CtH / 2, CtCz), new Vector3(w, CtH, d));
         var gz = AddGaze(odd.gameObject, "CityFloodedWindow", gate, room);
-        gz.gazeRenderers = new[] { front.GetComponent<Renderer>() };
+        // 2026-11-19 사용자 결정: 창이 깜빡이는 모션은 이상해서 뺀다. 인외(창 밖으로 나온 몸 포함)나 창을 보고 있으면 물이 차오른다.
+        var figR = odd.Find("Window_Figure/Body")?.GetComponent<Renderer>();
+        gz.gazeRenderers = figR != null ? new[] { front.GetComponent<Renderer>(), figR } : new[] { front.GetComponent<Renderer>() };
         gz.maxDistance = 10f; gz.dwellTime = 1.5f; gz.boundsPadding = 0.15f;
-        gz.blinkRenderers = new[] { front.GetComponent<Renderer>(), odd.Find("Back").GetComponent<Renderer>() };
-        gz.blinkCount = 2; gz.blinkOff = 0.15f;
+        gz.blinkRenderers = new Renderer[0]; gz.blinkCount = 0;
         gz.notifyDelay = FloodTime + 2f; // 물이 다 찬 뒤에 문이 열린다
 
         // ---- 계단 + 동쪽 벽 산책로(6m) + 다이빙대 + 늘어진 사다리. 난간에는 구명 튜브.

@@ -151,6 +151,68 @@ public static partial class GreyboxGraphicsPass
         return root;
     }
 
+    // 흐르는 물 무늬: 세로 줄무늬(가는 물줄기 여러 가닥) + 위아래로 끊기는 덩어리. 가로·세로 모두 이어진다(정수 주파수).
+    // 알파 = 물의 두께. WaterFlow가 이 무늬를 위로 흘린다(2026-11-19: 원기둥이 "물기둥"처럼 보인다는 피드백).
+    static Texture2D FlowTexture()
+    {
+        const int size = 256;
+        string path = $"{TexDir}/GB_Shower_Flow.png";
+        var px = new Color[size * size];
+        float S(float x) => 0.5f + 0.5f * Mathf.Sin(2f * Mathf.PI * x);
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float u = (x + 0.5f) / size, v = (y + 0.5f) / size;
+                float streak = Mathf.Pow(S(u * 7f + 0.3f * Mathf.Sin(2f * Mathf.PI * u * 3f) + 0.08f * Mathf.Sin(2f * Mathf.PI * v)), 6f)
+                             + 0.6f * Mathf.Pow(S(u * 13f + 0.17f), 10f)
+                             + 0.35f * Mathf.Pow(S(u * 23f + 0.41f + 0.05f * Mathf.Sin(2f * Mathf.PI * v * 2f)), 14f);
+                float pulse = 0.5f + 0.5f * S(v * 2f + 0.5f * Mathf.Sin(2f * Mathf.PI * u * 5f));
+                float a = Mathf.Clamp01(0.12f + 0.8f * streak * pulse);
+                px[y * size + x] = new Color(0.85f + 0.15f * a, 0.95f, 1f, a);
+            }
+        System.IO.Directory.CreateDirectory(TexDir);
+        var t = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        t.SetPixels(px); t.Apply();
+        System.IO.File.WriteAllBytes(path, t.EncodeToPNG());
+        Object.DestroyImmediate(t);
+        AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+        var imp = (TextureImporter)AssetImporter.GetAtPath(path);
+        imp.wrapMode = TextureWrapMode.Repeat; imp.sRGBTexture = true; imp.alphaIsTransparency = true; imp.mipmapEnabled = true;
+        imp.SaveAndReimport();
+        return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+    }
+
+    // 천장의 젖은 얼룩: 가운데가 진하고 가장자리로 갈수록 흐려지는 불규칙한 원 + 옅은 물결 테. 알파 = 젖은 정도.
+    static Texture2D WetStainTexture()
+    {
+        const int size = 256;
+        string path = $"{TexDir}/GB_Shower_CeilingWet.png";
+        var px = new Color[size * size];
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float dx = (x + 0.5f) / size * 2f - 1f, dy = (y + 0.5f) / size * 2f - 1f;
+                float ang = Mathf.Atan2(dy, dx), d = Mathf.Sqrt(dx * dx + dy * dy);
+                float edge = 0.7f + 0.06f * Mathf.Sin(ang * 3f + 0.7f) + 0.035f * Mathf.Sin(ang * 7f + 2.1f) + 0.015f * Mathf.Sin(ang * 13f);
+                // 흐릿한 가장자리. Mathf.SmoothStep은 GLSL smoothstep이 아니라(두 값 사이 보간) 직접 계산한다.
+                float s = Mathf.Clamp01((d - edge * 0.2f) / (edge * 0.8f));
+                float body = 1f - s * s * (3f - 2f * s);
+                float ring = 0.12f * Mathf.Exp(-Mathf.Pow((d - edge * 0.85f) / 0.06f, 2f)); // 옅은 마른 자국 테
+                float a = Mathf.Clamp01(0.85f * body + ring);
+                px[y * size + x] = new Color(1f, 1f, 1f, a);
+            }
+        System.IO.Directory.CreateDirectory(TexDir);
+        var t = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        t.SetPixels(px); t.Apply();
+        System.IO.File.WriteAllBytes(path, t.EncodeToPNG());
+        Object.DestroyImmediate(t);
+        AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+        var imp = (TextureImporter)AssetImporter.GetAtPath(path);
+        imp.wrapMode = TextureWrapMode.Clamp; imp.sRGBTexture = true; imp.alphaIsTransparency = true; imp.mipmapEnabled = true;
+        imp.SaveAndReimport();
+        return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+    }
+
     // ---------------------------------------------------------------- 잠긴 샤워실
     static void BuildShower()
     {
@@ -161,6 +223,31 @@ public static partial class GreyboxGraphicsPass
         var metal = Lit("GB_Shower_Chrome", m => Plain(m, new Color(0.75f, 0.77f, 0.78f), 0.85f, 1f));
         var water = Transparent("GB_Shower_Water", new Color(0.5f, 0.78f, 0.84f, 0.35f), 0.97f);
         var stream = Transparent("GB_Shower_Stream", new Color(0.85f, 0.95f, 1f, 0.75f), 0.95f, 6f);
+        var flowTex = FlowTexture();
+        var flow = Lit("GB_Shower_FlowUp", m =>
+        {
+            Plain(m, new Color(0.9f, 0.97f, 1f, 1f), 0.95f);
+            m.SetTexture("_BaseColorMap", flowTex); m.SetTextureScale("_BaseColorMap", new Vector2(1f, 3f));
+            m.SetTexture("_EmissiveColorMap", flowTex); m.SetTextureScale("_EmissiveColorMap", new Vector2(1f, 3f));
+            m.SetColor("_EmissiveColor", new Color(0.85f, 0.95f, 1f) * 5f); // 어두운 샤워실에서도 물줄기가 읽히게 살짝
+            m.SetFloat("_UseEmissiveIntensity", 0f); m.SetFloat("_EmissiveExposureWeight", 1f);
+            m.SetFloat("_SurfaceType", 1f); m.SetFloat("_BlendMode", 0f);
+            m.SetFloat("_ZWrite", 0f); m.SetFloat("_TransparentZWrite", 0f);
+            m.SetFloat("_AlphaCutoffEnable", 0f); m.SetFloat("_DoubleSidedEnable", 1f);
+            m.renderQueue = (int)RenderQueue.Transparent;
+        });
+        var wetTex = WetStainTexture();
+        var wet = Lit("GB_Shower_CeilingWet", m =>
+        {
+            Plain(m, new Color(0.3f, 0.37f, 0.4f, 1f), 0.55f);
+            m.SetTexture("_BaseColorMap", wetTex);
+            m.SetFloat("_SurfaceType", 1f); m.SetFloat("_BlendMode", 0f);
+            // 투명한 곳에서도 반사가 남아 네모 판이 보였다 → 반사도 알파를 따르게
+            m.SetFloat("_EnableBlendModePreserveSpecularLighting", 0f);
+            m.SetFloat("_ZWrite", 0f); m.SetFloat("_TransparentZWrite", 0f);
+            m.SetFloat("_AlphaCutoffEnable", 0f); m.SetFloat("_DoubleSidedEnable", 1f);
+            m.renderQueue = (int)RenderQueue.Transparent;
+        });
         var drain = Lit("GB_Shower_Drain", m => Plain(m, new Color(0.08f, 0.09f, 0.1f), 0.5f, 0.8f));
         var bench = Lit("GB_Shower_Bench", m => Plain(m, new Color(0.55f, 0.42f, 0.3f), 0.35f));
         var mirror = Lit("GB_Shower_Mirror", m => Plain(m, new Color(0.82f, 0.86f, 0.88f), 0.6f, 0.6f)); // 김이 서린 거울
@@ -189,7 +276,7 @@ public static partial class GreyboxGraphicsPass
                 go.transform.SetParent(g, false); go.transform.localPosition = lc; go.transform.localScale = sz;
                 if (e.HasValue) go.transform.localRotation = Quaternion.Euler(e.Value);
                 var r = go.GetComponent<MeshRenderer>(); r.sharedMaterial = m; r.renderingLayerMask = LShower;
-                if (m == stream || m == water) r.shadowCastingMode = ShadowCastingMode.Off;
+                if (m == stream || m == water || m == flow || m == wet) r.shadowCastingMode = ShadowCastingMode.Off;
             }
             // VARCO 샤워기(벽에서 나와 아래로 굽은 팔 + 머리)가 있으면 팔·머리 더미 대신 쓰고, 배관은 그 아래까지 잇는다.
             if (VarcoInto(g, "Shower", "ShowerHead", LShower, new Vector3(0, 2.32f, 0), default, false))
@@ -207,8 +294,29 @@ public static partial class GreyboxGraphicsPass
             if (up)
             {
                 // 배수구에서 물기둥이 천장까지 솟고, 천장에 물이 고여 번진다. 샤워기 머리에서는 물이 나오지 않는다.
-                P(PrimitiveType.Cylinder, "Stream_Up", new Vector3(0, (0.12f + ShH) / 2, 0.36f), new Vector3(0.12f, (ShH - 0.12f) / 2, 0.12f), stream);
-                P(PrimitiveType.Sphere, "CeilingPool", new Vector3(0, ShH - 0.02f, 0.36f), new Vector3(0.9f, 0.05f, 0.9f), stream);
+                // 2026-11-19: 굵은 원기둥 하나는 "물기둥"처럼 보였다 → 위로 흐르는 줄무늬 물줄기 세 가닥(가운데 하나 + 가는 둘)으로.
+                var up3 = new GameObject("Stream_Up").transform; up3.SetParent(g, false);
+                float mid = (0.12f + ShH) / 2, half = (ShH - 0.12f) / 2;
+                var strands = new (string n, Vector3 off, float r, float spd, float tilt)[]
+                {
+                    ("Strand_Core", new Vector3(0f, 0f, 0.36f), 0.075f, 1.6f, 0f),
+                    ("Strand_A", new Vector3(0.035f, 0f, 0.33f), 0.028f, 2.3f, 1.2f),
+                    ("Strand_B", new Vector3(-0.03f, 0f, 0.39f), 0.022f, 2.0f, -1.5f),
+                };
+                for (int k = 0; k < strands.Length; k++)
+                {
+                    var st = strands[k];
+                    var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder); go.name = st.n; Object.DestroyImmediate(go.GetComponent<Collider>());
+                    go.transform.SetParent(up3, false);
+                    go.transform.localPosition = new Vector3(st.off.x, mid, st.off.z);
+                    go.transform.localRotation = Quaternion.Euler(st.tilt, 0f, st.tilt * 0.7f);
+                    go.transform.localScale = new Vector3(st.r, half, st.r);
+                    var r = go.GetComponent<MeshRenderer>(); r.sharedMaterial = flow; r.renderingLayerMask = LShower; r.shadowCastingMode = ShadowCastingMode.Off;
+                    var wf = go.AddComponent<WaterFlow>(); wf.speed = st.spd; wf.phase = k * 0.13f; wf.wobble = k == 0 ? 0.1f : 0.2f;
+                }
+                // 천장에 번진 물: 2026-11-19 납작한 구(줄무늬가 방사형으로 퍼진 원판)가 어색하다는 피드백 →
+                // 천장에 딱 붙은 젖은 얼룩(가장자리가 흐릿하고 불규칙한, 조금 어둡고 반들거리는 자국)으로.
+                P(PrimitiveType.Quad, "CeilingPool", new Vector3(0, ShH - 0.003f, 0.36f), new Vector3(1.1f, 1.1f, 1f), wet, new Vector3(-90f, 0f, 0f));
                 odd = g.gameObject;
             }
         }
