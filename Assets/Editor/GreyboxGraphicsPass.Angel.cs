@@ -142,6 +142,8 @@ public static partial class GreyboxGraphicsPass
         var g = PropGroup(parent, name, pos, 0);
         g.localScale = Vector3.one * scale;
         g.gameObject.AddComponent<FacePlayer>();
+        // 2026-11-19 VARCO 날개 달린 눈: 원점 = 눈알 가운데, 앞(+Z) = 눈동자, 날개 폭 4.5m(scale 1 기준). 있으면 더미 대신 쓴다.
+        if (VarcoInto(g, "Angel", "WingedEye", propLayer, default, default, false)) return g;
 
         // 눈: 가로로 긴 눈알, 붉은 홍채, 검은 동공, 위아래 붉은 눈꺼풀 테
         Part(g, PrimitiveType.Sphere, "Eye", Vector3.zero, new Vector3(1.5f, 0.95f, 0.9f), sclera);

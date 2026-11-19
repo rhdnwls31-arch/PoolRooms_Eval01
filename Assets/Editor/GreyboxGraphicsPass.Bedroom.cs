@@ -66,8 +66,10 @@ public static partial class GreyboxGraphicsPass
             // 사람이 든 침대는 Oddity_BlanketFigure 아래(찾으면 꺼진다), 빈 침대는 처음엔 꺼 두고 찾은 순간 켠다(BuildBlueGimmick의 showOnFound).
             lump = new GameObject("Oddity_BlanketFigure").transform; lump.SetParent(bed, false);
             VarcoInto(lump, "Bedroom", "Bed_BlanketFigure", LBedroom, default, new Vector3(0, 90, 0), false);
-            var empty = VarcoInto(bed, "Bedroom", "Bed_Empty", LBedroom, default, new Vector3(0, 90, 0), true);
+            var empty = VarcoInto(bed, "Bedroom", "Bed_Empty", LBedroom, default, new Vector3(0, 90, 0), false);
             empty.SetActive(false);
+            // 콜라이더는 매트리스 높이까지만: 빈 침대(더 크고 높음)에 맞추면 이불 속 사람을 바라보는 시선을 가려 찾을 수 없었다(2026-11-19).
+            bc.size = new Vector3(2.0f, 0.55f, 1.15f); bc.center = new Vector3(0, 0.275f, 0);
         }
         else
         {
@@ -98,7 +100,6 @@ public static partial class GreyboxGraphicsPass
         PBox(desk, "Leg_L", new Vector3(-0.85f, 0.37f, 0), new Vector3(0.05f, 0.74f, 0.64f), furn);
         PBox(desk, "Monitor", new Vector3(0.1f, 1.02f, 0.12f), new Vector3(0.5f, 0.38f, 0.32f), deep);
         PBox(desk, "Screen", new Vector3(0.1f, 1.03f, -0.045f), new Vector3(0.4f, 0.28f, 0.01f), screenMat);
-        PBox(desk, "Keyboard", new Vector3(0.1f, 0.79f, -0.18f), new Vector3(0.42f, 0.02f, 0.14f), deep);
         for (int i = 0; i < 4; i++) PBox(desk, "Book", new Vector3(-0.62f + i * 0.09f, 0.92f, 0.1f), new Vector3(0.07f, 0.28f + (i % 2) * 0.05f, 0.22f), i % 2 == 0 ? deep : furn);
         PBox(desk, "BookStack", new Vector3(-0.3f, 0.83f, 0.1f), new Vector3(0.26f, 0.1f, 0.2f), deep);
         var chair = new GameObject("Chair").transform; chair.SetParent(props, true); chair.position = new Vector3(45.5f, 0f, BdZ1 - 1.05f);

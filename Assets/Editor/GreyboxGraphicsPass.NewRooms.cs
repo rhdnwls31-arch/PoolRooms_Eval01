@@ -320,14 +320,24 @@ public static partial class GreyboxGraphicsPass
         var rt = TvRenderTexture();
         var screenMat = Lit("GB_Living_TVScreen", m =>
         {
-            Plain(m, Color.black, 0.35f); // 앞의 TV 불빛이 화면에 하얗게 맺히지 않게 덜 반짝이게
+            Plain(m, Color.black, 0f); // 반짝임 없음: 둥근 화면은 앞의 TV 불빛을 하얗게 받아 그림이 바랬다(2026-11-19)
             m.SetTexture("_EmissiveColorMap", rt); m.SetColor("_EmissiveColor", Color.white * 90f);
             m.SetFloat("_UseEmissiveIntensity", 0f); m.SetFloat("_EmissiveExposureWeight", 1f);
         });
-        var screen = crt
-            ? Prim(PrimitiveType.Quad, tv, "Screen", tv.TransformPoint(new Vector3(0.05f, 0.83f, 0.353f)), new Vector3(0.53f, 0.4f, 1f), screenMat, LLiving)
-            : Prim(PrimitiveType.Quad, tv, "Screen", tvPos + new Vector3(0.235f, 0.86f, 0), new Vector3(0.62f, 0.46f, 1f), screenMat, LLiving);
-        screen.transform.rotation = Quaternion.LookRotation(Vector3.left); // 보이는 면(-Z)이 방 쪽(+x)
+        // 브라운관이면 유리 모양(둥근 모서리, 볼록한 면)을 따라 만든 메쉬에 화면을 띄운다(CrtScreenMesh).
+        var crtScreen = crt ? CrtScreenMesh() : null;
+        GameObject screen;
+        if (crtScreen != null)
+        {
+            screen = MeshPart(tv, "Screen", crtScreen, screenMat, LLiving, 1f);
+            screen.transform.localPosition = new Vector3(0, 0.5f, 0); // 받침대 위 TV 원점
+            screen.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+        }
+        else
+        {
+            screen = Prim(PrimitiveType.Quad, tv, "Screen", tvPos + new Vector3(0.235f, 0.86f, 0), new Vector3(0.62f, 0.46f, 1f), screenMat, LLiving);
+            screen.transform.rotation = Quaternion.LookRotation(Vector3.left); // 보이는 면(-Z)이 방 쪽(+x)
+        }
 
         var sofaPos = new Vector3(47.4f, 0f, -118.6f);
         var sofa = new GameObject("Sofa").transform; sofa.SetParent(props, true);

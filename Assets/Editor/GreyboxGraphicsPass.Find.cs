@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 // 2026-11-18 찾기 규칙(기획서 §4-1): 방마다 출구를 벽으로 막아 두고, 그 방의 "이상한 점"을 응시해 찾으면 연다.
 // 이상한 점은 다음 출구를 가리킨다. 모두 그레이박스 더미다. 나중에 VARCO 3D 모델로 바꾼다.
@@ -211,8 +212,22 @@ public static partial class GreyboxGraphicsPass
         if (eye.TryGetComponent<FacePlayer>(out var fp)) Object.DestroyImmediate(fp);
         eye.rotation = Quaternion.LookRotation(gate.wallBounds.center - eye.position, Vector3.up);
         var g = AddGaze(eye.gameObject, "AngelOddEye", gate, room);
-        g.blinkRenderers = new[] { eye.Find("Iris").GetComponent<Renderer>(), eye.Find("Pupil").GetComponent<Renderer>() };
         g.blinkCount = 2; g.blinkOff = 0.3f;
+        g.maxDistance = 9f; // 눈이 6.4m 높이에 떠 있어 6m로는 바로 밑에서만 닿는다
+        if (eye.Find("Iris") == null)
+        {
+            // VARCO 모델(한 덩어리): 눈 전체가 깜빡이고, 판정은 날개를 뺀 눈알 크기의 빈 상자로 한다.
+            var model = eye.GetComponentsInChildren<Renderer>();
+            g.blinkRenderers = model;
+            var core = new GameObject("GazeCore"); core.transform.SetParent(eye, false);
+            core.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f); // 눈알 지름 약 0.9m(scale 1 기준)
+            var mr = core.AddComponent<MeshRenderer>(); core.AddComponent<MeshFilter>().sharedMesh = Resources.GetBuiltinResource<UnityEngine.Mesh>("Cube.fbx");
+            mr.forceRenderingOff = true; mr.shadowCastingMode = ShadowCastingMode.Off; // 보이지 않는 판정용 상자(범위만 쓴다)
+            g.gazeRenderers = new[] { (Renderer)mr };
+            g.boundsPadding = 0.1f;
+            return;
+        }
+        g.blinkRenderers = new[] { eye.Find("Iris").GetComponent<Renderer>(), eye.Find("Pupil").GetComponent<Renderer>() };
         // 날개 끝을 봐도 열리던 것을 막는다(2026-11-18 플레이 피드백): 눈알을 정면으로 겨눠야 찾은 것이다.
         g.gazeRenderers = new[] { eye.Find("Eye").GetComponent<Renderer>(), eye.Find("Iris").GetComponent<Renderer>(), eye.Find("Pupil").GetComponent<Renderer>() };
         g.boundsPadding = 0f;

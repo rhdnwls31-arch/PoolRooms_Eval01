@@ -54,6 +54,8 @@ public class GazeTarget : MonoBehaviour
     public float dropToY;
     [Tooltip("찾은 뒤 hideOnFound/showOnFound를 바꾸기까지 기다리는 시간(초). 섬뜩한 것이 바로 사라지지 않게.")]
     public float hideDelay = 0f;
+    [Tooltip("참이면 hideDelay가 지난 뒤에도 이 대상이 화면에서 벗어날 때까지 기다렸다가 hideOnFound/showOnFound를 바꾼다(보는 앞에서는 안 바뀐다).")]
+    public bool changeWhenUnseen = false;
     [Tooltip("찾은 뒤 출구에 알리기까지 기다리는 시간(초).")]
     public float notifyDelay = 0f;
 
@@ -170,7 +172,7 @@ public class GazeTarget : MonoBehaviour
     {
         Found = true;
         float start = Time.time;
-        if (hideDelay <= 0f) ApplyState(Swapped, true);
+        if (hideDelay <= 0f && !changeWhenUnseen) ApplyState(Swapped, true);
         if (notifyDelay <= 0f && gate != null) gate.MarkVisited(id);
 
         if (dropTarget != null)
@@ -191,9 +193,14 @@ public class GazeTarget : MonoBehaviour
             foreach (var r in blinkRenderers) if (r != null) r.enabled = true;
             yield return new WaitForSeconds(blinkOff * 1.5f);
         }
-        if (hideDelay > 0f)
+        if (hideDelay > 0f || changeWhenUnseen)
         {
             while (Time.time - start < hideDelay) yield return null;
+            if (changeWhenUnseen)
+            {
+                var b = CurrentBounds();
+                while (cam != null && GeometryUtility.TestPlanesAABB(GeometryUtility.CalculateFrustumPlanes(cam), b)) yield return null;
+            }
             ApplyState(Swapped, true);
         }
         if (notifyDelay > 0f)

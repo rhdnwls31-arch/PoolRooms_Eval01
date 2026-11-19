@@ -36,8 +36,10 @@ public static partial class GreyboxGraphicsPass
         for (int i = 0; i < parts.Length; i++) parts[i] = lump.GetChild(i).gameObject;
         gz.hideOnFound = parts;
         var emptyBed = lump.parent.Find("Bed_Empty"); // VARCO 침대일 때만 있다: 사람이 사라지면 빈 침대로 바꾼다
-        if (emptyBed != null) gz.showOnFound = new[] { emptyBed.gameObject };
-        gz.hideDelay = 1.6f;   // 꿈틀한 뒤 꺼지고, 같은 순간 벽에 그림자가 생긴다
+        // 2026-11-19: 보는 앞에서 바뀌면 침대째 사라져 보였다. 꿈틀(깜빡)한 뒤 플레이어가 시선을 돌렸을 때
+        // 사람 든 침대 → 빈 침대로 바꾸고, 같은 순간 벽에 그림자가 생긴다(사용자 결정).
+        gz.hideDelay = 1f;
+        gz.changeWhenUnseen = true;
 
         // ---- 2) 벽의 그림자: 출구 벽의 방 쪽 면에 붙인 반투명 실루엣. 발끝이 바닥에 닿아 있다.
         var shadowMat = Lit("GB_Bedroom_WallShadow", m =>
@@ -61,7 +63,8 @@ public static partial class GreyboxGraphicsPass
         sg.blinkCount = 2; sg.blinkOff = 0.15f;
         sg.hideOnFound = new[] { sil };   // 판정 컴포넌트가 붙은 shadowRoot는 끄지 않는다
         sg.hideDelay = 1f; sg.notifyDelay = 1.3f;
-        gz.showOnFound = new[] { shadowRoot };
+        // 예전에는 여기서 빈 침대를 덮어써 지워 버려서, 찾으면 침대가 통째로 사라졌다(2026-11-19 버그).
+        gz.showOnFound = emptyBed != null ? new[] { emptyBed.gameObject, shadowRoot } : new[] { shadowRoot };
         shadowRoot.SetActive(false);
         EditorUtility.SetDirty(gz); EditorUtility.SetDirty(sg);
 

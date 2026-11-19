@@ -51,6 +51,65 @@ public static partial class GreyboxGraphicsPass
         return true;
     }
 
+    // ---------------------------------------------------------------- 브라운관 TV 화면: 유리 모양을 따라 만든 메쉬
+    // 평평한 네모 판을 유리 앞에 띄우면 모서리가 테두리 위로 튀어나와 티가 났다(2026-11-19 사용자 피드백).
+    // 그래서 모델 유리를 앞(+Z)에서 쏘아 표면을 따라가는 둥근 모서리 메쉬를 만든다(유리 위 4mm). CRTTV 프리팹 원점 기준.
+    // 유리 = 가운데 (0.055, 0.32), 가로 반폭 0.27, 세로 반높이 0.19, 모서리 반지름 0.08. 보는 사람 왼쪽이 모델 +X.
+    static UnityEngine.Mesh CrtScreenMesh()
+    {
+        const string path = "Assets/VARCO/LivingRoom/Models/VAR_LivingRoom_CRTTV_Screen.asset";
+        var cached = AssetDatabase.LoadAssetAtPath<UnityEngine.Mesh>(path);
+        if (cached != null) return cached;
+        var prefab = VarcoPrefab("LivingRoom", "CRTTV");
+        if (prefab == null) return null;
+
+        var probe = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+        probe.transform.position = new Vector3(0f, 400f, 0f);
+        var mf = probe.GetComponentInChildren<MeshFilter>();
+        var col = mf.gameObject.AddComponent<MeshCollider>(); col.sharedMesh = mf.sharedMesh;
+        Physics.SyncTransforms();
+
+        const float cx = 0.055f, cy = 0.32f, hw = 0.27f, hh = 0.19f, r = 0.08f, lift = 0.004f;
+        const int nx = 28, ny = 20;
+        var verts = new Vector3[(nx + 1) * (ny + 1)]; var uvs = new Vector2[verts.Length];
+        for (int j = 0; j <= ny; j++)
+            for (int i = 0; i <= nx; i++)
+            {
+                float u = i / (float)nx, v = j / (float)ny;
+                float x = cx + hw - u * 2f * hw, y = cy - hh + v * 2f * hh; // u 0 = 보는 사람 왼쪽 = +X
+                // 둥근 모서리: 모서리 원 밖의 점은 원 위로 당긴다
+                float qx = Mathf.Abs(x - cx) - (hw - r), qy = Mathf.Abs(y - cy) - (hh - r);
+                if (qx > 0f && qy > 0f && qx * qx + qy * qy > r * r)
+                {
+                    float k = r / Mathf.Sqrt(qx * qx + qy * qy);
+                    x = cx + Mathf.Sign(x - cx) * ((hw - r) + qx * k);
+                    y = cy + Mathf.Sign(y - cy) * ((hh - r) + qy * k);
+                }
+                var o = probe.transform.position + new Vector3(x, y, 1f);
+                float z = Physics.Raycast(o, Vector3.back, out var hit, 2f) ? hit.point.z - probe.transform.position.z : 0.3f;
+                verts[j * (nx + 1) + i] = new Vector3(x, y, z + lift);
+                uvs[j * (nx + 1) + i] = new Vector2(u, v);
+            }
+        Object.DestroyImmediate(probe);
+
+        var tris = new System.Collections.Generic.List<int>();
+        for (int j = 0; j < ny; j++)
+            for (int i = 0; i < nx; i++)
+            {
+                int a = j * (nx + 1) + i, b = a + 1, c = a + nx + 1, d = c + 1;
+                tris.AddRange(new[] { a, c, b, b, c, d });
+            }
+        var m = new UnityEngine.Mesh { name = "VAR_LivingRoom_CRTTV_Screen", vertices = verts, uv = uvs };
+        m.SetTriangles(tris, 0);
+        m.RecalculateNormals();
+        // 앞(+Z)을 보게: 법선이 뒤를 보면 감는 방향을 뒤집는다
+        float nz = 0f; foreach (var n in m.normals) nz += n.z;
+        if (nz < 0f) { for (int t = 0; t < tris.Count; t += 3) (tris[t + 1], tris[t + 2]) = (tris[t + 2], tris[t + 1]); m.SetTriangles(tris, 0); m.RecalculateNormals(); }
+        m.RecalculateTangents(); m.RecalculateBounds();
+        AssetDatabase.CreateAsset(m, path); AssetDatabase.SaveAssets();
+        return m;
+    }
+
     static GameObject MeshPart(Transform parent, string name, UnityEngine.Mesh mesh, Material mat, uint layer, float scale)
     {
         var go = new GameObject(name);
