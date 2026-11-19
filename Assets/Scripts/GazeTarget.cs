@@ -22,6 +22,8 @@ public class GazeTarget : MonoBehaviour
     public float boundsPadding = 0.1f;
     [Tooltip("비워 두면 자식 렌더러 전체로 판정한다. 채우면 이것들만 겨눠야 찾은 것이다(천사 눈: 날개 말고 눈알).")]
     public Renderer[] gazeRenderers = new Renderer[0];
+    [Tooltip("채우면 렌더러 대신 이 빈 오브젝트의 위치·크기(lossyScale)를 판정 범위로 쓴다(한 덩어리 모델에서 일부만 겨누게 할 때).")]
+    public Transform gazeBox;
 
     [Header("힌트")]
     [Tooltip("이 방의 범위. 플레이어가 안에 있는 동안만 힌트 시간을 센다.")]
@@ -47,6 +49,8 @@ public class GazeTarget : MonoBehaviour
     public GameObject[] showOnFound = new GameObject[0];
     [Tooltip("찾으면 껐다 켜는 렌더러(글자 깜빡임, 눈 깜빡임).")]
     public Renderer[] blinkRenderers = new Renderer[0];
+    [Tooltip("찾으면 껐다 켜는 오브젝트(렌더러 대신 오브젝트째 깜빡일 때).")]
+    public GameObject[] blinkObjects = new GameObject[0];
     public int blinkCount = 0;
     public float blinkOff = 0.15f;
     [Tooltip("찾으면 바닥으로 떨어지는 것(열쇠 등).")]
@@ -133,6 +137,13 @@ public class GazeTarget : MonoBehaviour
 
     Bounds CurrentBounds()
     {
+        if (gazeBox != null)
+        {
+            // 렌더러 없이 판정 범위만 정한다: 위치 = 가운데, lossyScale = 크기(축 정렬 상자로 본다)
+            var gb = new Bounds(gazeBox.position, gazeBox.lossyScale);
+            gb.Expand(boundsPadding * 2f);
+            return gb;
+        }
         Bounds b = default; bool any = false;
         var rs = gazeRenderers.Length > 0 ? gazeRenderers : GetComponentsInChildren<Renderer>(false);
         foreach (var r in rs)
@@ -189,8 +200,10 @@ public class GazeTarget : MonoBehaviour
         for (int i = 0; i < blinkCount; i++)
         {
             foreach (var r in blinkRenderers) if (r != null) r.enabled = false;
+            foreach (var o in blinkObjects) if (o != null) o.SetActive(false);
             yield return new WaitForSeconds(blinkOff);
             foreach (var r in blinkRenderers) if (r != null) r.enabled = true;
+            foreach (var o in blinkObjects) if (o != null) o.SetActive(true);
             yield return new WaitForSeconds(blinkOff * 1.5f);
         }
         if (hideDelay > 0f || changeWhenUnseen)
@@ -219,6 +232,7 @@ public class GazeTarget : MonoBehaviour
         SetHintVisible(true);
         if (dropTarget != null) dropTarget.localPosition = dropStart;
         foreach (var r in blinkRenderers) if (r != null) r.enabled = true;
+        foreach (var o in blinkObjects) if (o != null) o.SetActive(true);
         ApplyState(false, false);
     }
 

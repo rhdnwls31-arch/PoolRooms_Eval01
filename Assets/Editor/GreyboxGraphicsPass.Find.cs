@@ -216,14 +216,13 @@ public static partial class GreyboxGraphicsPass
         g.maxDistance = 9f; // 눈이 6.4m 높이에 떠 있어 6m로는 바로 밑에서만 닿는다
         if (eye.Find("Iris") == null)
         {
-            // VARCO 모델(한 덩어리): 눈 전체가 깜빡이고, 판정은 날개를 뺀 눈알 크기의 빈 상자로 한다.
-            var model = eye.GetComponentsInChildren<Renderer>();
-            g.blinkRenderers = model;
+            // VARCO 모델(한 덩어리): 찾으면 눈 모델 오브젝트째 껐다 켠다(2026-11-19 사용자 결정).
+            // 판정은 날개를 뺀 눈알 크기의 빈 오브젝트(렌더러 없음)로 한다. 예전에 렌더러 달린 상자를 쓰다
+            // 깜빡일 때 재질 없는 보라색 상자가 보였다.
+            g.blinkObjects = new[] { eye.Find("WingedEye").gameObject };
             var core = new GameObject("GazeCore"); core.transform.SetParent(eye, false);
             core.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f); // 눈알 지름 약 0.9m(scale 1 기준)
-            var mr = core.AddComponent<MeshRenderer>(); core.AddComponent<MeshFilter>().sharedMesh = Resources.GetBuiltinResource<UnityEngine.Mesh>("Cube.fbx");
-            mr.forceRenderingOff = true; mr.shadowCastingMode = ShadowCastingMode.Off; // 보이지 않는 판정용 상자(범위만 쓴다)
-            g.gazeRenderers = new[] { (Renderer)mr };
+            g.gazeBox = core.transform;
             g.boundsPadding = 0.1f;
             return;
         }
