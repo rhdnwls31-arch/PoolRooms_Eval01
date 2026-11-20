@@ -117,12 +117,34 @@ public static partial class GreyboxGraphicsPass
         LocalVolume(gen, "LocalVolume", new Vector3(28.15f, 1.5f, -106.55f), new Vector3(16f, 3f, 15.7f), 1f, 130f, profile); // 천사 방(125)보다 높다: 노란 방 안에서는 노란 방 값이 이긴다
     }
 
+    /// <summary>
+    /// HDRP 물(Water Surface, Pool·Quad)을 놓는다. center = 수면 가운데, size = 가로·세로(m). 방 조명만 받게 렌더링 레이어를 맞춘다.
+    /// 2026-11-19: 샤워실 발목 물과 도시에 차오르는 물을 반투명 판에서 이것으로 바꿨다(물결·굴절·바닥 빛무늬).
+    /// </summary>
+    static WaterSurface PoolWater(Transform parent, string name, Vector3 center, Vector2 size, uint layer,
+        Color refraction, Color scattering, float absorption, float wind, float caustics)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, true);
+        go.transform.position = center;
+        go.transform.localScale = new Vector3(size.x, 1f, size.y);
+        var ws = go.AddComponent<WaterSurface>();
+        ws.surfaceType = WaterSurfaceType.Pool; ws.geometryType = WaterGeometryType.Quad;
+        ws.refractionColor = refraction; ws.scatteringColor = scattering;
+        ws.absorptionDistance = absorption; ws.maxRefractionDistance = 1.5f;
+        ws.ripplesWindSpeed = wind; ws.ripplesChaos = 0.6f;
+        ws.caustics = caustics > 0f; ws.causticsIntensity = caustics;
+        ws.renderingLayerMask = (UnityEngine.Rendering.HighDefinition.RenderingLayerMask)(int)layer;
+        return ws;
+    }
+
     // ---------------------------------------------------------------- 물과 하늘 (D-1, D-3)
     static void ApplyWaterAndSky()
     {
         // D-1: 더 맑은 하늘색 물. 흡수를 줄여 바닥 타일이 비치게 하고, 물결 무늬(caustics)는 조금 약하게.
         foreach (var ws in Object.FindObjectsByType<WaterSurface>(FindObjectsInactive.Include, FindObjectsSortMode.None))
         {
+            if (!ws.name.EndsWith("_HDRP")) continue; // 수영장 물(HdrpScenePort)만. 샤워실·도시 물은 PoolWater()에서 따로 정한다.
             ws.refractionColor = new Color(0.62f, 0.94f, 1f);
             ws.scatteringColor = new Color(0.36f, 0.8f, 0.88f);
             ws.absorptionDistance = 14f; ws.maxRefractionDistance = 1.5f;

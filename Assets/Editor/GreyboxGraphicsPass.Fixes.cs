@@ -5,8 +5,58 @@ using UnityEngine;
 // 2026-11-17 플레이 피드백 버그 수정(카메라 최소 거리, 아치 위 모서리 구멍).
 public static partial class GreyboxGraphicsPass
 {
+    // 2026-11-19 사용자 피드백 "계단이랑 물 닿았을 때 깨진다 / 움직일 때마다 보인다": 원인은 물이 아니라 같은 면에 겹친 두 상자였다.
+    // 수영장 벽(타일)과 데크 띠(데크 돌)가 윗면(y 0)도, 물 쪽 안쪽 면도 한 평면에 겹쳐 있어서, 보는 각도마다 둘이 번갈아 그려졌다(z-fighting).
+    // 계단 자리처럼 턱이 없는 곳에서는 데크 끝에 40cm 띠로, 맞은편 벽에서는 물 바로 위 띠로 보였다.
+    // 벽을 물 쪽으로 3mm, 아래로 3mm 옮겨 안쪽 면은 벽 타일이, 윗면은 데크가 이기게 한다(타일 UV가 구워진 메쉬는 크기를 바꾸지 않는다).
+    // 위치는 지금 값을 1cm 단위로 반올림한 자리에서 3mm라 여러 번 돌려도 같다. 인트로·라군·수로·홀 수조·같은 수영장(복사본) 모두.
+    static void ApplyPoolWallNudge()
+    {
+        const float nudge = 0.003f;
+        var waters = Object.FindObjectsByType<UnityEngine.Rendering.HighDefinition.WaterSurface>(FindObjectsInactive.Include);
+        foreach (var r in Object.FindObjectsByType<MeshRenderer>(FindObjectsInactive.Include))
+        {
+            string n = r.name;
+            if (!(n.StartsWith("Pool_Wall_") || n.StartsWith("Lagoon_Wall_") || n.StartsWith("Channel_Wall_") || n.StartsWith("Basin_Wall_"))) continue;
+            var b = r.bounds;
+            // 이 벽이 둘러싼 물: 벽 가운데가 물 범위(1m 넓힌) 안에 있는 것
+            UnityEngine.Rendering.HighDefinition.WaterSurface w = null;
+            foreach (var ws in waters)
+            {
+                if (!ws.name.EndsWith("_HDRP")) continue;
+                var s = ws.transform.lossyScale; var c = ws.transform.position;
+                if (Mathf.Abs(b.center.x - c.x) < s.x / 2 + 1f && Mathf.Abs(b.center.z - c.z) < s.z / 2 + 1f && Mathf.Abs(b.max.y - c.y) < 1f) { w = ws; break; }
+            }
+            if (w == null) continue;
+            var wc = w.transform.position;
+            var t = r.transform;
+            Vector3 p = t.position;
+            // 윗면: 1cm 반올림 자리보다 3mm 아래
+            float top = Mathf.Round(b.max.y * 100f) / 100f - nudge;
+            p.y += top - b.max.y;
+            // 안쪽 면: 얇은 축에서 물 쪽 면을 1cm 반올림 자리보다 3mm 물 쪽으로
+            bool thinX = b.size.x < b.size.z;
+            if (thinX)
+            {
+                float dir = Mathf.Sign(wc.x - b.center.x);
+                float inner = dir > 0 ? b.max.x : b.min.x;
+                float target = Mathf.Round(inner * 100f) / 100f + dir * nudge;
+                p.x += target - inner;
+            }
+            else
+            {
+                float dir = Mathf.Sign(wc.z - b.center.z);
+                float inner = dir > 0 ? b.max.z : b.min.z;
+                float target = Mathf.Round(inner * 100f) / 100f + dir * nudge;
+                p.z += target - inner;
+            }
+            if ((p - t.position).sqrMagnitude > 1e-10f) { t.position = p; EditorUtility.SetDirty(t); }
+        }
+    }
+
     static void ApplyPlaytestFixes()
     {
+        ApplyPoolWallNudge();
         // 4번: 카메라가 0.3m 안쪽을 그리지 않는데 플레이어 반지름도 0.3m라, 벽에 붙으면 벽이 잘려 밖이 보였다.
         foreach (var cam in Object.FindObjectsByType<Camera>(FindObjectsInactive.Include))
             if (cam.GetComponentInParent<CharacterController>(true) != null)

@@ -341,7 +341,9 @@ public static partial class GreyboxGraphicsPass
         // ---- 물 차오름(찾으면 켜진다): 수면 판 + 물속 화면
         var flood = new GameObject("Flood");
         flood.transform.SetParent(gen, true);
-        var surf = Box(flood.transform, "WaterSurface", new Vector3(CtCx, -0.3f, CtCz), new Vector3(w, 0.06f, d), water, LCity);
+        // 2026-11-19: 반투명 판 → HDRP 물. FloodRise는 위치만 올리므로 그대로 쓴다.
+        var surf = PoolWater(flood.transform, "WaterSurface", new Vector3(CtCx, -0.3f, CtCz), new Vector2(w, d), LCity,
+            new Color(0.62f, 0.94f, 1f), new Color(0.36f, 0.8f, 0.88f), 20f, 3f, 0.8f);
         var underProfile = RoomProfile("CityUnder", AngelEV, 0.45f, 0.2f, new Color(0.3f, 0.75f, 0.82f), 20f, new Color(0.1f, 0.45f, 0.56f), -18f, 0f, 0.75f);
         {
             // 물속: 청록으로 물들이고 살짝 어둡게. 2026-11-18 Play 확인에서 안개만으로는 물속처럼 안 보였다.

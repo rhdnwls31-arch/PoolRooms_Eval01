@@ -261,7 +261,9 @@ public static partial class GreyboxGraphicsPass
         WallWithHoles(shell, "East", false, 19.7f, 0.3f, -103.4f, -91.2f, 0f, ShH, new[] { (ShOutZ - 0.9f, ShOutZ + 0.9f, 2.4f) }, wall, LShower);
 
         // 발목까지 찬 물(콜라이더 없음). 문 자리의 턱은 문이 있던 티가 나서 없앴다(2026-11-18 플레이 피드백).
-        Box(gen, "Water", new Vector3((ShX0 + ShX1) / 2, 0.06f, (ShZ0 + ShZ1) / 2), new Vector3(ShX1 - ShX0, 0.12f, ShZ1 - ShZ0), water, LShower);
+        // 2026-11-19: 반투명 상자 → HDRP 물(잔잔한 물결, 바닥 타일에 빛무늬). 수면 = 0.12m.
+        PoolWater(gen, "Water", new Vector3((ShX0 + ShX1) / 2, 0.12f, (ShZ0 + ShZ1) / 2), new Vector2(ShX1 - ShX0, ShZ1 - ShZ0), LShower,
+            new Color(0.55f, 0.86f, 0.9f), new Color(0.2f, 0.55f, 0.62f), 4f, 0.8f, 1.2f);
 
         // 샤워기: 북쪽 벽 4개, 동쪽 벽 3개. 동쪽 맨 아래(출구 옆) 하나만 물이 바닥 배수구에서 천장으로 솟는다(나머지는 물이 나오지 않는다).
         var showers = Group(gen, "Showers");
@@ -288,7 +290,8 @@ public static partial class GreyboxGraphicsPass
                 P(PrimitiveType.Cylinder, "Head", new Vector3(0, 2.12f, 0.36f), new Vector3(0.18f, 0.025f, 0.18f), metal);
             }
             P(PrimitiveType.Sphere, "Valve", new Vector3(0, 1.1f, 0.05f), Vector3.one * 0.09f, metal);
-            P(PrimitiveType.Cylinder, "Drain", new Vector3(0, 0.122f, 0.36f), new Vector3(0.16f, 0.002f, 0.16f), drain);
+            // 배수구 덮개는 물(수면 0.12) 밑 바닥에 둔다. 수면과 같은 높이면 물결에 깜빡였다(2026-11-19).
+            P(PrimitiveType.Cylinder, "Drain", new Vector3(0, 0.005f, 0.36f), new Vector3(0.16f, 0.002f, 0.16f), drain);
             // 2026-11-19: 보통 샤워기의 떨어지는 물줄기(흰 원기둥 + 바닥 물보라)는 기둥처럼 보여 비현실적이라 뺐다(사용자 결정).
             // 물이 나오는 건 이상한 점(솟는 물기둥) 하나뿐이라 더 눈에 띈다.
             if (up)
