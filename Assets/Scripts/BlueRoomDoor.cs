@@ -5,7 +5,8 @@ using UnityEngine.UI;
 /// 파란 침실 복도 끝의 문(기획서 §6-3d). 단계는 다음과 같다.
 /// 0) 문에 바짝 다가가 바라보면 도어뷰어(볼록렌즈) 시야로 바뀐다. 처음에는 문밖(천사 방 하늘)에서 키 큰 인외가 렌즈를 들여다보고 있다.
 /// 1) 물러나거나 눈을 떼면 시야가 풀리고, 그 사이 인외는 사라진다. 다시 보면 문밖에는 아무도 없다.
-/// 2) 두 번째로 보고 나서 문이 화면 밖에 있으면 문이 열린다.
+/// 2) 다시 들여다보고 눈을 떼면(시야가 다 풀리면) 눈앞에서 문이 천천히 열린다.
+///    2026-11-20 사용자 결정: 전에는 문이 화면 밖에 있어야 열려서 뒤를 돌아봐야 했다. 그럴 필요 없이 바로 열리게 바꿨다.
 /// 3) 열린 문 너머의 빛으로 들어가면, 천사 방 동쪽 벽에 붙은 같은 문 앞으로 옮겨진다(복도 끝과 천사 방이 이어진 순간이동).
 /// 4) 천사 방에 남은 문은 플레이어가 멀어지고 화면 밖에 있을 때 사라진다. 하늘 벽만 남는다(§7 돌아갈 수 없다).
 /// 소리(노크 등)는 나중에 넣는다(§8).
@@ -38,6 +39,10 @@ public class BlueRoomDoor : MonoBehaviour
     [Tooltip("문짝의 경첩. 열리면 y축으로 openAngle만큼 돈다.")]
     public Transform leafHinge;
     public float openAngle = 95f;
+    [Tooltip("문이 다 열리기까지 걸리는 시간(초). 눈앞에서 열리므로 천천히, 끝에서 느려진다.")]
+    public float openDuration = 1.8f;
+    [Tooltip("시야가 풀린 뒤 문이 열리기 시작할 때까지 기다리는 시간(초).")]
+    public float openDelay = 0.4f;
     [Tooltip("문이 닫혀 있는 동안 지나가지 못하게 막는 콜라이더.")]
     public Collider leafBlocker;
 
@@ -65,6 +70,7 @@ public class BlueRoomDoor : MonoBehaviour
     CanvasGroup overlay;
     FisheyeDisc disc;
     float peekStart, overlayAlpha;
+    float openT = 1f, clearTime = -1f;
     Quaternion hingeClosed;
 
     void Awake()
@@ -87,7 +93,18 @@ public class BlueRoomDoor : MonoBehaviour
         if (cam == null) return;
 
         if (Stage <= 2) UpdatePeek();
-        if (Stage == 2 && !Peeking && overlayAlpha <= 0f && !InView(RendererBounds(leafHinge))) Open();
+        if (Stage == 2 && !Peeking && overlayAlpha <= 0f)
+        {
+            if (clearTime < 0f) clearTime = Time.time;
+            if (Time.time - clearTime >= openDelay) Open();
+        }
+        else clearTime = -1f;
+        if (Stage >= 3 && openT < 1f && leafHinge != null)
+        {
+            openT = Mathf.Min(1f, openT + Time.deltaTime / Mathf.Max(0.01f, openDuration));
+            float e = 1f - (1f - openT) * (1f - openT) * (1f - openT); // 끝에서 느려진다
+            leafHinge.localRotation = hingeClosed * Quaternion.Euler(0f, openAngle * e, 0f);
+        }
         if (Stage == 3 && teleportZone.Contains(player.position)) Teleport();
         if (Stage == 4 && arrivalDoor != null)
         {
@@ -178,7 +195,7 @@ public class BlueRoomDoor : MonoBehaviour
     void Open()
     {
         Stage = 3;
-        if (leafHinge != null) leafHinge.localRotation = hingeClosed * Quaternion.Euler(0f, openAngle, 0f);
+        openT = 0f; // 문짝은 Update에서 openDuration 동안 돌아간다(앞쪽 = 플레이어 반대쪽으로 열린다)
         if (leafBlocker != null) leafBlocker.enabled = false;
     }
 
@@ -206,6 +223,7 @@ public class BlueRoomDoor : MonoBehaviour
         if (peepCamera != null) peepCamera.enabled = false;
         if (figure != null) figure.SetActive(false);
         if (leafHinge != null) leafHinge.localRotation = hingeClosed;
+        openT = 1f; clearTime = -1f;
         if (leafBlocker != null) leafBlocker.enabled = true;
         if (arrivalDoor != null) arrivalDoor.SetActive(false);
     }
