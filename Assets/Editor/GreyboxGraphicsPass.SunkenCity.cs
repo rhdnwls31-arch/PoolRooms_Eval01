@@ -289,6 +289,17 @@ public static partial class GreyboxGraphicsPass
         Ring(new Vector3(116f, 0.06f, -156.5f), new Vector3(-90f, 0f, 0f));
         Ring(new Vector3(142.5f, 0.06f, -171f), new Vector3(-90f, 0f, 0f));
         Ring(new Vector3(127f, 0.06f, -178f), new Vector3(-90f, 0f, 0f));
+        // 2026-11-20 사용자 요청: 인트로 수영장 플라밍고 튜브를 길가 바닥에 하나 둔다. 물이 차면 구명 튜브처럼 떠오른다.
+        // 모델은 콜라이더가 없어 시선 판정을 막지 않는다. 피벗이 바닥이라 floatDepth(0.15m)만큼 물에 잠긴다.
+        var flSrc = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/prop_flamingo.prefab");
+        if (flSrc != null)
+        {
+            var fl = (GameObject)PrefabUtility.InstantiatePrefab(flSrc, rings);
+            fl.name = "Prop_Flamingo_City";
+            fl.transform.SetPositionAndRotation(new Vector3(121f, 0f, -160f), Quaternion.Euler(-90f, 35f, 0f));
+            foreach (var r in fl.GetComponentsInChildren<Renderer>()) r.renderingLayerMask = LCity;
+            floaters.Add(fl.transform);
+        }
 
         // ---- 감시탑 의자, 배수구
         var props = Group(gen, "Props");

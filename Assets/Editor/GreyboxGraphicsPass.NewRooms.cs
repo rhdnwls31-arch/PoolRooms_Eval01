@@ -530,13 +530,73 @@ public static partial class GreyboxGraphicsPass
         Box(props, "Curtain_L", new Vector3(LvX1 - 0.08f, 1.45f, -115.4f), new Vector3(0.06f, 1.9f, 0.5f), Lit("GB_Living_Curtain", m => Plain(m, new Color(0.35f, 0.08f, 0.08f), 0.1f)), LLiving);
         Box(props, "Curtain_R", new Vector3(LvX1 - 0.08f, 1.45f, -117.4f), new Vector3(0.06f, 1.9f, 0.5f), AssetDatabase.LoadAssetAtPath<Material>($"{MatDir}/GB_Living_Curtain.mat"), LLiving);
 
+        // 2026-11-20 방 채우기(넓은데 휑하다는 피드백). 모두 벽 쪽이고, 입구(서쪽 z -112.4) → TV → 출구(남쪽 x 40.6)의 서쪽 동선은 비운다.
+        // 북쪽 벽: 가족사진 아래 장식장(꽃병·탁상시계) / 동쪽 벽 북쪽: 책장 / 소파 남쪽 끝: 협탁(재떨이) / TV를 보는 안락의자 / 남동쪽 모서리: 화분.
+        var leaf = Lit("GB_Living_Plant", m => Plain(m, new Color(0.12f, 0.2f, 0.1f), 0.2f));
+        FillProp(props, "LivingRoom", "Sideboard", new Vector3(43.6f, 0f, LvZ1 - 0.25f), 180f, new Vector3(1.6f, 0.8f, 0.45f), g =>
+        {
+            PBox(g, "Body", new Vector3(0, 0.42f, 0), new Vector3(1.6f, 0.72f, 0.45f), wood);
+            PBox(g, "Top", new Vector3(0, 0.79f, 0.01f), new Vector3(1.64f, 0.03f, 0.48f), wood);
+            foreach (float x in new[] { -0.4f, 0.4f }) PBox(g, "Door", new Vector3(x, 0.42f, 0.226f), new Vector3(0.76f, 0.6f, 0.006f), trim);
+            foreach (float x in new[] { -0.7f, 0.7f }) PBox(g, "Foot", new Vector3(x, 0.03f, 0), new Vector3(0.06f, 0.06f, 0.4f), trim);
+            Part(g, PrimitiveType.Cylinder, "Vase", new Vector3(-0.5f, 0.93f, 0), new Vector3(0.12f, 0.12f, 0.12f), pale);
+            PBox(g, "Clock", new Vector3(0.45f, 0.9f, 0), new Vector3(0.2f, 0.2f, 0.1f), trim);
+        });
+        // 장식장 위 작은 스탠드(따로 둔다: VARCO 장식장이 와도 불빛 자리는 같게). 스탠드 빛을 줄이자 장식장·사진이 어둠에 묻혀서
+        // 이 작은 빛으로 북쪽 벽 가구 주변만 밝힌다(아래 Lights의 SideboardLamp).
+        var sbLampPos = new Vector3(43.75f, 0.81f, LvZ1 - 0.25f);
+        var sbLamp = PropGroup(props, "SideboardLamp", sbLampPos, 0f);
+        Part(sbLamp, PrimitiveType.Cylinder, "Base", new Vector3(0, 0.12f, 0), new Vector3(0.1f, 0.12f, 0.1f), dark);
+        Part(sbLamp, PrimitiveType.Cylinder, "Shade", new Vector3(0, 0.3f, 0), new Vector3(0.24f, 0.08f, 0.24f), shade);
+        FillProp(props, "LivingRoom", "Bookcase", new Vector3(LvX1 - 0.18f, 0f, -112.3f), -90f, new Vector3(0.9f, 1.9f, 0.34f), g =>
+        {
+            foreach (float x in new[] { -0.43f, 0.43f }) PBox(g, "Side", new Vector3(x, 0.95f, 0), new Vector3(0.04f, 1.9f, 0.34f), wood);
+            PBox(g, "Back", new Vector3(0, 0.95f, -0.16f), new Vector3(0.9f, 1.9f, 0.02f), trim);
+            for (int k = 0; k < 5; k++)
+            {
+                float y = 0.05f + k * 0.45f;
+                PBox(g, "Board", new Vector3(0, y, 0), new Vector3(0.82f, 0.03f, 0.32f), wood);
+                if (k == 4) continue;
+                for (int i = 0; i < 8; i++)
+                {
+                    if ((i * 5 + k * 3) % 7 == 0) continue; // 군데군데 빈칸
+                    float h = 0.26f + ((i + k) % 3) * 0.04f;
+                    PBox(g, "Book", new Vector3(-0.33f + i * 0.09f, y + 0.015f + h / 2, 0.02f), new Vector3(0.07f, h, 0.24f), (i + k) % 2 == 0 ? fabric : trim);
+                }
+            }
+        });
+        FillProp(props, "LivingRoom", "SideTable", new Vector3(47.5f, 0f, -120.25f), -90f, new Vector3(0.45f, 0.55f, 0.45f), g =>
+        {
+            PBox(g, "Top", new Vector3(0, 0.53f, 0), new Vector3(0.45f, 0.04f, 0.45f), wood);
+            foreach (var o in new[] { new Vector2(-0.19f, -0.19f), new Vector2(0.19f, -0.19f), new Vector2(-0.19f, 0.19f), new Vector2(0.19f, 0.19f) })
+                PBox(g, "Leg", new Vector3(o.x, 0.26f, o.y), new Vector3(0.04f, 0.51f, 0.04f), wood);
+            Part(g, PrimitiveType.Cylinder, "Ashtray", new Vector3(0.05f, 0.565f, 0.03f), new Vector3(0.14f, 0.015f, 0.14f), dark);
+        });
+        // 안락의자: 소파 남쪽에서 비스듬히 TV를 본다(정면 +Z → TV 방향).
+        var armPos = new Vector3(45.6f, 0f, -122.6f);
+        var toTv = tvPos - armPos;
+        FillProp(props, "LivingRoom", "Armchair", armPos, Mathf.Atan2(toTv.x, toTv.z) * Mathf.Rad2Deg, new Vector3(0.85f, 0.95f, 0.85f), g =>
+        {
+            PBox(g, "Seat", new Vector3(0, 0.22f, 0.05f), new Vector3(0.85f, 0.44f, 0.75f), fabric);
+            PBox(g, "Back", new Vector3(0, 0.6f, -0.33f), new Vector3(0.85f, 0.7f, 0.19f), fabric);
+            foreach (float x in new[] { -0.36f, 0.36f }) PBox(g, "Arm", new Vector3(x, 0.55f, 0.05f), new Vector3(0.13f, 0.22f, 0.75f), fabric);
+        });
+        FillProp(props, "LivingRoom", "PottedPlant", new Vector3(LvX1 - 0.4f, 0f, LvZ0 + 0.4f), 0f, new Vector3(0.4f, 0.5f, 0.4f), g =>
+        {
+            Part(g, PrimitiveType.Cylinder, "Pot", new Vector3(0, 0.2f, 0), new Vector3(0.34f, 0.2f, 0.34f), trim);
+            Part(g, PrimitiveType.Sphere, "Leaves", new Vector3(0, 0.75f, 0), new Vector3(0.6f, 0.75f, 0.6f), leaf);
+            Part(g, PrimitiveType.Sphere, "Leaves_Top", new Vector3(0.08f, 1.12f, -0.04f), new Vector3(0.38f, 0.45f, 0.38f), leaf);
+        });
+
         var lights = Group(gen, "Lights");
         // 밤의 방이지만 가구와 벽이 읽혀야 한다. 2026-11-19: 방 모음 사진에서 거의 검게 보여서 노출 7.4 → 6.8(파란 침실과 같게),
         // 스탠드를 키워 소파 쪽에 주황빛이 고이게 하고, 바닥 아래 있던 채움 빛을 방 한가운데 높이로 올려 벽과 사진이 어렴풋이 보이게 했다.
         // (천장 바로 밑에 두면 등이 없는 천장에 빛 얼룩이 생긴다.)
-        MakeLight(lights, "Lamp", LightType.Point, lampPos + new Vector3(0, 1.45f, 0), Vector3.zero, new Color(1f, 0.62f, 0.32f), 110000f, 14f, LLiving, true);
+        // 2026-11-20 빛을 가구 쪽으로 좁힌다: 스탠드 14 → 8m, 방 전체를 채우던 Fill 20000/12m → 탁자 주변 9000/6m. 방 모서리는 어둠에 묻힌다.
+        MakeLight(lights, "Lamp", LightType.Point, lampPos + new Vector3(0, 1.45f, 0), Vector3.zero, new Color(1f, 0.62f, 0.32f), 110000f, 8f, LLiving, true);
         MakeLight(lights, "TV_Glow", LightType.Point, tvPos + new Vector3(0.7f, 0.9f, 0), Vector3.zero, new Color(0.6f, 0.72f, 1f), 10000f, 6f, LLiving, false, false);
-        MakeLight(lights, "Fill", LightType.Point, new Vector3(44.4f, 1.4f, -117f), Vector3.zero, new Color(0.9f, 0.7f, 0.5f), 20000f, 12f, LLiving, false, false);
+        MakeLight(lights, "Fill", LightType.Point, new Vector3(44.4f, 1.4f, -118f), Vector3.zero, new Color(0.9f, 0.7f, 0.5f), 9000f, 6f, LLiving, false, false);
+        MakeLight(lights, "SideboardLamp", LightType.Point, sbLampPos + new Vector3(0, 0.28f, 0.15f), Vector3.zero, new Color(1f, 0.62f, 0.32f), 6000f, 3.5f, LLiving, false, false);
         var profile = RoomProfile("Living", 6.8f, 0.01f, 0.04f, new Color(0.7f, 0.55f, 0.42f), 40f, new Color(0.02f, 0.015f, 0.01f), 8f, 0f);
         LocalVolume(gen, "LocalVolume", new Vector3((LvX0 + LvX1) / 2, LvH / 2, (LvZ0 + LvZ1) / 2), new Vector3(LvX1 - LvX0, LvH, LvZ1 - LvZ0), 1f, 125f, profile);
 

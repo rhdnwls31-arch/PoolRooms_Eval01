@@ -178,6 +178,88 @@ public static partial class GreyboxGraphicsPass
         return m;
     }
 
+    // ---------------------------------------------------------------- 수영장 선베드
+    // 2026-11-20 VARCO 선베드(Blender에서 깨진 조각·등받이 정리, 0.74×0.86×1.93). 더미(IntroMapBuilder.Lounger)는
+    // 등받이가 -Z라 VARCO(정면 +Z = 발 쪽, 등받이 -Z)와 방향이 같다. 더미 조각은 끄고(렌더러만) 그룹 콜라이더는 모델에 맞춘다.
+    // 인트로(Dummies)와 같은 수영장 복사본(GB_05_SameIntro/Dummies) 모두. 다시 실행해도 같은 결과.
+    const string LoungerVarcoName = "VARCO_Lounger";
+    static void SwapPoolLoungers()
+    {
+        if (VarcoPrefab("Pool", "Bench") == null) return;
+        int n = 0;
+        foreach (var t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include))
+        {
+            if (t == null) continue; // 앞에서 지운 예전 VARCO_Lounger의 자식(다시 실행할 때)
+            if (!(t.name.StartsWith("Prop_Lounger_") || t.name.StartsWith("LagoonCourt_Lounger_"))) continue;
+            var old = t.Find(LoungerVarcoName);
+            if (old != null) Object.DestroyImmediate(old.gameObject);
+            uint layer = 1u;
+            foreach (Transform c in t)
+                if (c.TryGetComponent<MeshRenderer>(out var r)) { layer = r.renderingLayerMask; r.enabled = false; EditorUtility.SetDirty(r); }
+            var go = VarcoInto(t, "Pool", "Bench", layer);
+            go.name = LoungerVarcoName;
+            n++;
+        }
+        Debug.Log($"[GreyboxGraphicsPass] VARCO 선베드 {n}개");
+    }
+
+    // ---------------------------------------------------------------- 수영장 파라솔
+    // 2026-11-20 VARCO 파라솔: 인트로·같은 수영장의 Prop_Parasol_*는 펼친 것, 라군 마당(LagoonCourt_Parasol_*)은 접힌 것.
+    // 더미 조각 렌더러만 끄고 기둥 콜라이더(0.22×2.2)는 그대로 둔다(펼친 천 아래로 걸어 다닐 수 있게).
+    const string ParasolVarcoName = "VARCO_Parasol";
+    static void SwapPoolParasols()
+    {
+        if (VarcoPrefab("Pool", "Parasol_Open") == null) return;
+        int n = 0;
+        foreach (var t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include))
+        {
+            if (t == null) continue;
+            bool lagoon = t.name.StartsWith("LagoonCourt_Parasol_");
+            if (!(lagoon || t.name.StartsWith("Prop_Parasol_"))) continue;
+            var old = t.Find(ParasolVarcoName);
+            if (old != null) Object.DestroyImmediate(old.gameObject);
+            uint layer = 1u;
+            foreach (Transform c in t)
+                if (c.TryGetComponent<MeshRenderer>(out var r)) { layer = r.renderingLayerMask; r.enabled = false; EditorUtility.SetDirty(r); }
+            var go = VarcoInto(t, "Pool", lagoon ? "Parasol_Folded" : "Parasol_Open", layer, default, default, false);
+            go.name = ParasolVarcoName;
+            n++;
+        }
+        Debug.Log($"[GreyboxGraphicsPass] VARCO 파라솔 {n}개");
+    }
+
+    // ---------------------------------------------------------------- 컴퓨터 속 거대한 모니터
+    // 2026-11-20 VARCO 거대 브라운관(9.4×7.12×9.85)은 화면 유리가 막힌 통짜라, 출구 연출(화면 벽이 사라지고 빛의 방이 드러남)에 맞게
+    // 유리 면 삼각형만 지운 메쉬를 만든다(프리팹 원점 기준, 처음 한 번만). 유리 = x ±3.2, y 1.5~5.95, 앞면(z 4.93)에서 0.3~0.6 들어감.
+    public const float GiantGlassBottom = 1.5f, GiantGlassZ = 4.45f;
+    static UnityEngine.Mesh GiantMonitorOpenMesh(out Material mat)
+    {
+        mat = null;
+        var prefab = VarcoPrefab("Computer", "GiantMonitor");
+        if (prefab == null) return null;
+        var mf = prefab.GetComponentInChildren<MeshFilter>();
+        mat = mf.GetComponent<MeshRenderer>().sharedMaterial;
+        const string path = "Assets/VARCO/Computer/Models/VAR_Computer_GiantMonitor_Open.asset";
+        var cached = AssetDatabase.LoadAssetAtPath<UnityEngine.Mesh>(path);
+        if (cached != null) return cached;
+        var src = mf.sharedMesh;
+        var M = prefab.transform.worldToLocalMatrix * mf.transform.localToWorldMatrix;
+        var v = src.vertices; var n = src.normals; var t = src.tangents;
+        for (int i = 0; i < v.Length; i++) v[i] = M.MultiplyPoint3x4(v[i]);
+        for (int i = 0; i < n.Length; i++) n[i] = M.MultiplyVector(n[i]).normalized;
+        for (int i = 0; i < t.Length; i++) { var d = M.MultiplyVector(t[i]).normalized; t[i] = new Vector4(d.x, d.y, d.z, t[i].w); }
+        bool Glass(Vector3 p) => Mathf.Abs(p.x) < 3.3f && p.y > 1.45f && p.y < 6.0f && p.z > 3.8f && p.z < 4.68f;
+        var tri = src.triangles; var keep = new System.Collections.Generic.List<int>();
+        for (int i = 0; i < tri.Length; i += 3)
+            if (!(Glass(v[tri[i]]) && Glass(v[tri[i + 1]]) && Glass(v[tri[i + 2]]))) keep.AddRange(new[] { tri[i], tri[i + 1], tri[i + 2] });
+        var m = new UnityEngine.Mesh { name = "VAR_Computer_GiantMonitor_Open", indexFormat = src.indexFormat };
+        m.vertices = v; m.normals = n; m.tangents = t; m.uv = src.uv;
+        m.SetTriangles(keep, 0); m.RecalculateBounds();
+        AssetDatabase.CreateAsset(m, path); AssetDatabase.SaveAssets();
+        Debug.Log($"[GreyboxGraphicsPass] 거대 모니터 유리 삼각형 {(tri.Length - keep.Count) / 3}개 지움");
+        return m;
+    }
+
     static GameObject MeshPart(Transform parent, string name, UnityEngine.Mesh mesh, Material mat, uint layer, float scale)
     {
         var go = new GameObject(name);
@@ -205,16 +287,18 @@ public static partial class GreyboxGraphicsPass
 
         if (fitCollider && parent.TryGetComponent<BoxCollider>(out var bc))
         {
-            // 부모 로컬 공간에서 모델이 차지하는 상자
+            // 부모 로컬 공간에서 모델이 차지하는 상자. 메쉬 자체 상자의 모서리를 옮겨 잰다
+            // (월드 상자로 재면 비스듬히 돌린 그룹에서 콜라이더가 부풀었다: 2026-11-20 휴지통 3.66m).
             var rs = go.GetComponentsInChildren<Renderer>();
             Bounds b = default; bool first = true;
             foreach (var r in rs)
             {
-                var wb = r.bounds;
+                var mf = r.GetComponent<MeshFilter>();
+                var lb = mf != null && mf.sharedMesh != null ? mf.sharedMesh.bounds : new Bounds(r.transform.InverseTransformPoint(r.bounds.center), Vector3.zero);
                 for (int i = 0; i < 8; i++)
                 {
-                    var c = wb.center + Vector3.Scale(wb.extents, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
-                    var lp = parent.InverseTransformPoint(c);
+                    var c = lb.center + Vector3.Scale(lb.extents, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
+                    var lp = parent.InverseTransformPoint(r.transform.TransformPoint(c));
                     if (first) { b = new Bounds(lp, Vector3.zero); first = false; } else b.Encapsulate(lp);
                 }
             }

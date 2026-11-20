@@ -142,6 +142,25 @@ public static partial class GreyboxGraphicsPass
         Box(mon, "Inside_Top", new Vector3(PcCx, ScrH - 0.01f, (cz0 + cz1) / 2), new Vector3(ScrW, 0.02f, cz0 - cz1), glow, LComputer);
         Box(mon, "Inside_L", new Vector3(sx0 + 0.01f, ScrH / 2, (cz0 + cz1) / 2), new Vector3(0.02f, ScrH, cz0 - cz1), glow, LComputer);
         Box(mon, "Inside_R", new Vector3(sx1 - 0.01f, ScrH / 2, (cz0 + cz1) / 2), new Vector3(0.02f, ScrH, cz0 - cz1), glow, LComputer);
+        // 2026-11-20 VARCO 거대 브라운관: 유리를 지운 메쉬를 화면 아래가 땅에 닿게 1.5m 묻고, 유리 자리가 출구 벽(화면) 바로 뒤에 오게 둔다.
+        // 더미 상자들은 콜라이더(벽)로만 남기고 보이지 않게 한다. 화면 속 빛의 방(Inside_*)은 그대로 보인다.
+        var openMon = GiantMonitorOpenMesh(out var monMat);
+        if (openMon != null)
+        {
+            foreach (Transform c in mon)
+                if (!c.name.StartsWith("Inside_") && c.TryGetComponent<MeshRenderer>(out var mr)) mr.enabled = false;
+            var vm = MeshPart(mon, "VARCO_GiantMonitor", openMon, monMat, LComputer, 1f);
+            vm.transform.position = new Vector3(PcCx, -GiantGlassBottom, ScrZ - 0.02f - GiantGlassZ);
+            // 유리 구멍(x ±3.3, 높이 약 4.6)이 빛의 방(폭 ScrW, 1m 뒤에서 시작)보다 넓고 앞이라 열리면 가장자리에 어두운 틈이 보였다.
+            // 빛의 방을 화면 바로 뒤까지 당기고 조금 넓힌다(벽들은 콜라이더 없음, 바닥은 그대로 밟힌다).
+            float iz0 = ScrZ - 0.03f, iw = ScrW / 2 + 0.25f, ih = ScrH + 0.3f;
+            void Fit(string n, Vector3 c, Vector3 s) { var t = mon.Find(n); t.position = c; t.localScale = s; }
+            Fit("Inside_Floor", new Vector3(PcCx, 0.01f, (iz0 + cz1) / 2), new Vector3(iw * 2, 0.02f, iz0 - cz1));
+            Fit("Inside_Back", new Vector3(PcCx, ih / 2, cz1 + 0.01f), new Vector3(iw * 2, ih, 0.02f));
+            Fit("Inside_Top", new Vector3(PcCx, ih - 0.01f, (iz0 + cz1) / 2), new Vector3(iw * 2, 0.02f, iz0 - cz1));
+            Fit("Inside_L", new Vector3(PcCx - iw + 0.01f, ih / 2, (iz0 + cz1) / 2), new Vector3(0.02f, ih, iz0 - cz1));
+            Fit("Inside_R", new Vector3(PcCx + iw - 0.01f, ih / 2, (iz0 + cz1) / 2), new Vector3(0.02f, ih, iz0 - cz1));
+        }
 
         // ---- 서쪽 벽: 벽 전체를 덮은 거대한 파란 화면
         var deco = Group(gen, "Desktop");
@@ -164,22 +183,30 @@ public static partial class GreyboxGraphicsPass
         // 바탕화면 아이콘: 폴더, 문서, 휴지통, 작은 모니터. 사람 키보다 크다.
         propLayer = LComputer;
         var fo = PropGroup(deco, "Icon_Folder", new Vector3(50.5f, 1.2f, -151f), 30f);
+        // 2026-11-20 VARCO 폴더 아이콘(2.2×1.7×0.89, 더미와 같은 폭). 떠서 흔들리는 건 그대로(FloatDrift).
+        if (VarcoInto(fo, "Computer", "FolderIcon", LComputer, default, default, false) == null)
+        {
         PBox(fo, "Back", new Vector3(0f, 0.8f, 0f), new Vector3(2.2f, 1.6f, 0.12f), folder);
         PBox(fo, "Tab", new Vector3(-0.6f, 1.7f, 0f), new Vector3(0.9f, 0.25f, 0.12f), folder);
         PBox(fo, "Front", new Vector3(0f, 0.7f, 0.1f), new Vector3(2.2f, 1.4f, 0.08f), Lit("GB_PC_FolderFront", m => Plain(m, new Color(1f, 0.87f, 0.4f), 0.3f)));
+        }
         fo.gameObject.AddComponent<FloatDrift>().phase = 1.7f;
         var doc = PropGroup(deco, "Icon_Document", new Vector3(65.5f, 1.4f, -146.5f), -25f);
         PBox(doc, "Sheet", new Vector3(0f, 1f, 0f), new Vector3(1.4f, 2f, 0.06f), paper);
         for (int i = 0; i < 5; i++) PBox(doc, "Line", new Vector3(-0.05f, 1.55f - i * 0.25f, 0.04f), new Vector3(1f, 0.06f, 0.01f), beigeDark);
         PBox(doc, "Fold", new Vector3(0.55f, 1.85f, 0.04f), new Vector3(0.3f, 0.3f, 0.02f), Lit("GB_PC_PaperFold", m => Plain(m, new Color(0.8f, 0.8f, 0.78f), 0.15f)));
         var fd2 = doc.gameObject.AddComponent<FloatDrift>(); fd2.phase = 3.9f; fd2.bobHeight = 0.4f;
-        var bn = PropGroup(deco, "Icon_RecycleBin", new Vector3(67f, 0f, -152.5f), -40f, new Vector3(1.6f, 2.2f, 1.6f));
+        // 2026-11-20 VARCO 철망 휴지통(1.84×2.0×1.85). 더미보다 넓어 옆 언덕(Hill_E)에 가장자리가 묻혀서 (67, -152.5)에서 언덕 반대쪽으로 옮겼다.
+        var bn = PropGroup(deco, "Icon_RecycleBin", new Vector3(66.4f, 0f, -151.9f), -40f, new Vector3(1.6f, 2.2f, 1.6f));
+        if (VarcoInto(bn, "Computer", "RecycleBinIcon", LComputer) == null)
+        {
         Part(bn, PrimitiveType.Cylinder, "Can", new Vector3(0f, 1f, 0f), new Vector3(1.5f, 1f, 1.5f), bin);
         Part(bn, PrimitiveType.Cylinder, "Rim", new Vector3(0f, 2.02f, 0f), new Vector3(1.62f, 0.04f, 1.62f), beigeDark);
         for (int i = 0; i < 6; i++)
         {
             float a = i * Mathf.PI / 3f;
             Part(bn, PrimitiveType.Cube, "Rib", new Vector3(Mathf.Sin(a) * 0.76f, 1f, Mathf.Cos(a) * 0.76f), new Vector3(0.05f, 1.9f, 0.05f), beigeDark, new Vector3(0f, a * Mathf.Rad2Deg, 0f));
+        }
         }
         var pcIcon = PropGroup(deco, "Icon_MyComputer", new Vector3(46.5f, 2.6f, -151.5f), 50f);
         PBox(pcIcon, "Case", new Vector3(0f, 0.6f, 0f), new Vector3(1.4f, 1.2f, 1.1f), beige);

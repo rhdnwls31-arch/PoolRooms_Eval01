@@ -178,6 +178,32 @@ public static partial class GreyboxGraphicsPass
             var r = go.GetComponent<MeshRenderer>(); r.sharedMaterial = m; r.renderingLayerMask = layer;
         }
         const float jw = 0.08f;
+
+        // 2026-11-20 VARCO 파란 패널 문(Blender에서 문틀/문짝 분리, 문짝 원점 = 경첩). 프리팹은 정면 +Z·손잡이 +X·경첩 -X라
+        // 180도 돌려 정면이 앵커 -Z(플레이어 쪽), 경첩이 +x가 되게 한다(더미와 같다). 벽 구멍(DoorW+2jw × DoorH+jw)에 맞춰
+        // 가로 12%·세로 1%만 늘린다. 문짝은 Hinge 아래로 옮겨 BlueRoomDoor가 돌린다. 도어뷰어 렌즈는 양면에 있다(높이 약 1.59m).
+        var vDoor = VarcoPrefab("BlueCorridor", "PanelDoor");
+        if (vDoor != null)
+        {
+            var inst = (GameObject)PrefabUtility.InstantiatePrefab(vDoor, anchor.gameObject.scene);
+            PrefabUtility.UnpackPrefabInstance(inst, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
+            inst.name = "VARCO_PanelDoor";
+            var frameR = inst.transform.Find("Model/Door_Frame").GetComponent<MeshRenderer>();
+            var fs = frameR.bounds.size; // 원점·회전 없는 상태에서 잰 문틀 크기
+            inst.transform.localScale = new Vector3((DoorW + jw * 2) / fs.x, (DoorH + jw) / fs.y, 1f);
+            inst.transform.SetParent(g, false);
+            inst.transform.localPosition = new Vector3(0f, 0f, zc);
+            inst.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            foreach (var r in inst.GetComponentsInChildren<Renderer>()) r.renderingLayerMask = layer;
+            var leaf = inst.transform.Find("Model/Door_Leaf");
+            var vHinge = new GameObject("Hinge").transform;
+            vHinge.SetParent(g, false);
+            vHinge.position = leaf.position;
+            vHinge.rotation = g.rotation;
+            leaf.SetParent(vHinge, true);
+            return vHinge;
+        }
+
         Piece(g, "Jamb_L", new Vector3(-(DoorW / 2 + jw / 2), DoorH / 2, zc), new Vector3(jw, DoorH, depth), frameMat);
         Piece(g, "Jamb_R", new Vector3(DoorW / 2 + jw / 2, DoorH / 2, zc), new Vector3(jw, DoorH, depth), frameMat);
         Piece(g, "Header", new Vector3(0f, DoorH + jw / 2, zc), new Vector3(DoorW + jw * 2, jw, depth), frameMat);

@@ -105,13 +105,28 @@ public static partial class GreyboxGraphicsPass
         // 격자 천장등 9개: 누런 형광 패널(3000K 근처)
         var lights = Group(gen, "Lights");
         var warm = new Color(1f, 0.9f, 0.6f);
+        // 2026-11-20 빛을 가구 쪽으로 좁힌다: 가구가 없는 서쪽 가운데·방 한가운데 패널 2개는 나간 등(빛 없음, 어두운 관)으로 둔다.
+        // 북쪽 줄은 책상·서류함·액자, 남쪽 줄은 소파·의자·삐에로, 동쪽 가운데는 TV를 비춘다.
+        var deadTube = Lit("GB_Yellow_PanelDead", m => Plain(m, new Color(0.32f, 0.3f, 0.24f), 0.5f));
         foreach (float x in new[] { 23.05f, 28.15f, 33.25f })
             foreach (float z in new[] { -101.45f, -106.55f, -111.65f })
-                Fluorescent(lights, $"Panel_{x:F0}_{-z:F0}", new Vector3(x, 3f, z), false, 1.2f, 0.6f, warm, 120000f, 1500f, Housing(), "GB_Yellow_PanelGlow", LYellow);
+            {
+                var l = Fluorescent(lights, $"Panel_{x:F0}_{-z:F0}", new Vector3(x, 3f, z), false, 1.2f, 0.6f, warm, 120000f, 1500f, Housing(), "GB_Yellow_PanelGlow", LYellow);
+                l.range = 9f;
+                // 같은 날 사용자 요청(패널 더 끄기): 북동(정수기만)·남서(상자·의자) 모서리도 끈다 → 방 모서리가 어둠에 묻힌다.
+                // 켜 둔 5개: 북서(입구·책상), 북쪽 가운데(액자), 동쪽 가운데(TV), 남쪽 가운데(소파), 남동(삐에로).
+                bool dead = (z == -106.55f && x < 30f) || (x > 30f && z == -101.45f) || (x < 25f && z == -111.65f);
+                if (dead)
+                {
+                    l.gameObject.SetActive(false);
+                    l.transform.parent.Find("Tube").GetComponent<MeshRenderer>().sharedMaterial = deadTube;
+                }
+            }
         // 바닥 반사광 흉내: 그림자 없는 점광을 바닥 아래에 두면 바닥 윗면은 등지고 천장과 벽 아래쪽만 고르게 밝힌다.
+        // 2026-11-20 방 끝까지 고르게 밝혀 휑해 보이는 원인이라 120000/14m → 30000/8m.
         foreach (float x in new[] { 24.15f, 32.15f })
             foreach (float z in new[] { -102.6f, -110.6f })
-                MakeLight(lights, "BounceFill", LightType.Point, new Vector3(x, -3f, z), Vector3.zero, new Color(1f, 0.86f, 0.52f), 120000f, 14f, LYellow, false, false);
+                MakeLight(lights, "BounceFill", LightType.Point, new Vector3(x, -3f, z), Vector3.zero, new Color(1f, 0.86f, 0.52f), 30000f, 8f, LYellow, false, false);
         // 안개를 옅게 깔아 공기가 탁해 보이게
         var profile = RoomProfile("Yellow", 7.9f, 0.03f, 0.1f, new Color(1f, 0.86f, 0.5f), 26f, new Color(0.05f, 0.04f, 0.015f), 5f, 2f);
         LocalVolume(gen, "LocalVolume", new Vector3(28.15f, 1.5f, -106.55f), new Vector3(16f, 3f, 15.7f), 1f, 130f, profile); // 천사 방(125)보다 높다: 노란 방 안에서는 노란 방 값이 이긴다

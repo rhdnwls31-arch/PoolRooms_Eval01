@@ -117,3 +117,46 @@ no other objects, no people, product render, high detail silhouette
 1. **스마일 풍선**: 찾기 규칙과 연결돼 플레이 감각에 바로 영향이 있다.
 2. **구명 튜브**: 도시 곳곳에 여러 번 쓰인다.
 3. **감시탑 의자**, **다이빙대**.
+
+---
+
+## 6. 방 채우기 소품 (2026-11-20 추가)
+넓은 방이 휑해서 노란 방·밤의 거실·파란 침실에 더미 소품을 3~5개씩 더 놓았다. 모두 벽 쪽에 모여 있다.
+VARCO FBX를 `Assets/VARCO/VAR_<방>_<이름>.fbx`로 올리면 같은 자리의 더미와 바꾼다(코드는 `FillProp`, 프리팹이 있으면 프리팹, 없으면 더미).
+원점은 모두 **바닥 가운데**, 앞면 **+Z**. 우선순위는 모두 B(배경). 파란 침실 것은 Unity에서 파랗게 칠하므로 옅은 회청색으로 뽑는다.
+
+| 방 | 파일 이름 | 설명 | 크기(m, 폭×높이×깊이) |
+|---|---|---|---|
+| 노란 방 | `VAR_Yellow_FilingCabinet` | 4단 철제 서류함(회색). 2개 놓는다 | 0.5 × 1.32 × 0.6 |
+| 노란 방 | `VAR_Yellow_WaterCooler` | 사무실 정수기, 위에 파란 물통 | 0.34 × 1.35 × 0.34 |
+| 노란 방 | `VAR_Yellow_OfficeCouch` | 낡은 2~3인용 대기실 소파, 한쪽 쿠션이 꺼짐 | 1.9 × 0.85 × 0.85 |
+| 노란 방 | `VAR_Yellow_StackedChairs` | 쌓아 둔 회의실 의자 5개 | 0.48 × 1.25 × 0.5 |
+| 노란 방 | `VAR_Yellow_CardboardBoxes` | 테이프 붙은 골판지 상자 3개 더미 | 1.15 × 0.75 × 0.55 |
+| 밤의 거실 | `VAR_LivingRoom_Sideboard` | 낮은 나무 장식장(문 2짝), 위에 꽃병과 탁상시계 | 1.6 × 0.8 × 0.45 |
+| 밤의 거실 | `VAR_LivingRoom_Bookcase` | 책이 꽂힌 나무 책장(5단) | 0.9 × 1.9 × 0.34 |
+| 밤의 거실 | `VAR_LivingRoom_SideTable` | 네 다리 작은 협탁, 위에 재떨이 | 0.45 × 0.55 × 0.45 |
+| 밤의 거실 | `VAR_LivingRoom_Armchair` | 천 씌운 1인용 안락의자(소파와 같은 갈색) | 0.85 × 0.95 × 0.85 |
+| 밤의 거실 | `VAR_LivingRoom_PottedPlant` | 큰 잎 화분(고무나무 같은) | 0.4 × 1.3 × 0.4 |
+| 파란 침실 | `VAR_Bedroom_Wardrobe` | 문 2짝 옷장 | 1.2 × 2.0 × 0.6 |
+| 파란 침실 | `VAR_Bedroom_Nightstand` | 서랍 하나 협탁(스탠드는 따로 둠, 모델에 넣지 않는다) | 0.45 × 0.55 × 0.4 |
+| 파란 침실 | `VAR_Bedroom_StandingMirror` | 받침대가 뒤로 기댄 전신 거울 | 0.55 × 1.6 × 0.3 |
+| 파란 침실 | `VAR_Bedroom_ToyChest` | 뚜껑 달린 나무 장난감 상자, 옆에 공 하나 | 0.9 × 0.5 × 0.45 |
+
+프롬프트는 §2-4 틀의 `[ ]` 세 곳만 바꿔 넣는다.
+
+| 파일 이름 | [오브젝트 영문 설명] | [재질] | [색] |
+|---|---|---|---|
+| FilingCabinet | four-drawer steel office filing cabinet | painted metal | faded grey, dark grey handles |
+| WaterCooler | office water cooler with a large blue water bottle on top | plastic | off-white, pale blue |
+| OfficeCouch | worn two-seat waiting-room couch, one cushion sagging | fabric, wood feet | faded olive, brown |
+| StackedChairs | stack of five identical plastic meeting chairs with metal legs | plastic, metal | faded grey, silver |
+| CardboardBoxes | pile of three taped cardboard moving boxes | cardboard | faded brown, beige tape |
+| Sideboard | low wooden sideboard with two doors, a small vase and a desk clock on top | wood, ceramic | dark brown, cream |
+| Bookcase | five-shelf wooden bookcase filled with plain books | wood, paper | dark brown, faded red and beige |
+| SideTable | small four-legged wooden side table with an ashtray on top | wood, glass | dark brown, black |
+| Armchair | upholstered single armchair | fabric, wood | faded brown, dark brown |
+| PottedPlant | large-leaf indoor plant in a plain round pot | ceramic, leaves | dark green, brown |
+| Wardrobe | two-door bedroom wardrobe with small knobs | painted wood | pale grey-blue, dark blue |
+| Nightstand | small bedside nightstand with one drawer, nothing on top | painted wood | pale grey-blue, dark blue |
+| StandingMirror | full-length standing mirror leaning on a back stand | painted wood, glass | pale grey-blue, dark mirror |
+| ToyChest | wooden toy chest with a lid and a small ball beside it | painted wood | pale grey-blue, dark blue |

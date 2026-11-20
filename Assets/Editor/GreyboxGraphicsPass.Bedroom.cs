@@ -19,7 +19,9 @@ public static partial class GreyboxGraphicsPass
     // 2026-11-20 사용자 요청: VARCO 침실 가구 텍스처는 옅은 회청색(평균 sRGB 0.25, 0.29, 0.34)이라 방 조명에서 갈색으로 읽혔다.
     // "방 전체가 파란색 하나"에 맞게 재질 색(곱해지는 값, 선형)으로 파랑 쪽으로 밝힌다. 텍스처 무늬는 그대로 남는다.
     static readonly Color BedroomVarcoTint = new Color(0.6f, 1.1f, 4.8f);
-    static readonly string[] BedroomVarcoFurniture = { "Bookshelf", "CRTMonitor", "Desk", "LowCabinet", "WallShelf", "WoodChair" };
+    static readonly string[] BedroomVarcoFurniture = { "Bookshelf", "CRTMonitor", "Desk", "LowCabinet", "WallShelf", "WoodChair",
+        "Wardrobe", "Nightstand", "StandingMirror", "ToyChest",
+        "CurvedLowTable", "Dresser", "RotaryPhone" }; // 2026-11-20 VARCO 추가분(전화기도 흰 모델이라 같이 파랗게) // 2026-11-20 방 채우기 소품(아직 더미, VARCO가 오면 같이 칠한다)
 
     static void TintBedroomVarco()
     {
@@ -27,9 +29,32 @@ public static partial class GreyboxGraphicsPass
         {
             var mat = AssetDatabase.LoadAssetAtPath<Material>($"Assets/VARCO/Bedroom/Materials/VAR_Bedroom_{n}.mat");
             if (mat == null) continue;
-            mat.SetColor("_BaseColor", BedroomVarcoTint.gamma); // 재질 색은 sRGB로 저장되므로 선형 값을 변환해 넣는다
+            // 2026-11-20: 흰 텍스처(낮은 탁자·전화기)에 같은 색을 곱하면 하얗게 빛나 보였다. 텍스처 평균 밝기가
+            // 처음 6종 기준(sRGB 약 0.29)보다 밝으면 그 비율만큼 줄여 곱한다. 기준보다 어두운 것은 그대로(처음 6종은 바뀌지 않음).
+            float lum = BaseMapLum(mat);
+            float k = lum > 0.4f ? BedroomVarcoRefLum / lum : 1f;
+            var tint = BedroomVarcoTint * k; tint.a = 1f;
+            mat.SetColor("_BaseColor", tint.gamma); // 재질 색은 sRGB로 저장되므로 선형 값을 변환해 넣는다
             EditorUtility.SetDirty(mat);
         }
+    }
+
+    const float BedroomVarcoRefLum = 0.29f;
+
+    /// <summary>재질 베이스 텍스처의 평균 밝기(sRGB, 띄엄띄엄 표본). PNG 파일을 직접 읽는다(텍스처가 읽기 가능하지 않아도 된다).</summary>
+    static float BaseMapLum(Material mat)
+    {
+        var tex = mat.GetTexture("_BaseColorMap");
+        if (tex == null) return BedroomVarcoRefLum;
+        var path = AssetDatabase.GetAssetPath(tex);
+        if (!File.Exists(path)) return BedroomVarcoRefLum;
+        var t = new Texture2D(2, 2);
+        t.LoadImage(File.ReadAllBytes(path));
+        var px = t.GetPixels32();
+        double sum = 0; int n = 0;
+        for (int i = 0; i < px.Length; i += 37) { var c = px[i]; if (c.a < 128) continue; sum += (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b) / 255.0; n++; }
+        Object.DestroyImmediate(t);
+        return n > 0 ? (float)(sum / n) : BedroomVarcoRefLum;
     }
 
     static void BuildBedroom()
@@ -208,13 +233,20 @@ public static partial class GreyboxGraphicsPass
         foreach (var o in new[] { new Vector2(-0.25f, -0.38f), new Vector2(0.25f, -0.38f), new Vector2(-0.25f, 0.38f), new Vector2(0.25f, 0.38f) })
             PBox(side, "Leg", new Vector3(o.x, 0.33f, o.y), new Vector3(0.04f, 0.66f, 0.04f), furn);
         // 탁자 윗면(0.70)에 올려 둔다. 전에는 본체가 5mm, 수화기가 본체 위로 1cm 떠 있었다.
+        // 2026-11-20 VARCO 다이얼 전화기(0.24×0.13×0.18): 정면(다이얼)이 방 쪽(서쪽 -X)을 보게 -90도.
+        if (VarcoInto(side, "Bedroom", "RotaryPhone", LBedroom, new Vector3(0, 0.70f, 0.05f), new Vector3(0, -90, 0), false) == null)
+        {
         PBox(side, "Phone_Base", new Vector3(0, 0.745f, 0.05f), new Vector3(0.22f, 0.09f, 0.26f), black);
         PBox(side, "Phone_Receiver", new Vector3(0, 0.815f, 0.05f), new Vector3(0.07f, 0.05f, 0.3f), black);
         Part(side, PrimitiveType.Cylinder, "Phone_Dial", new Vector3(-0.112f, 0.745f, 0.05f), new Vector3(0.14f, 0.005f, 0.14f), deep, new Vector3(0, 0, 90));
+        }
 
         // ---- 가운데: 다리가 휜 낮은 탁자. 서쪽 벽: 서랍장과 그 위의 종이 한 장. 남쪽 벽: 검은 액자.
         var table = new GameObject("LowTable").transform; table.SetParent(props, true); table.position = new Vector3(46.4f, 0f, -131.2f);
         var tc = table.gameObject.AddComponent<BoxCollider>(); tc.size = new Vector3(1.3f, 0.45f, 1.3f); tc.center = new Vector3(0, 0.22f, 0);
+        // 2026-11-20 VARCO 다리 휜 낮은 탁자(1.12×0.6×1.12).
+        if (VarcoInto(table, "Bedroom", "CurvedLowTable", LBedroom) == null)
+        {
         PBox(table, "Top", new Vector3(0, 0.42f, 0), new Vector3(1.3f, 0.07f, 1.3f), furn);
         PBox(table, "Apron", new Vector3(0, 0.35f, 0), new Vector3(1.18f, 0.08f, 1.18f), furn);
         foreach (var o in new[] { new Vector2(-1, -1), new Vector2(1, -1), new Vector2(-1, 1), new Vector2(1, 1) })
@@ -222,11 +254,63 @@ public static partial class GreyboxGraphicsPass
             PBox(table, "Leg", new Vector3(o.x * 0.52f, 0.18f, o.y * 0.52f), new Vector3(0.06f, 0.34f, 0.06f), furn);
             PBox(table, "Foot", new Vector3(o.x * 0.58f, 0.02f, o.y * 0.58f), new Vector3(0.12f, 0.04f, 0.06f), furn);
         }
+        }
+        // 2026-11-20 VARCO 서랍장은 키 큰 서랍장(0.75×1.1×0.51)이라 낮고 긴 더미와 모양이 다르다. 같은 서쪽 벽 자리, 정면이 방 쪽(동쪽).
+        // 종이 한 장은 서랍장 윗면에 올린다.
+        if (VarcoPrefab("Bedroom", "Dresser") != null)
+        {
+            var dr = PropGroup(props, "Dresser", new Vector3(BdX0 + 0.02f + 0.255f, 0f, -127.6f), 90f, new Vector3(0.75f, 1.1f, 0.51f));
+            VarcoInto(dr, "Bedroom", "Dresser", LBedroom);
+            Box(props, "Note", new Vector3(BdX0 + 0.3f, 1.103f, -127.65f), new Vector3(0.22f, 0.004f, 0.3f), paper, LBedroom, false, new Vector3(0, 14f, 0));
+        }
+        else
+        {
         Box(props, "Dresser", new Vector3(BdX0 + 0.28f, 0.42f, -127.6f), new Vector3(0.52f, 0.84f, 2.4f), furn, LBedroom, true);
         foreach (var z in new[] { -126.8f, -128.4f }) Box(props, "Dresser_Line", new Vector3(BdX0 + 0.545f, 0.5f, z), new Vector3(0.01f, 0.02f, 0.7f), deep, LBedroom);
         Box(props, "Note", new Vector3(BdX0 + 0.3f, 0.845f, -128.1f), new Vector3(0.22f, 0.004f, 0.3f), paper, LBedroom, false, new Vector3(0, 14f, 0));
+        }
         Box(props, "Frame", new Vector3(45.8f, 1.6f, BdZ0 + 0.03f), new Vector3(0.9f, 0.7f, 0.04f), black, LBedroom);
         Box(props, "Rug_Under_Table", new Vector3(46.4f, 0.004f, -131.2f), new Vector3(2.2f, 0.008f, 2.0f), deep, LBedroom);
+
+        // 2026-11-20 방 채우기(넓은데 휑하다는 피드백). 비어 있던 서쪽 벽 남쪽·남쪽 벽에 둔다.
+        // 입구(북쪽 x 40.6) → 침대의 시선, 동쪽 벽(그림자·복도 입구 CrZ)은 비운다.
+        // 서쪽 벽: 옷장 / 침대 남쪽 머리맡: 협탁과 작은 스탠드 / 남서쪽 모서리: 전신 거울 / 남쪽 벽 액자 아래: 장난감 상자.
+        var mirrorGlass = Lit("GB_Bedroom_Mirror", m => Plain(m, new Color(0.08f, 0.1f, 0.2f), 0.95f, 0.9f));
+        var lampShade = Lit("GB_Bedroom_LampShade", m => Emissive(m, new Color(0.55f, 0.65f, 1f), 120f));
+        FillProp(props, "Bedroom", "Wardrobe", new Vector3(BdX0 + 0.33f, 0f, -133.4f), 90f, new Vector3(1.2f, 2.0f, 0.6f), g =>
+        {
+            PBox(g, "Body", new Vector3(0, 1.0f, 0), new Vector3(1.2f, 2.0f, 0.58f), furn);
+            foreach (float x in new[] { -0.3f, 0.3f })
+            {
+                PBox(g, "Door", new Vector3(x, 1.02f, 0.292f), new Vector3(0.58f, 1.9f, 0.006f), furn);
+                PBox(g, "Knob", new Vector3(x * 0.15f, 1.05f, 0.31f), new Vector3(0.025f, 0.12f, 0.025f), deep);
+            }
+            PBox(g, "Crown", new Vector3(0, 2.0f, 0.01f), new Vector3(1.26f, 0.04f, 0.62f), deep);
+        });
+        var nsPos = new Vector3(42.75f, 0f, BdOutZ - 1.2f);
+        FillProp(props, "Bedroom", "Nightstand", nsPos, 0f, new Vector3(0.45f, 0.55f, 0.4f), g =>
+        {
+            PBox(g, "Body", new Vector3(0, 0.275f, 0), new Vector3(0.45f, 0.55f, 0.4f), furn);
+            PBox(g, "Drawer", new Vector3(0, 0.4f, 0.201f), new Vector3(0.38f, 0.16f, 0.006f), deep);
+        });
+        // 협탁 위 스탠드는 따로(나중에 VARCO 모델이 협탁 한 덩어리로 와도 불빛 자리는 같게). 콜라이더 없음.
+        var lamp = PropGroup(props, "BedsideLamp", nsPos + new Vector3(-0.08f, 0.55f, 0f), 0f);
+        Part(lamp, PrimitiveType.Cylinder, "Base", new Vector3(0, 0.01f, 0), new Vector3(0.12f, 0.01f, 0.12f), deep);
+        Part(lamp, PrimitiveType.Cylinder, "Stem", new Vector3(0, 0.12f, 0), new Vector3(0.02f, 0.11f, 0.02f), deep);
+        Part(lamp, PrimitiveType.Cylinder, "Shade", new Vector3(0, 0.27f, 0), new Vector3(0.2f, 0.08f, 0.2f), lampShade);
+        FillProp(props, "Bedroom", "StandingMirror", new Vector3(BdX0 + 0.45f, 0f, BdZ0 + 0.45f), 45f, new Vector3(0.55f, 1.6f, 0.3f), g =>
+        {
+            PBox(g, "Frame", new Vector3(0, 0.82f, -0.05f), new Vector3(0.55f, 1.5f, 0.04f), deep);
+            PBox(g, "Glass", new Vector3(0, 0.82f, -0.028f), new Vector3(0.47f, 1.42f, 0.005f), mirrorGlass);
+            Part(g, PrimitiveType.Cube, "Stand", new Vector3(0, 0.5f, -0.17f), new Vector3(0.04f, 1.0f, 0.04f), deep, new Vector3(-18f, 0, 0));
+            PBox(g, "Foot", new Vector3(0, 0.02f, -0.05f), new Vector3(0.5f, 0.04f, 0.12f), deep);
+        });
+        FillProp(props, "Bedroom", "ToyChest", new Vector3(45.8f, 0f, BdZ0 + 0.27f), 0f, new Vector3(0.9f, 0.5f, 0.45f), g =>
+        {
+            PBox(g, "Body", new Vector3(0, 0.22f, 0), new Vector3(0.9f, 0.44f, 0.45f), furn);
+            PBox(g, "Lid", new Vector3(0, 0.47f, 0), new Vector3(0.94f, 0.06f, 0.49f), deep);
+            Part(g, PrimitiveType.Sphere, "Ball", new Vector3(0.62f, 0.12f, 0.12f), Vector3.one * 0.24f, bedding);
+        });
 
         // ---- 빛: 창문으로 들어오는 파란 달빛 한 줄기 + 보조광. 방 전체를 파랗게, 벽과 가구가 읽힐 만큼은 밝게(처음엔 벽이 거의 검었다).
         var lights = Group(gen, "Lights");
@@ -234,8 +318,11 @@ public static partial class GreyboxGraphicsPass
         var moonAim = new Vector3(44.2f, 0f, -132.4f);
         var moon = MakeLight(lights, "Moonlight", LightType.Spot, moonPos, Quaternion.LookRotation(moonAim - moonPos).eulerAngles, new Color(0.45f, 0.6f, 1f), 26000f, 14f, LBedroom, true, false); // 안개 산란 끔: 켜면 창문 위 광원 자리에 빛 얼룩이 맺혀 보였다(2026-11-20)
         moon.spotAngle = 62f; moon.innerSpotAngle = 30f;
-        MakeLight(lights, "Fill", LightType.Point, new Vector3(44f, -2.5f, -130f), Vector3.zero, new Color(0.3f, 0.42f, 1f), 160000f, 14f, LBedroom, false, false);
-        MakeLight(lights, "CeilingFill", LightType.Point, new Vector3(44f, 2.2f, -129f), Vector3.zero, new Color(0.35f, 0.45f, 1f), 40000f, 10f, LBedroom, false, false);
+        // 2026-11-20 빛을 가구 쪽으로 좁힌다: 방 전체를 고르게 밝히던 채움 빛 2개를 줄이고(160000/14m → 90000/9m, 40000/10m → 22000/6m)
+        // 협탁 스탠드의 작은 빛을 더한다. 방 모서리는 어둠에 묻힌다.
+        MakeLight(lights, "Fill", LightType.Point, new Vector3(44f, -2.5f, -130f), Vector3.zero, new Color(0.3f, 0.42f, 1f), 90000f, 9f, LBedroom, false, false);
+        MakeLight(lights, "CeilingFill", LightType.Point, new Vector3(44f, 1.3f, -129f), Vector3.zero, new Color(0.35f, 0.45f, 1f), 22000f, 6f, LBedroom, false, false);
+        MakeLight(lights, "BedsideLamp", LightType.Point, nsPos + new Vector3(-0.08f, 0.85f, 0f), Vector3.zero, new Color(0.55f, 0.65f, 1f), 2500f, 3f, LBedroom, false, false);
         MakeLight(lights, "ScreenGlow", LightType.Point, new Vector3(45.7f, 1.1f, BdZ1 - 0.8f), Vector3.zero, new Color(0.45f, 0.65f, 1f), 2500f, 3f, LBedroom, false, false);
         var profile = RoomProfile("Bedroom", 6.8f, 0.01f, 0.04f, new Color(0.35f, 0.45f, 0.95f), 30f, new Color(0.01f, 0.015f, 0.05f), -30f, 0f);
         var roomCenter = new Vector3((BdX0 + BdX1) / 2, BdH / 2, (BdZ0 + BdZ1) / 2);

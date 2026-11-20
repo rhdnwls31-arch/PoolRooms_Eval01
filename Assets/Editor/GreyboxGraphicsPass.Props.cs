@@ -48,6 +48,17 @@ public static partial class GreyboxGraphicsPass
         return g;
     }
 
+    /// <summary>
+    /// 2026-11-20 방 채우기 소품. VARCO 프리팹(Assets/VARCO/&lt;room&gt;/Prefabs/VAR_&lt;room&gt;_&lt;name&gt;)이 있으면 그것을, 없으면 dummy(로컬 좌표, 앞 = +Z)를 만든다.
+    /// collider = 바닥 기준 상자 크기(null이면 콜라이더 없음). 렌더링 레이어는 propLayer.
+    /// </summary>
+    static Transform FillProp(Transform parent, string room, string name, Vector3 pos, float yaw, Vector3? collider, System.Action<Transform> dummy)
+    {
+        var g = PropGroup(parent, name, pos, yaw, collider);
+        if (VarcoInto(g, room, name, propLayer, default, default, collider.HasValue) == null) dummy(g);
+        return g;
+    }
+
     static void Part(Transform g, PrimitiveType type, string name, Vector3 localCenter, Vector3 size, Material m, Vector3? euler = null)
     {
         var go = GameObject.CreatePrimitive(type);
@@ -164,6 +175,8 @@ public static partial class GreyboxGraphicsPass
     static void TvOnStand(Transform parent, Vector3 pos, float yaw)
     {
         var g = PropGroup(parent, "TV_Off", pos, yaw, new Vector3(1.1f, 1.15f, 0.45f));
+        // 2026-11-20 VARCO 받침대 달린 브라운관 TV(한 덩어리, 1.07×1.1×0.78)가 있으면 그것 하나로.
+        if (VarcoInto(g, "Yellow", "CRTTV_Stand", propLayer) != null) return;
         if (VarcoPrefab("LivingRoom", "CRTTV") != null)
         {
             // 받침대(더미) 위에 VARCO 브라운관 TV. 콜라이더는 받침대 + TV 높이.
@@ -175,6 +188,63 @@ public static partial class GreyboxGraphicsPass
         PBox(g, "Stand", new Vector3(0, 0.25f, 0), new Vector3(1.1f, 0.5f, 0.42f), pWood);
         PBox(g, "Body", new Vector3(0, 0.82f, 0), new Vector3(0.9f, 0.6f, 0.34f), pGrey);
         PBox(g, "Screen", new Vector3(0, 0.83f, 0.172f), new Vector3(0.76f, 0.48f, 0.004f), pDark);
+    }
+
+    // 2026-11-20 노란 방 채우기(넓은데 휑하다는 피드백). 모두 벽에 붙인다. 비워 두는 곳:
+    // 입구(서쪽 z -101.5) → 삐에로(32, -109.5) → 출구(동쪽 z -112.4)의 대각선 동선, 삐에로 → 출구 문 위로 풍선이 날아가는 길.
+    // 북쪽 벽: 책상 옆 서류함 2개, 북동쪽 정수기 / 남쪽 벽: 낡은 소파, 쌓인 의자, 남서쪽 모서리 상자 더미.
+    static void YellowFill(Transform props)
+    {
+        var cardboard = Lit("GB_Prop_Cardboard", m => Plain(m, new Color(0.55f, 0.42f, 0.26f), 0.15f));
+        var couch = Lit("GB_Prop_OfficeCouch", m => Plain(m, new Color(0.36f, 0.34f, 0.22f), 0.12f));
+        var bottle = Lit("GB_Prop_WaterBottle", m => Plain(m, new Color(0.45f, 0.62f, 0.75f), 0.85f));
+
+        foreach (float x in new[] { 25.0f, 25.55f })
+            FillProp(props, "Yellow", "FilingCabinet", new Vector3(x, 0, -99.05f), 180, new Vector3(0.5f, 1.32f, 0.6f), g =>
+            {
+                PBox(g, "Body", new Vector3(0, 0.66f, 0), new Vector3(0.48f, 1.32f, 0.6f), pGrey);
+                for (int i = 0; i < 4; i++)
+                {
+                    PBox(g, "Drawer", new Vector3(0, 0.17f + i * 0.32f, 0.302f), new Vector3(0.42f, 0.28f, 0.006f), pMetal);
+                    PBox(g, "Handle", new Vector3(0, 0.25f + i * 0.32f, 0.31f), new Vector3(0.12f, 0.02f, 0.02f), pDark);
+                }
+            });
+
+        FillProp(props, "Yellow", "WaterCooler", new Vector3(34.6f, 0, -98.97f), 180, new Vector3(0.34f, 1.35f, 0.34f), g =>
+        {
+            PBox(g, "Cabinet", new Vector3(0, 0.47f, 0), new Vector3(0.32f, 0.94f, 0.32f), pWhite);
+            PBox(g, "Tap", new Vector3(0, 0.82f, 0.17f), new Vector3(0.06f, 0.05f, 0.04f), pDark);
+            PBox(g, "DripTray", new Vector3(0, 0.6f, 0.15f), new Vector3(0.2f, 0.02f, 0.06f), pGrey);
+            Part(g, PrimitiveType.Cylinder, "Bottle", new Vector3(0, 1.14f, 0), new Vector3(0.27f, 0.2f, 0.27f), bottle);
+        });
+
+        FillProp(props, "Yellow", "OfficeCouch", new Vector3(27.6f, 0, -113.92f), 0, new Vector3(1.9f, 0.85f, 0.85f), g =>
+        {
+            PBox(g, "Seat", new Vector3(0, 0.22f, 0.05f), new Vector3(1.9f, 0.44f, 0.75f), couch);
+            PBox(g, "Back", new Vector3(0, 0.55f, -0.33f), new Vector3(1.9f, 0.6f, 0.19f), couch);
+            PBox(g, "Arm_L", new Vector3(-0.87f, 0.33f, 0.05f), new Vector3(0.16f, 0.24f, 0.75f), couch);
+            PBox(g, "Arm_R", new Vector3(0.87f, 0.33f, 0.05f), new Vector3(0.16f, 0.24f, 0.75f), couch);
+            PBox(g, "Cushion_Sag", new Vector3(0.4f, 0.45f, 0.08f), new Vector3(0.75f, 0.03f, 0.6f), couch);
+        });
+
+        FillProp(props, "Yellow", "StackedChairs", new Vector3(23.0f, 0, -114.05f), 0, new Vector3(0.48f, 1.25f, 0.5f), g =>
+        {
+            foreach (var o in new[] { new Vector2(-0.2f, -0.2f), new Vector2(0.2f, -0.2f), new Vector2(-0.2f, 0.2f), new Vector2(0.2f, 0.2f) })
+                PBox(g, "Leg", new Vector3(o.x, 0.23f, o.y), new Vector3(0.025f, 0.46f, 0.025f), pMetal);
+            for (int i = 0; i < 5; i++)
+            {
+                PBox(g, "Seat", new Vector3(0, 0.46f + i * 0.08f, 0.01f * i), new Vector3(0.44f, 0.04f, 0.42f), pGrey);
+                PBox(g, "Back", new Vector3(0, 0.72f + i * 0.08f, -0.2f + 0.01f * i), new Vector3(0.42f, 0.3f, 0.025f), pGrey);
+            }
+        });
+
+        FillProp(props, "Yellow", "CardboardBoxes", new Vector3(21.0f, 0, -113.85f), 0, new Vector3(1.15f, 0.75f, 0.55f), g =>
+        {
+            PBox(g, "Box_A", new Vector3(-0.28f, 0.2f, 0), new Vector3(0.58f, 0.4f, 0.5f), cardboard);
+            Part(g, PrimitiveType.Cube, "Box_B", new Vector3(-0.25f, 0.55f, 0.02f), new Vector3(0.48f, 0.3f, 0.42f), cardboard, new Vector3(0, 9f, 0));
+            PBox(g, "Box_C", new Vector3(0.33f, 0.17f, 0.04f), new Vector3(0.45f, 0.34f, 0.4f), cardboard);
+            PBox(g, "Tape", new Vector3(-0.28f, 0.401f, 0), new Vector3(0.06f, 0.003f, 0.5f), pCanvas);
+        });
     }
 
     // ---------------------------------------------------------------- 데칼
@@ -341,6 +411,7 @@ public static partial class GreyboxGraphicsPass
             Frame(props, new Vector3(28.4f, 1.75f, -98.72f), 180, 0.7f, 0.5f);
             Frame(props, new Vector3(29.6f, 1.65f, -98.72f), 180, 0.45f, 0.6f);
             Frame(props, new Vector3(20.17f, 1.7f, -111.6f), 90, 0.6f, 0.8f);
+            YellowFill(props);
 
             var decals = Fresh(room.transform.Find(GenName), "Decals");
             // 얼룩이 너무 많다는 피드백(2026-11-17): 카펫 하나만 옅게, 천장 얼룩은 뺀다.
