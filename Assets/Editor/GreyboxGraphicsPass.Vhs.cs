@@ -9,9 +9,20 @@ using UnityEngine.Rendering.HighDefinition;
 public static partial class GreyboxGraphicsPass
 {
     // 조절값. 너무 세면 멀미가 나니 색 번짐과 렌즈 휨은 낮게 둔다.
-    const float VhsChromatic = 0.45f;     // 화면 가장자리 색 번짐(0~1)
-    const float VhsGrain = 0.32f;         // 입자 세기(0~1)
-    const float VhsGrainResponse = 0.6f;  // 밝은 곳에서도 입자가 보이는 정도(0이면 어두운 곳에만)
+    // 2026-11-20 다듬기: 0.45에서는 1080p 화면 가장자리에서 R/G/B가 20~40px씩 갈라져 겹쳐 보였다(VHS보다 겹보임).
+    // 입자는 밝은 하이키 방(인트로)에서 지저분한 얼룩으로 보여 조금 줄였다.
+    const float VhsChromatic = 0.15f;     // 화면 가장자리 색 번짐(0~1)
+    const float VhsChromaticUncanny = 0.3f; // 이상한 방(꽃무늬 복도, 컴퓨터 속)만 더 세게
+    const float VhsGrain = 0.25f;         // 입자 세기(0~1)
+    const float VhsGrainResponse = 0.45f; // 밝은 곳에서도 입자가 보이는 정도(0이면 어두운 곳에만)
+
+    /// <summary>방 프로파일에 색 번짐 세기를 덮어쓴다(전역 VHS 값보다 이 방에서만 다르게).</summary>
+    static void RoomChromatic(VolumeProfile profile, float intensity)
+    {
+        var ca = Get<ChromaticAberration>(profile);
+        ca.intensity.Override(intensity);
+        EditorUtility.SetDirty(ca); EditorUtility.SetDirty(profile);
+    }
     const float VhsVignette = 0.3f;       // 가장자리 어둡게
     const float VhsLensDistortion = 0.12f;// 양수 = 볼록 렌즈(배럴)
     const float VhsBloom = 0.35f;         // 하이라이트 번짐

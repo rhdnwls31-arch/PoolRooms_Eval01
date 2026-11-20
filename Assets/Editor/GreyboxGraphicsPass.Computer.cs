@@ -221,6 +221,8 @@ public static partial class GreyboxGraphicsPass
             fog.color.Override(new Color(0.72f, 0.86f, 1f));
             EditorUtility.SetDirty(fog); EditorUtility.SetDirty(profile);
         }
+        RoomChromatic(profile, VhsChromaticUncanny);
+        AssetDatabase.SaveAssets();
         var roomCenter = new Vector3(PcCx, PcH / 2, (PcZ0 + PcZ1) / 2);
         var roomSize = new Vector3(w, PcH, d);
         LocalVolume(gen, "LocalVolume", roomCenter, roomSize, 2f, 125f, profile);

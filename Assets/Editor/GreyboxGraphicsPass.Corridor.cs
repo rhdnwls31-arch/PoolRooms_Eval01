@@ -120,6 +120,7 @@ public static partial class GreyboxGraphicsPass
             // 끝없는 복도에서 플레이어를 옮길 때 모션 블러가 번지면 들킨다.
             var mb = Persist(profile, profile.Add<MotionBlur>(true));
             mb.intensity.Override(0f);
+            RoomChromatic(profile, VhsChromaticUncanny);
             EditorUtility.SetDirty(profile); AssetDatabase.SaveAssets();
         }
         LocalVolume(gen, "LocalVolume", room.center, room.size, 0.5f, 125f, profile);
