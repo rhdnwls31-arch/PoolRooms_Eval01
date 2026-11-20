@@ -23,8 +23,8 @@ public static partial class GreyboxGraphicsPass
         ca.intensity.Override(intensity);
         EditorUtility.SetDirty(ca); EditorUtility.SetDirty(profile);
     }
-    const float VhsVignette = 0.3f;       // 가장자리 어둡게
-    const float VhsLensDistortion = 0.12f;// 양수 = 볼록 렌즈(배럴)
+    const float VhsVignette = 0.2f;       // 가장자리 어둡게(2026-11-20 TV 화면 유리가 가장자리를 같이 어둡게 하므로 0.3→0.2)
+    const float VhsLensDistortion = 0f;   // 양수 = 볼록 렌즈(배럴). 2026-11-20 TV 화면(CrtScreen)이 유리 휨을 맡아 0.12→0(두 번 휘면 멀미)
     const float VhsBloom = 0.35f;         // 하이라이트 번짐
     const float VhsSaturation = -12f;     // 바랜 색(-100~100)
     const float VhsContrast = -8f;
@@ -48,7 +48,7 @@ public static partial class GreyboxGraphicsPass
 
         var lens = Get<LensDistortion>(profile);
         lens.intensity.Override(VhsLensDistortion);
-        lens.scale.Override(1.03f); // 휘면서 가장자리가 잘리지 않게 살짝 확대
+        lens.scale.Override(VhsLensDistortion > 0f ? 1.03f : 1f); // 휘면서 가장자리가 잘리지 않게 살짝 확대(휨이 없으면 확대도 없음)
 
         var bloom = Get<Bloom>(profile);
         bloom.intensity.Override(VhsBloom);

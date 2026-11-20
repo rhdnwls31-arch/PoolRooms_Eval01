@@ -232,7 +232,7 @@ public static partial class GreyboxGraphicsPass
         var lights = Group(gen, "Lights");
         var moonPos = new Vector3(BdX1 - 0.3f, 2.3f, -130.6f);
         var moonAim = new Vector3(44.2f, 0f, -132.4f);
-        var moon = MakeLight(lights, "Moonlight", LightType.Spot, moonPos, Quaternion.LookRotation(moonAim - moonPos).eulerAngles, new Color(0.45f, 0.6f, 1f), 26000f, 14f, LBedroom, true);
+        var moon = MakeLight(lights, "Moonlight", LightType.Spot, moonPos, Quaternion.LookRotation(moonAim - moonPos).eulerAngles, new Color(0.45f, 0.6f, 1f), 26000f, 14f, LBedroom, true, false); // 안개 산란 끔: 켜면 창문 위 광원 자리에 빛 얼룩이 맺혀 보였다(2026-11-20)
         moon.spotAngle = 62f; moon.innerSpotAngle = 30f;
         MakeLight(lights, "Fill", LightType.Point, new Vector3(44f, -2.5f, -130f), Vector3.zero, new Color(0.3f, 0.42f, 1f), 160000f, 14f, LBedroom, false, false);
         MakeLight(lights, "CeilingFill", LightType.Point, new Vector3(44f, 2.2f, -129f), Vector3.zero, new Color(0.35f, 0.45f, 1f), 40000f, 10f, LBedroom, false, false);
