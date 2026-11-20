@@ -141,6 +141,15 @@ public static partial class GreyboxGraphicsPass
     static void DeskAndChair(Transform parent, Vector3 pos, float yaw)
     {
         var g = PropGroup(parent, "EmptyDesk", pos, yaw, new Vector3(1.4f, 0.76f, 0.7f));
+        // 2026-11-20 VARCO 사무용 책상(1.75×0.74×0.81)·회전의자(0.73×0.95×0.72). 책상 정면(+Z)이 의자 쪽,
+        // 의자는 책상을 보게 180도. 책상이 깊어져 의자를 0.85m 앞에 둔다.
+        if (VarcoPrefab("Yellow", "OfficeDesk") != null && VarcoPrefab("Yellow", "SwivelChair") != null)
+        {
+            VarcoInto(g, "Yellow", "OfficeDesk", propLayer);
+            var vc = PropGroup(parent, "DeskChair", pos + g.forward * 0.85f, yaw + 180f, new Vector3(0.6f, 0.95f, 0.6f));
+            VarcoInto(vc, "Yellow", "SwivelChair", propLayer, default, default, false);
+            return;
+        }
         PBox(g, "Top", new Vector3(0, 0.74f, 0), new Vector3(1.4f, 0.04f, 0.7f), pWood);
         PBox(g, "SideL", new Vector3(-0.67f, 0.36f, 0), new Vector3(0.04f, 0.72f, 0.66f), pWood);
         PBox(g, "SideR", new Vector3(0.67f, 0.36f, 0), new Vector3(0.04f, 0.72f, 0.66f), pWood);

@@ -117,12 +117,18 @@ public static partial class GreyboxGraphicsPass
     // 평평한 네모 판을 유리 앞에 띄우면 모서리가 테두리 위로 튀어나와 티가 났다(2026-11-19 사용자 피드백).
     // 그래서 모델 유리를 앞(+Z)에서 쏘아 표면을 따라가는 둥근 모서리 메쉬를 만든다(유리 위 4mm). CRTTV 프리팹 원점 기준.
     // 유리 = 가운데 (0.055, 0.32), 가로 반폭 0.27, 세로 반높이 0.19, 모서리 반지름 0.08. 보는 사람 왼쪽이 모델 +X.
-    static UnityEngine.Mesh CrtScreenMesh()
+    static UnityEngine.Mesh CrtScreenMesh() => GlassScreenMesh("LivingRoom", "CRTTV", 0.055f, 0.32f, 0.27f, 0.19f, 0.08f);
+
+    /// <summary>
+    /// VARCO 화면 달린 물건(TV, 모니터)의 유리 면을 앞(+Z)에서 쏘아 따라가는 둥근 모서리 메쉬. 프리팹 원점 기준, 유리 위 4mm.
+    /// cx, cy = 유리 가운데, hw/hh = 반폭/반높이, r = 모서리 반지름. 만든 메쉬는 Models/VAR_&lt;방&gt;_&lt;이름&gt;_Screen.asset에 둔다.
+    /// </summary>
+    static UnityEngine.Mesh GlassScreenMesh(string room, string name, float cx, float cy, float hw, float hh, float r)
     {
-        const string path = "Assets/VARCO/LivingRoom/Models/VAR_LivingRoom_CRTTV_Screen.asset";
+        string path = $"Assets/VARCO/{room}/Models/VAR_{room}_{name}_Screen.asset";
         var cached = AssetDatabase.LoadAssetAtPath<UnityEngine.Mesh>(path);
         if (cached != null) return cached;
-        var prefab = VarcoPrefab("LivingRoom", "CRTTV");
+        var prefab = VarcoPrefab(room, name);
         if (prefab == null) return null;
 
         var probe = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
@@ -131,7 +137,7 @@ public static partial class GreyboxGraphicsPass
         var col = mf.gameObject.AddComponent<MeshCollider>(); col.sharedMesh = mf.sharedMesh;
         Physics.SyncTransforms();
 
-        const float cx = 0.055f, cy = 0.32f, hw = 0.27f, hh = 0.19f, r = 0.08f, lift = 0.004f;
+        const float lift = 0.004f;
         const int nx = 28, ny = 20;
         var verts = new Vector3[(nx + 1) * (ny + 1)]; var uvs = new Vector2[verts.Length];
         for (int j = 0; j <= ny; j++)
@@ -161,7 +167,7 @@ public static partial class GreyboxGraphicsPass
                 int a = j * (nx + 1) + i, b = a + 1, c = a + nx + 1, d = c + 1;
                 tris.AddRange(new[] { a, c, b, b, c, d });
             }
-        var m = new UnityEngine.Mesh { name = "VAR_LivingRoom_CRTTV_Screen", vertices = verts, uv = uvs };
+        var m = new UnityEngine.Mesh { name = $"VAR_{room}_{name}_Screen", vertices = verts, uv = uvs };
         m.SetTriangles(tris, 0);
         m.RecalculateNormals();
         // 앞(+Z)을 보게: 법선이 뒤를 보면 감는 방향을 뒤집는다

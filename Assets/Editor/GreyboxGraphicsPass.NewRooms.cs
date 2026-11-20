@@ -455,10 +455,14 @@ public static partial class GreyboxGraphicsPass
         sofa.SetPositionAndRotation(sofaPos, Quaternion.LookRotation(Vector3.left));
         var sc = sofa.gameObject.AddComponent<BoxCollider>(); sc.size = new Vector3(2.2f, 0.9f, 0.95f); sc.center = new Vector3(0, 0.45f, 0);
         // 바닥까지 내린다(2026-11-20): 전에는 좌석이 2.5cm, 등받이가 24cm 떠 있었다.
+        // 2026-11-20 VARCO 소파(2.1×0.83×0.92). 정면 +Z = TV 쪽, 뒷면이 더미 등받이 자리와 같다.
+        if (VarcoInto(sofa, "LivingRoom", "Sofa", LLiving) == null)
+        {
         PBox(sofa, "Seat", new Vector3(0, 0.235f, 0.05f), new Vector3(2.2f, 0.47f, 0.85f), fabric);
         PBox(sofa, "Back", new Vector3(0, 0.4975f, -0.36f), new Vector3(2.2f, 0.995f, 0.22f), fabric);
         PBox(sofa, "Arm_L", new Vector3(-1.02f, 0.45f, 0.05f), new Vector3(0.18f, 0.5f, 0.85f), fabric);
         PBox(sofa, "Arm_R", new Vector3(1.02f, 0.45f, 0.05f), new Vector3(0.18f, 0.5f, 0.85f), fabric);
+        }
 
         // 소파에 앉은 사람: TV 화면에만 보인다(그림자 없음). 진짜 소파는 비어 있다.
         var ghost = new GameObject("TvOnly_SittingFigure").transform; ghost.SetParent(sofa, false);
@@ -488,14 +492,33 @@ public static partial class GreyboxGraphicsPass
         if (camGo.GetComponent<HDAdditionalCameraData>() == null) camGo.AddComponent<HDAdditionalCameraData>();
 
         Box(props, "Rug", new Vector3(44.2f, 0.005f, -118.6f), new Vector3(3.4f, 0.01f, 2.4f), Lit("GB_Living_Rug", m => Plain(m, new Color(0.3f, 0.12f, 0.1f), 0.1f)), LLiving);
+        // VARCO 낮은 탁자(1.2×0.42×0.78): 긴 쪽이 소파와 나란하게(남북) 90도 돌린다.
+        if (VarcoPrefab("LivingRoom", "CoffeeTable") != null)
+        {
+            var ct = PropGroup(props, "CoffeeTable", new Vector3(44.6f, 0f, -118.6f), 90f, new Vector3(1.2f, 0.42f, 0.78f));
+            VarcoInto(ct, "LivingRoom", "CoffeeTable", LLiving);
+        }
+        else
+        {
         Box(props, "CoffeeTable", new Vector3(44.6f, 0.4f, -118.6f), new Vector3(0.6f, 0.05f, 1.1f), wood, LLiving, true);
         foreach (var o in new[] { new Vector2(-0.25f, -0.5f), new Vector2(0.25f, -0.5f), new Vector2(-0.25f, 0.5f), new Vector2(0.25f, 0.5f) })
             Box(props, "TableLeg", new Vector3(44.6f + o.x, 0.19f, -118.6f + o.y), new Vector3(0.05f, 0.38f, 0.05f), wood, LLiving);
+        }
         // 스탠드: 소파 옆, 따뜻한 주황빛 하나가 방을 겨우 밝힌다.
         var lampPos = new Vector3(48.6f, 0f, -116.9f);
+        if (VarcoPrefab("LivingRoom", "FloorLamp") != null)
+        {
+            // VARCO 스탠드(높이 1.6). 전등(1.45m)이 갓 안에 들어가므로, 갓이 빛을 막지 않게 스탠드는 그림자를 만들지 않는다.
+            var lg = PropGroup(props, "FloorLamp", lampPos, 0f, new Vector3(0.4f, 1.6f, 0.4f));
+            var lm = VarcoInto(lg, "LivingRoom", "FloorLamp", LLiving, default, default, false);
+            foreach (var r in lm.GetComponentsInChildren<MeshRenderer>()) r.shadowCastingMode = ShadowCastingMode.Off;
+        }
+        else
+        {
         Box(props, "Lamp_Pole", lampPos + new Vector3(0, 0.75f, 0), new Vector3(0.04f, 1.5f, 0.04f), dark, LLiving);
         Box(props, "Lamp_Base", lampPos + new Vector3(0, 0.02f, 0), new Vector3(0.3f, 0.04f, 0.3f), dark, LLiving);
         Prim(PrimitiveType.Cylinder, props, "Lamp_Shade", lampPos + new Vector3(0, 1.55f, 0), new Vector3(0.42f, 0.16f, 0.42f), shade, LLiving);
+        }
         // 북쪽 벽 가족사진(빈 액자), 동쪽 벽 밤 창문과 커튼
         foreach (var f in new[] { new Vector3(42.6f, 1.7f, 0.5f), new Vector3(43.5f, 1.6f, 0.4f), new Vector3(44.6f, 1.75f, 0.55f) })
         {

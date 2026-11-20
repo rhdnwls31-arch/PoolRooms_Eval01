@@ -16,6 +16,22 @@ public static partial class GreyboxGraphicsPass
     const float BdInX = 40.6f;           // 거실 → 침실 구멍 가운데 x (폭 1.8, 높이 2.4). 거실 TV(서쪽 벽) 옆 모서리.
     const float BdOutZ = -133.4f;        // 침대 가운데 z. 예전 침실 → 천사 방 구멍 자리(2026-11-18 기믹 확장으로 없앰)
 
+    // 2026-11-20 사용자 요청: VARCO 침실 가구 텍스처는 옅은 회청색(평균 sRGB 0.25, 0.29, 0.34)이라 방 조명에서 갈색으로 읽혔다.
+    // "방 전체가 파란색 하나"에 맞게 재질 색(곱해지는 값, 선형)으로 파랑 쪽으로 밝힌다. 텍스처 무늬는 그대로 남는다.
+    static readonly Color BedroomVarcoTint = new Color(0.6f, 1.1f, 4.8f);
+    static readonly string[] BedroomVarcoFurniture = { "Bookshelf", "CRTMonitor", "Desk", "LowCabinet", "WallShelf", "WoodChair" };
+
+    static void TintBedroomVarco()
+    {
+        foreach (var n in BedroomVarcoFurniture)
+        {
+            var mat = AssetDatabase.LoadAssetAtPath<Material>($"Assets/VARCO/Bedroom/Materials/VAR_Bedroom_{n}.mat");
+            if (mat == null) continue;
+            mat.SetColor("_BaseColor", BedroomVarcoTint.gamma); // 재질 색은 sRGB로 저장되므로 선형 값을 변환해 넣는다
+            EditorUtility.SetDirty(mat);
+        }
+    }
+
     static void BuildBedroom()
     {
         NewRoomRoot("GB_03c_Bedroom", out var gen);
@@ -53,6 +69,7 @@ public static partial class GreyboxGraphicsPass
         Cover(trim, "S", true, BdZ0 + 0.02f, BdX0, BdX1, 0.1f, BdX0, BdX0, 0.1f, deep, LBedroom);
 
         propLayer = LBedroom;
+        TintBedroomVarco();
         var props = Group(gen, "Props");
 
         // ---- 침대(이상한 점). 방 남쪽 가운데에 x 방향으로 놓이고, 머리 쪽(서쪽)이 출구를 향한다.
@@ -95,22 +112,50 @@ public static partial class GreyboxGraphicsPass
         // ---- 북쪽 벽: 책상(모니터, 책 더미, 의자), 키 큰 책장
         var desk = new GameObject("Desk").transform; desk.SetParent(props, true); desk.position = new Vector3(45.6f, 0f, BdZ1 - 0.4f);
         var dc = desk.gameObject.AddComponent<BoxCollider>(); dc.size = new Vector3(1.8f, 0.78f, 0.7f); dc.center = new Vector3(0, 0.39f, 0);
-        PBox(desk, "Top", new Vector3(0, 0.76f, 0), new Vector3(1.8f, 0.05f, 0.7f), furn);
-        PBox(desk, "Drawers", new Vector3(0.62f, 0.37f, 0), new Vector3(0.5f, 0.72f, 0.64f), furn);
-        PBox(desk, "Leg_L", new Vector3(-0.85f, 0.37f, 0), new Vector3(0.05f, 0.74f, 0.64f), furn);
-        PBox(desk, "Monitor", new Vector3(0.1f, 1.02f, 0.12f), new Vector3(0.5f, 0.38f, 0.32f), deep);
-        PBox(desk, "Screen", new Vector3(0.1f, 1.03f, -0.045f), new Vector3(0.4f, 0.28f, 0.01f), screenMat);
-        for (int i = 0; i < 4; i++) PBox(desk, "Book", new Vector3(-0.62f + i * 0.09f, 0.92f, 0.1f), new Vector3(0.07f, 0.28f + (i % 2) * 0.05f, 0.22f), i % 2 == 0 ? deep : furn);
-        PBox(desk, "BookStack", new Vector3(-0.3f, 0.83f, 0.1f), new Vector3(0.26f, 0.1f, 0.2f), deep);
-        var chair = new GameObject("Chair").transform; chair.SetParent(props, true); chair.position = new Vector3(45.5f, 0f, BdZ1 - 1.05f);
+        // 2026-11-20 VARCO 책상(1.37×0.76×0.79)·브라운관 모니터: 정면이 방 쪽(-Z)이게 180도, 뒷면을 벽에 붙인다.
+        // 모니터 화면은 유리 면을 따라 만든 발광 메쉬를 덮어 켜진 화면으로 둔다(거실 TV와 같은 방식).
+        bool vDesk = VarcoInto(desk, "Bedroom", "Desk", LBedroom, new Vector3(0, 0, -0.05f), new Vector3(0, 180, 0)) != null;
+        if (!vDesk)
+        {
+            PBox(desk, "Top", new Vector3(0, 0.76f, 0), new Vector3(1.8f, 0.05f, 0.7f), furn);
+            PBox(desk, "Drawers", new Vector3(0.62f, 0.37f, 0), new Vector3(0.5f, 0.72f, 0.64f), furn);
+            PBox(desk, "Leg_L", new Vector3(-0.85f, 0.37f, 0), new Vector3(0.05f, 0.74f, 0.64f), furn);
+        }
+        float deskTop = vDesk ? 0.76f : 0.785f;
+        var mon = VarcoInto(desk, "Bedroom", "CRTMonitor", LBedroom, new Vector3(0.15f, deskTop, 0.05f), new Vector3(0, 180, 0), false);
+        if (mon != null)
+        {
+            var monScreen = GlassScreenMesh("Bedroom", "CRTMonitor", 0f, 0.235f, 0.125f, 0.095f, 0.03f);
+            if (monScreen != null)
+            {
+                var s = MeshPart(mon.transform, "Screen", monScreen, screenMat, LBedroom, 1f);
+                s.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+            }
+        }
+        else
+        {
+            PBox(desk, "Monitor", new Vector3(0.1f, 1.02f, 0.12f), new Vector3(0.5f, 0.38f, 0.32f), deep);
+            PBox(desk, "Screen", new Vector3(0.1f, 1.03f, -0.045f), new Vector3(0.4f, 0.28f, 0.01f), screenMat);
+        }
+        float bookX = vDesk ? -0.58f : -0.62f;
+        for (int i = 0; i < 4; i++) PBox(desk, "Book", new Vector3(bookX + i * 0.07f, deskTop + 0.14f + (i % 2) * 0.025f, 0.1f), new Vector3(0.05f, 0.28f + (i % 2) * 0.05f, 0.22f), i % 2 == 0 ? deep : furn);
+        PBox(desk, "BookStack", new Vector3(vDesk ? -0.15f : -0.3f, deskTop + 0.05f, 0.1f), new Vector3(0.22f, 0.1f, 0.2f), deep);
+        var chair = new GameObject("Chair").transform; chair.SetParent(props, true); chair.position = new Vector3(45.5f, 0f, BdZ1 - (VarcoPrefab("Bedroom", "WoodChair") != null ? 1.12f : 1.05f));
         chair.rotation = Quaternion.Euler(0, 12f, 0);
-        PBox(chair, "Seat", new Vector3(0, 0.46f, 0), new Vector3(0.45f, 0.04f, 0.42f), furn);
-        PBox(chair, "Back", new Vector3(0, 0.75f, -0.2f), new Vector3(0.45f, 0.55f, 0.03f), furn);
-        foreach (var o in new[] { new Vector2(-0.2f, -0.18f), new Vector2(0.2f, -0.18f), new Vector2(-0.2f, 0.18f), new Vector2(0.2f, 0.18f) })
-            PBox(chair, "Leg", new Vector3(o.x, 0.22f, o.y), new Vector3(0.03f, 0.44f, 0.03f), furn);
+        // 의자 정면(+Z)이 책상(북쪽)을 보게 둔다: 앉는 사람이 책상을 향한다.
+        if (VarcoInto(chair, "Bedroom", "WoodChair", LBedroom, default, default, false) == null)
+        {
+            PBox(chair, "Seat", new Vector3(0, 0.46f, 0), new Vector3(0.45f, 0.04f, 0.42f), furn);
+            PBox(chair, "Back", new Vector3(0, 0.75f, -0.2f), new Vector3(0.45f, 0.55f, 0.03f), furn);
+            foreach (var o in new[] { new Vector2(-0.2f, -0.18f), new Vector2(0.2f, -0.18f), new Vector2(-0.2f, 0.18f), new Vector2(0.2f, 0.18f) })
+                PBox(chair, "Leg", new Vector3(o.x, 0.22f, o.y), new Vector3(0.03f, 0.44f, 0.03f), furn);
+        }
 
         var shelf = new GameObject("Bookshelf").transform; shelf.SetParent(props, true); shelf.position = new Vector3(47.9f, 0f, BdZ1 - 0.22f);
         var shc = shelf.gameObject.AddComponent<BoxCollider>(); shc.size = new Vector3(1.4f, 2.1f, 0.42f); shc.center = new Vector3(0, 1.05f, 0);
+        // VARCO 책장(1.24×2.1×0.46, 2026-11-20 Blender에서 녹은 책 덩어리 제거·선반 바닥 다시 칠함). 정면이 방 쪽(-Z), 뒷면을 벽에.
+        if (VarcoInto(shelf, "Bedroom", "Bookshelf", LBedroom, new Vector3(0, 0, -0.025f), new Vector3(0, 180, 0)) == null)
+        {
         PBox(shelf, "Side_L", new Vector3(-0.68f, 1.05f, 0), new Vector3(0.04f, 2.1f, 0.42f), furn);
         PBox(shelf, "Side_R", new Vector3(0.68f, 1.05f, 0), new Vector3(0.04f, 2.1f, 0.42f), furn);
         PBox(shelf, "Mid", new Vector3(0, 1.05f, 0), new Vector3(0.03f, 2.1f, 0.42f), furn);
@@ -128,13 +173,31 @@ public static partial class GreyboxGraphicsPass
                 PBox(shelf, "Book", new Vector3(x, y + 0.015f + h / 2, 0.02f), new Vector3(0.06f, h, 0.28f), (i + k) % 3 == 0 ? furn : deep);
             }
         }
+        }
 
         // ---- 동쪽 벽: 낮은 수납장, 벽 선반, 달빛 창문, 옛날 전화기가 놓인 작은 탁자
+        // VARCO 낮은 수납장(1.14×0.75×0.65)·벽 선반(1.1×0.7×0.43, 책 몇 권 포함): 정면이 방 쪽(서쪽 -X), 뒷면을 동쪽 벽에.
+        if (VarcoPrefab("Bedroom", "LowCabinet") != null)
+        {
+            var cab = PropGroup(props, "Cabinet", new Vector3(BdX1 - 0.015f - 0.325f, 0f, -126.4f), -90f, new Vector3(1.14f, 0.75f, 0.65f));
+            VarcoInto(cab, "Bedroom", "LowCabinet", LBedroom);
+        }
+        else
+        {
         Box(props, "Cabinet", new Vector3(BdX1 - 0.25f, 0.45f, -126.4f), new Vector3(0.48f, 0.9f, 1.0f), furn, LBedroom, true);
         Box(props, "Cabinet_Gap", new Vector3(BdX1 - 0.49f, 0.45f, -126.4f), new Vector3(0.01f, 0.02f, 0.96f), deep, LBedroom);
+        }
+        if (VarcoPrefab("Bedroom", "WallShelf") != null)
+        {
+            var ws = PropGroup(props, "WallShelf", new Vector3(BdX1 - 0.015f, 2.0f, -128.4f), -90f);
+            VarcoInto(ws, "Bedroom", "WallShelf", LBedroom, default, default, false);
+        }
+        else
+        {
         Box(props, "WallShelf", new Vector3(BdX1 - 0.15f, 1.85f, -128.4f), new Vector3(0.3f, 0.04f, 1.5f), furn, LBedroom);
         for (int i = 0; i < 7; i++)
             Box(props, "ShelfBook", new Vector3(BdX1 - 0.17f, 1.99f + (i % 2) * 0.02f, -129.0f + i * 0.08f), new Vector3(0.22f, 0.24f + (i % 2) * 0.04f, 0.06f), i % 3 == 0 ? furn : deep, LBedroom);
+        }
         Box(props, "Window_Glass", new Vector3(BdX1 - 0.05f, 1.55f, -130.6f), new Vector3(0.02f, 1.2f, 1.4f), night, LBedroom); // 틀보다 방 쪽에 둔다
         Box(props, "Window_Frame", new Vector3(BdX1 - 0.03f, 1.55f, -130.6f), new Vector3(0.03f, 1.3f, 1.5f), deep, LBedroom);
         Box(props, "Window_Bar", new Vector3(BdX1 - 0.07f, 1.55f, -130.6f), new Vector3(0.03f, 1.3f, 0.04f), deep, LBedroom);
