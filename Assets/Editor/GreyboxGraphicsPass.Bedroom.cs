@@ -144,9 +144,10 @@ public static partial class GreyboxGraphicsPass
         PBox(side, "Top", new Vector3(0, 0.68f, 0), new Vector3(0.62f, 0.04f, 0.92f), furn);
         foreach (var o in new[] { new Vector2(-0.25f, -0.38f), new Vector2(0.25f, -0.38f), new Vector2(-0.25f, 0.38f), new Vector2(0.25f, 0.38f) })
             PBox(side, "Leg", new Vector3(o.x, 0.33f, o.y), new Vector3(0.04f, 0.66f, 0.04f), furn);
-        PBox(side, "Phone_Base", new Vector3(0, 0.75f, 0.05f), new Vector3(0.22f, 0.09f, 0.26f), black);
-        PBox(side, "Phone_Receiver", new Vector3(0, 0.83f, 0.05f), new Vector3(0.07f, 0.05f, 0.3f), black);
-        Part(side, PrimitiveType.Cylinder, "Phone_Dial", new Vector3(-0.112f, 0.75f, 0.05f), new Vector3(0.14f, 0.005f, 0.14f), deep, new Vector3(0, 0, 90));
+        // 탁자 윗면(0.70)에 올려 둔다. 전에는 본체가 5mm, 수화기가 본체 위로 1cm 떠 있었다.
+        PBox(side, "Phone_Base", new Vector3(0, 0.745f, 0.05f), new Vector3(0.22f, 0.09f, 0.26f), black);
+        PBox(side, "Phone_Receiver", new Vector3(0, 0.815f, 0.05f), new Vector3(0.07f, 0.05f, 0.3f), black);
+        Part(side, PrimitiveType.Cylinder, "Phone_Dial", new Vector3(-0.112f, 0.745f, 0.05f), new Vector3(0.14f, 0.005f, 0.14f), deep, new Vector3(0, 0, 90));
 
         // ---- 가운데: 다리가 휜 낮은 탁자. 서쪽 벽: 서랍장과 그 위의 종이 한 장. 남쪽 벽: 검은 액자.
         var table = new GameObject("LowTable").transform; table.SetParent(props, true); table.position = new Vector3(46.4f, 0f, -131.2f);

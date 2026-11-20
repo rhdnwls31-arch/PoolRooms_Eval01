@@ -54,9 +54,75 @@ public static partial class GreyboxGraphicsPass
         }
     }
 
+    /// <summary>
+    /// 소품 바닥 붙이기(2026-11-20). 인트로 소품은 IntroMapBuilder가 한 번 만든 것이라 여기서 바로잡는다(인트로·같은 수영장 둘 다).
+    /// 경계 상자 기준이라 몇 번을 돌려도 결과가 같다.
+    /// </summary>
+    static void ApplyPropGrounding()
+    {
+        Renderer[] All(Transform t) => t.GetComponentsInChildren<Renderer>(false);
+        float MinY(Transform t) { float y = float.MaxValue; foreach (var r in All(t)) y = Mathf.Min(y, r.bounds.min.y); return y; }
+        // 아래에 있는 메시(자기 자신 제외)의 윗면 높이. 선베드 콜라이더는 등받이까지 덮는 큰 상자라 콜라이더가 아니라 렌더러로 본다.
+        var allRenderers = Object.FindObjectsByType<MeshRenderer>(FindObjectsInactive.Exclude);
+        float SurfaceBelow(Transform t, Bounds b)
+        {
+            float y = float.NaN;
+            foreach (var r in allRenderers)
+            {
+                if (!r.enabled || r.transform.IsChildOf(t)) continue;
+                var rb = r.bounds;
+                if (b.center.x < rb.min.x || b.center.x > rb.max.x || b.center.z < rb.min.z || b.center.z > rb.max.z) continue;
+                if (rb.max.y > b.min.y + 0.2f || rb.size.y > 3f) continue; // 소품보다 위로 솟은 것(등받이)·큰 구조물 제외
+                if (float.IsNaN(y) || rb.max.y > y) y = rb.max.y;
+            }
+            return y;
+        }
+        // 라디오는 옆 탁자 상판에 12cm 묻혀 있었고(모델 피벗이 가운데), 수건은 선베드 위로 3cm 떠 있었다.
+        foreach (var t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include))
+        {
+            if (t.parent == null || t.parent.name != "Dummies") continue;
+            if (t.name != "Prop_Radio" && !t.name.StartsWith("Prop_Towels")) continue;
+            var rs = All(t); if (rs.Length == 0) continue;
+            var b = rs[0].bounds; foreach (var r in rs) b.Encapsulate(r.bounds);
+            // 선베드 등받이에 맞지 않도록 소품 발자국 가운데 아래 표면만 본다
+            float top = SurfaceBelow(t, b);
+            if (float.IsNaN(top)) continue;
+            float dy = top - MinY(t);
+            if (Mathf.Abs(dy) > 0.001f && Mathf.Abs(dy) < 0.3f) { t.position += Vector3.up * dy; EditorUtility.SetDirty(t); }
+        }
+        // 물 위 빛 구슬 중 계단에 박힌 것: 계단이 깊어지는 쪽으로 계단에서 비켜날 때까지 옮긴다.
+        foreach (var t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include))
+        {
+            if (t.parent == null || t.parent.name != "Dummies" || !(t.name.Contains("_Orb_") || t.name.StartsWith("Prop_GlowOrb"))) continue;
+            if (!t.TryGetComponent<Renderer>(out var orb)) continue;
+            Vector3 dir = Vector3.zero;
+            for (int i = 0; i < 60; i++)
+            {
+                var b = orb.bounds; float rad = b.extents.x;
+                Collider hit = null;
+                foreach (var c in Physics.OverlapSphere(b.center, rad, ~0, QueryTriggerInteraction.Ignore))
+                    if (c.name.StartsWith("Step_") && c.bounds.max.y > b.min.y + 0.01f) { hit = c; break; }
+                if (hit == null) break;
+                if (dir == Vector3.zero)
+                {
+                    // 계단은 한 축으로 늘어서 있다: 짧은 축(디딤판 깊이) 방향 중 더 낮은 계단 쪽
+                    var hb = hit.bounds; bool alongX = hb.size.x < hb.size.z;
+                    var probe = hb.center + (alongX ? Vector3.right : Vector3.forward) * (alongX ? hb.size.x : hb.size.z);
+                    float yNext = float.NaN;
+                    foreach (var c in Physics.OverlapSphere(probe, 0.05f, ~0, QueryTriggerInteraction.Ignore)) if (c.name.StartsWith("Step_")) yNext = c.bounds.max.y;
+                    var axis = alongX ? Vector3.right : Vector3.forward;
+                    dir = (!float.IsNaN(yNext) && yNext < hb.max.y) ? axis : -axis;
+                }
+                t.position += dir * 0.05f;
+                EditorUtility.SetDirty(t);
+            }
+        }
+    }
+
     static void ApplyPlaytestFixes()
     {
         ApplyPoolWallNudge();
+        ApplyPropGrounding();
         // 4번: 카메라가 0.3m 안쪽을 그리지 않는데 플레이어 반지름도 0.3m라, 벽에 붙으면 벽이 잘려 밖이 보였다.
         foreach (var cam in Object.FindObjectsByType<Camera>(FindObjectsInactive.Include))
             if (cam.GetComponentInParent<CharacterController>(true) != null)

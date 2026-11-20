@@ -139,6 +139,9 @@ public static partial class GreyboxGraphicsPass
     }
 
     // ---------------------------------------------------------------- 물과 하늘 (D-1, D-3)
+    /// <summary>전역 고정 노출(EV). 클수록 어둡다.</summary>
+    const float GlobalEV = 9.0f;
+
     static void ApplyWaterAndSky()
     {
         // D-1: 더 맑은 하늘색 물. 흡수를 줄여 바닥 타일이 비치게 하고, 물결 무늬(caustics)는 조금 약하게.
@@ -164,6 +167,9 @@ public static partial class GreyboxGraphicsPass
             sky.horizonZenithShift.Override(0.15f);
             UnityEditor.EditorUtility.SetDirty(sky);
         }
+        // 방별 밝기 맞추기(2026-11-20): 전역 노출은 방 볼륨이 없는 인트로·마지막 수영장에만 실제로 쓰인다.
+        // 8.7에서는 화면 평균 밝기가 0.80~0.82, 마지막 수영장은 11%가 하얗게 날아갔다. 0.3 EV 어둡게 한다.
+        if (profile.TryGet<Exposure>(out var gexp)) { gexp.fixedExposure.Override(GlobalEV); UnityEditor.EditorUtility.SetDirty(gexp); }
         UnityEditor.EditorUtility.SetDirty(profile);
         Root("HDRP_GlobalVolume").GetComponent<Volume>().sharedProfile = profile;
     }

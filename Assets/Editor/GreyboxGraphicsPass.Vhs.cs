@@ -48,9 +48,20 @@ public static partial class GreyboxGraphicsPass
         color.saturation.Override(VhsSaturation);
         color.contrast.Override(VhsContrast);
 
+        // AO 보강(2026-11-20): 실내 방은 하늘 앰비언트를 거의 막아(0.01~0.04) 간접광 AO가 거의 보이지 않았다.
+        // 직접광에도 조금 먹여 소품 밑·벽 모서리에 접지 그림자가 생기게 하고, 반경을 줄여 넓게 뿌옇지 않게 한다.
+        var ao = Get<ScreenSpaceAmbientOcclusion>(profile);
+        ao.intensity.Override(AoIntensity);
+        ao.directLightingStrength.Override(AoDirect);
+        ao.radius.Override(AoRadius);
+
         foreach (var c in profile.components) EditorUtility.SetDirty(c);
         EditorUtility.SetDirty(profile);
     }
+
+    const float AoIntensity = 1.2f;   // 0~4
+    const float AoDirect = 0.35f;     // 직접광에 먹이는 정도(0~1)
+    const float AoRadius = 1.0f;      // 미터
 
     /// <summary>프로파일에 있으면 그것을, 없으면 새로 만들어 에셋에 저장한 것을 돌려준다. 켜 둔다.</summary>
     static T Get<T>(VolumeProfile p) where T : VolumeComponent

@@ -360,7 +360,7 @@ public static partial class GreyboxGraphicsPass
         foreach (float x in new[] { 9.8f, 15.8f })
             Fluorescent(lights, $"Fluorescent_{x:F0}", new Vector3(x, ShH, -97.3f), true, 2.4f, 0.22f, cold, 90000f, 2600f, Housing(), "GB_Shower_TubeGlow", LShower);
         MakeLight(lights, "CeilingFill", LightType.Point, new Vector3(13f, 1.4f, -97.3f), Vector3.zero, new Color(0.82f, 0.95f, 1f), 30000f, 10f, LShower, false, false);
-        var profile = RoomProfile("Shower", 8.0f, 0.04f, 0.15f, new Color(0.82f, 0.94f, 1f), 14f, new Color(0.03f, 0.04f, 0.05f), -18f, -2f);
+        var profile = RoomProfile("Shower", 7.2f, /* 8.0에서는 앞뒤 방(0.65)보다 한참 어두웠다(0.46), 7.6은 0.50 */ 0.04f, 0.15f, new Color(0.82f, 0.94f, 1f), 14f, new Color(0.03f, 0.04f, 0.05f), -18f, -2f);
         LocalVolume(gen, "LocalVolume", new Vector3((ShX0 + ShX1) / 2, ShH / 2, (ShZ0 + ShZ1) / 2), new Vector3(ShX1 - ShX0, ShH, ShZ1 - ShZ0), 1f, 125f, profile);
 
         // 찾기 규칙: 솟는 물기둥을 바라보면 물이 멈추고, 옆 동쪽 벽(출구)이 열린다.
@@ -454,8 +454,9 @@ public static partial class GreyboxGraphicsPass
         var sofa = new GameObject("Sofa").transform; sofa.SetParent(props, true);
         sofa.SetPositionAndRotation(sofaPos, Quaternion.LookRotation(Vector3.left));
         var sc = sofa.gameObject.AddComponent<BoxCollider>(); sc.size = new Vector3(2.2f, 0.9f, 0.95f); sc.center = new Vector3(0, 0.45f, 0);
-        PBox(sofa, "Seat", new Vector3(0, 0.25f, 0.05f), new Vector3(2.2f, 0.45f, 0.85f), fabric);
-        PBox(sofa, "Back", new Vector3(0, 0.62f, -0.36f), new Vector3(2.2f, 0.75f, 0.22f), fabric);
+        // 바닥까지 내린다(2026-11-20): 전에는 좌석이 2.5cm, 등받이가 24cm 떠 있었다.
+        PBox(sofa, "Seat", new Vector3(0, 0.235f, 0.05f), new Vector3(2.2f, 0.47f, 0.85f), fabric);
+        PBox(sofa, "Back", new Vector3(0, 0.4975f, -0.36f), new Vector3(2.2f, 0.995f, 0.22f), fabric);
         PBox(sofa, "Arm_L", new Vector3(-1.02f, 0.45f, 0.05f), new Vector3(0.18f, 0.5f, 0.85f), fabric);
         PBox(sofa, "Arm_R", new Vector3(1.02f, 0.45f, 0.05f), new Vector3(0.18f, 0.5f, 0.85f), fabric);
 
@@ -473,8 +474,8 @@ public static partial class GreyboxGraphicsPass
         G(PrimitiveType.Sphere, "Head", new Vector3(0.2f, 1.28f, -0.1f), new Vector3(0.22f, 0.26f, 0.24f));
         G(PrimitiveType.Capsule, "Thigh_L", new Vector3(0.1f, 0.52f, 0.15f), new Vector3(0.14f, 0.22f, 0.14f), new Vector3(90, 0, 0));
         G(PrimitiveType.Capsule, "Thigh_R", new Vector3(0.32f, 0.52f, 0.15f), new Vector3(0.14f, 0.22f, 0.14f), new Vector3(90, 0, 0));
-        G(PrimitiveType.Capsule, "Shin_L", new Vector3(0.1f, 0.25f, 0.4f), new Vector3(0.12f, 0.22f, 0.12f));
-        G(PrimitiveType.Capsule, "Shin_R", new Vector3(0.32f, 0.25f, 0.4f), new Vector3(0.12f, 0.22f, 0.12f));
+        G(PrimitiveType.Capsule, "Shin_L", new Vector3(0.1f, 0.225f, 0.4f), new Vector3(0.12f, 0.22f, 0.12f)); // 발이 바닥에 닿게(전에는 3cm 떴다)
+        G(PrimitiveType.Capsule, "Shin_R", new Vector3(0.32f, 0.225f, 0.4f), new Vector3(0.12f, 0.22f, 0.12f));
 
         // TV 카메라: TV 자리에서 소파 쪽을 찍어 화면에 보낸다.
         var camGo = new GameObject("TV_Camera"); camGo.transform.SetParent(tv, false);
