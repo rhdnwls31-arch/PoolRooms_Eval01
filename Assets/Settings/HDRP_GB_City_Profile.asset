@@ -1,6 +1,51 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-6074006452432890077
+--- !u!114 &-797233411041767729
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f034cba68ab55e046ae1445a42f18c0e, type: 3}
+  m_Name: IndirectLightingController
+  m_EditorClassIdentifier: Unity.RenderPipelines.HighDefinition.Runtime::UnityEngine.Rendering.HighDefinition.IndirectLightingController
+  active: 1
+  indirectDiffuseLightingMultiplier:
+    m_OverrideState: 1
+    m_Value: 0.45
+  indirectDiffuseLightingLayers:
+    m_OverrideState: 1
+    m_Value: 65535
+  reflectionLightingMultiplier:
+    m_OverrideState: 1
+    m_Value: 0.2
+  reflectionLightingLayers:
+    m_OverrideState: 1
+    m_Value: 65535
+  reflectionProbeIntensityMultiplier:
+    m_OverrideState: 1
+    m_Value: 1
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7fd9488000d3734a9e00ee676215985, type: 3}
+  m_Name: HDRP_GB_City_Profile
+  m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.VolumeProfile
+  components:
+  - {fileID: 1917510627243677753}
+  - {fileID: -797233411041767729}
+  - {fileID: 1831693182273903858}
+  - {fileID: 3387449668636466776}
+--- !u!114 &1831693182273903858
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -94,71 +139,7 @@ MonoBehaviour:
   volumetricLightingDensityCutoff:
     m_OverrideState: 1
     m_Value: 0
---- !u!114 &-3651301907899868638
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b51a78e223a2e504bb88a059b55229ea, type: 3}
-  m_Name: WhiteBalance
-  m_EditorClassIdentifier: Unity.RenderPipelines.HighDefinition.Runtime::UnityEngine.Rendering.HighDefinition.WhiteBalance
-  active: 1
-  temperature:
-    m_OverrideState: 1
-    m_Value: 0
-  tint:
-    m_OverrideState: 1
-    m_Value: 0
---- !u!114 &-816204806206573011
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f034cba68ab55e046ae1445a42f18c0e, type: 3}
-  m_Name: IndirectLightingController
-  m_EditorClassIdentifier: Unity.RenderPipelines.HighDefinition.Runtime::UnityEngine.Rendering.HighDefinition.IndirectLightingController
-  active: 1
-  indirectDiffuseLightingMultiplier:
-    m_OverrideState: 1
-    m_Value: 0.45
-  indirectDiffuseLightingLayers:
-    m_OverrideState: 1
-    m_Value: 65535
-  reflectionLightingMultiplier:
-    m_OverrideState: 1
-    m_Value: 0.2
-  reflectionLightingLayers:
-    m_OverrideState: 1
-    m_Value: 65535
-  reflectionProbeIntensityMultiplier:
-    m_OverrideState: 1
-    m_Value: 1
---- !u!114 &11400000
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d7fd9488000d3734a9e00ee676215985, type: 3}
-  m_Name: HDRP_GB_City_Profile
-  m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.VolumeProfile
-  components:
-  - {fileID: 8825831477377094897}
-  - {fileID: -816204806206573011}
-  - {fileID: -6074006452432890077}
-  - {fileID: -3651301907899868638}
---- !u!114 &8825831477377094897
+--- !u!114 &1917510627243677753
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -309,3 +290,22 @@ MonoBehaviour:
   proceduralSoftness:
     m_OverrideState: 1
     m_Value: 0.5
+--- !u!114 &3387449668636466776
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b51a78e223a2e504bb88a059b55229ea, type: 3}
+  m_Name: WhiteBalance
+  m_EditorClassIdentifier: Unity.RenderPipelines.HighDefinition.Runtime::UnityEngine.Rendering.HighDefinition.WhiteBalance
+  active: 1
+  temperature:
+    m_OverrideState: 1
+    m_Value: 0
+  tint:
+    m_OverrideState: 1
+    m_Value: 0

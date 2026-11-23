@@ -122,6 +122,7 @@ no other objects, no people, product render, high detail silhouette
 
 ## 6. 방 채우기 소품 (2026-11-20 추가)
 넓은 방이 휑해서 노란 방·밤의 거실·파란 침실에 더미 소품을 3~5개씩 더 놓았다. 모두 벽 쪽에 모여 있다.
+2026-11-23: 노란 방 FilingCabinet·WaterCooler·OfficeCouch·CardboardBoxes는 VARCO로 바꿈.
 VARCO FBX를 `Assets/VARCO/VAR_<방>_<이름>.fbx`로 올리면 같은 자리의 더미와 바꾼다(코드는 `FillProp`, 프리팹이 있으면 프리팹, 없으면 더미).
 원점은 모두 **바닥 가운데**, 앞면 **+Z**. 우선순위는 모두 B(배경). 파란 침실 것은 Unity에서 파랗게 칠하므로 옅은 회청색으로 뽑는다.
 
@@ -130,7 +131,7 @@ VARCO FBX를 `Assets/VARCO/VAR_<방>_<이름>.fbx`로 올리면 같은 자리의
 | 노란 방 | `VAR_Yellow_FilingCabinet` | 4단 철제 서류함(회색). 2개 놓는다 | 0.5 × 1.32 × 0.6 |
 | 노란 방 | `VAR_Yellow_WaterCooler` | 사무실 정수기, 위에 파란 물통 | 0.34 × 1.35 × 0.34 |
 | 노란 방 | `VAR_Yellow_OfficeCouch` | 낡은 2~3인용 대기실 소파, 한쪽 쿠션이 꺼짐 | 1.9 × 0.85 × 0.85 |
-| 노란 방 | `VAR_Yellow_StackedChairs` | 쌓아 둔 회의실 의자 5개 | 0.48 × 1.25 × 0.5 |
+| 노란 방 | ~~`VAR_Yellow_StackedChairs`~~ | 쌓아 둔 회의실 의자 5개 — **뺌(2026-11-23)**: 겹친 의자는 VARCO 텍스처를 고칠 곳이 너무 많아 Unity 더미 그대로 둔다 | 0.48 × 1.25 × 0.5 |
 | 노란 방 | `VAR_Yellow_CardboardBoxes` | 테이프 붙은 골판지 상자 3개 더미 | 1.15 × 0.75 × 0.55 |
 | 밤의 거실 | `VAR_LivingRoom_Sideboard` | 낮은 나무 장식장(문 2짝), 위에 꽃병과 탁상시계 | 1.6 × 0.8 × 0.45 |
 | 밤의 거실 | `VAR_LivingRoom_Bookcase` | 책이 꽂힌 나무 책장(5단) | 0.9 × 1.9 × 0.34 |
