@@ -50,10 +50,11 @@ public static partial class GreyboxGraphicsPass
             m.SetColor("_EmissiveColor", Color.white * (1100f * K));
             m.SetFloat("_UseEmissiveIntensity", 0f); m.SetFloat("_EmissiveExposureWeight", 1f);
         });
+        var blueImg = Img2D("Computer", "BlueScreenWall"); // 2026-11-23 VARCO 2D 파란 화면(없으면 코드 그림)
         var desktopWall = Lit("GB_PC_DesktopWall", m =>
         {
             Plain(m, Color.white, 0.3f);
-            m.SetTexture("_BaseColorMap", PcScreenTexture("GB_PC_DesktopText", 31));
+            m.SetTexture("_BaseColorMap", blueImg != null ? blueImg : PcScreenTexture("GB_PC_DesktopText", 31));
             m.SetFloat("_UVBase", 0f);
             m.SetTexture("_EmissiveColorMap", m.GetTexture("_BaseColorMap"));
             m.SetFloat("_UVEmissive", 0f);
@@ -84,10 +85,11 @@ public static partial class GreyboxGraphicsPass
         var folder = Lit("GB_PC_Folder", m => Plain(m, new Color(0.98f, 0.8f, 0.25f), 0.3f));
         var paper = Lit("GB_PC_Paper", m => Plain(m, new Color(0.97f, 0.97f, 0.95f), 0.15f));
         var bin = Lit("GB_PC_Bin", m => Plain(m, new Color(0.7f, 0.74f, 0.78f), 0.5f, 0.3f));
+        var cursorImg = Img2D("Computer", "Cursor_Cut"); // 2026-11-23 VARCO 2D 커서(투명 여백을 잘라 왼쪽 위 = 화살표 끝)
         var cursorMat = Lit("GB_PC_Cursor", m =>
         {
             Plain(m, Color.white, 0.1f);
-            m.SetTexture("_BaseColorMap", PcCursorTexture());
+            m.SetTexture("_BaseColorMap", cursorImg != null ? cursorImg : PcCursorTexture());
             m.SetFloat("_UVBase", 0f);
             m.SetFloat("_AlphaCutoffEnable", 1f); m.SetFloat("_AlphaCutoff", 0.5f);
             m.SetFloat("_DoubleSidedEnable", 1f); m.SetFloat("_CullMode", 0f); m.SetFloat("_CullModeForward", 0f);
@@ -167,8 +169,24 @@ public static partial class GreyboxGraphicsPass
         Box(deco, "BlueScreenWall", new Vector3(PcX0 + 0.06f, 5.2f, -153f), new Vector3(0.1f, 8.4f, 20f), desktopWall, LComputer);
 
         // 떠 있는 창: 옛날 운영체제 창 모양 판. 천천히 위아래로 흔들린다.
+        // 2026-11-23 VARCO 2D: 시트에서 잘라 둔 창·대화상자(VAR_Computer_<이름>_Cut)가 있으면 그 그림을 쓰고, 높이는 두고 폭을 그림 비율에 맞춘다.
         void Win(string n, Vector3 c, float ww, float hh, float yaw, Material m, float phase)
         {
+            var img = Img2D("Computer", n + "_Cut");
+            if (img != null)
+            {
+                ww = hh * Img2DAspect(img);
+                m = Lit("GB_PC_" + n + "_Img", mm =>
+                {
+                    Plain(mm, Color.white, 0.2f);
+                    mm.SetTexture("_BaseColorMap", img);
+                    mm.SetFloat("_UVBase", 0f);
+                    mm.SetTexture("_EmissiveColorMap", img);
+                    mm.SetFloat("_UVEmissive", 0f);
+                    mm.SetColor("_EmissiveColor", Color.white * (250f * K));
+                    mm.SetFloat("_UseEmissiveIntensity", 0f); mm.SetFloat("_EmissiveExposureWeight", 1f);
+                });
+            }
             var go = Box(deco, n, c, new Vector3(ww, hh, 0.06f), m, LComputer, false, new Vector3(0f, yaw, 0f));
             var fd = go.AddComponent<FloatDrift>(); fd.bobHeight = 0.25f; fd.bobPeriod = 7f + phase % 3f; fd.swayDegrees = 1.5f; fd.phase = phase;
         }
@@ -273,7 +291,8 @@ public static partial class GreyboxGraphicsPass
         cursor.transform.position = new Vector3(52f, 7f, -150f);
         var vis = new GameObject("Visual").transform;
         vis.SetParent(cursor.transform, false);
-        const float cw = 1.7f, ch = 2.6f;
+        const float ch = 2.6f;
+        float cw = cursorImg != null ? ch * Img2DAspect(cursorImg) : 1.7f;
         var q = Prim(PrimitiveType.Quad, vis, "Arrow", cursor.transform.position, new Vector3(cw, ch, 1f), cursorMat, LComputer);
         q.transform.localPosition = new Vector3(cw / 2, -ch / 2, 0f); // 그림 왼쪽 위(화살표 끝)가 오브젝트 위치에 오게
         var gz = AddGaze(cursor, "ComputerCursor", gate, new Bounds(roomCenter, roomSize));

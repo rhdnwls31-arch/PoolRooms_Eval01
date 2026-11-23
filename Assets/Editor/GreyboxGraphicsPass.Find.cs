@@ -103,6 +103,11 @@ public static partial class GreyboxGraphicsPass
 
         var t12 = SignTexture("GB_Find_Depth_1_2m", 512, 256, new Color(0.93f, 0.94f, 0.92f), new Color(0.1f, 0.18f, 0.42f), TextGlyph("1.2m"));
         var t5 = SignTexture("GB_Find_Depth_5m", 512, 256, new Color(0.93f, 0.94f, 0.92f), new Color(0.1f, 0.18f, 0.42f), TextGlyph("5m"));
+        // 2026-11-23 VARCO 2D 수심 표지(16:9). 있으면 그림을 쓰고 표지 높이를 비율에 맞춘다(폭 0.5 그대로).
+        var i12 = Img2D("Crack", "DepthSign_1_2m"); var i5 = Img2D("Crack", "DepthSign_5m");
+        if (i12 != null) t12 = i12;
+        if (i5 != null) t5 = i5;
+        float sh = i12 != null ? 0.5f / Img2DAspect(i12) : 0.25f;
         var m12 = Lit("GB_Find_Depth_1_2m", m => { Plain(m, Color.white, 0.6f); m.SetTexture("_BaseColorMap", t12); });
         var m5 = Lit("GB_Find_Depth_5m", m => { Plain(m, Color.white, 0.6f); m.SetTexture("_BaseColorMap", t5); });
         var back = Lit("GB_Find_SignBack", m => Plain(m, new Color(0.85f, 0.86f, 0.84f), 0.5f));
@@ -110,8 +115,8 @@ public static partial class GreyboxGraphicsPass
         // 북쪽 벽(z -103.7) 1.5m 높이. 5m 표지는 출구(x 9.5) 바로 옆, 나머지 1.2m는 마네킹(x 15)을 사이에 두고 동쪽으로.
         var signs = new GameObject("DepthSigns"); signs.transform.SetParent(gen, true);
         foreach (float x in new[] { 12.8f, 16.1f, 18.9f })
-            WallSign(signs.transform, $"Depth_1_2m_{x:F0}", new Vector3(x, 1.5f, -103.7f), Vector3.back, 0.5f, 0.25f, m12, back, LCrack);
-        var odd = WallSign(gen, "Oddity_Depth_5m", new Vector3(10.95f, 1.5f, -103.7f), Vector3.back, 0.5f, 0.25f, m5, back, LCrack);
+            WallSign(signs.transform, $"Depth_1_2m_{x:F0}", new Vector3(x, 1.5f, -103.7f), Vector3.back, 0.5f, sh, m12, back, LCrack);
+        var odd = WallSign(gen, "Oddity_Depth_5m", new Vector3(10.95f, 1.5f, -103.7f), Vector3.back, 0.5f, sh, m5, back, LCrack);
         var g = AddGaze(odd, "CrackDepth", gate, room);
         g.blinkRenderers = new[] { odd.transform.Find("Face").GetComponent<Renderer>() };
         g.blinkCount = 2;

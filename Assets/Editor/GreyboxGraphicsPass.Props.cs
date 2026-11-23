@@ -142,11 +142,20 @@ public static partial class GreyboxGraphicsPass
         for (int i = 0; i < 5; i++) PBox(g, "Slot", new Vector3(-0.1f + i * 0.05f, 0.009f, 0), new Vector3(0.022f, 0.004f, 0.26f), pDark);
     }
 
-    static void Frame(Transform parent, Vector3 pos, float yaw, float w, float h)
+    static void Frame(Transform parent, Vector3 pos, float yaw, float w, float h, Texture2D img = null)
     {
-        var g = PropGroup(parent, "PictureFrame_Blank", pos, yaw);
+        var g = PropGroup(parent, img != null ? "PictureFrame_Poster" : "PictureFrame_Blank", pos, yaw);
         PBox(g, "Frame", new Vector3(0, 0, 0.015f), new Vector3(w, h, 0.03f), pWood);
-        PBox(g, "Canvas", new Vector3(0, 0, 0.031f), new Vector3(w - 0.08f, h - 0.08f, 0.004f), pCanvas);
+        if (img == null) { PBox(g, "Canvas", new Vector3(0, 0, 0.031f), new Vector3(w - 0.08f, h - 0.08f, 0.004f), pCanvas); return; }
+        // 2026-11-23 VARCO 2D 포스터: 액자 앞(+Z)에 그림 판. Quad의 보이는 면(-Z)이 앞을 보게 180도.
+        var mat = Lit("GB_Prop_Poster_" + img.name, m => { Plain(m, Color.white, 0.15f); m.SetTexture("_BaseColorMap", img); });
+        var q = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        Object.DestroyImmediate(q.GetComponent<Collider>());
+        q.name = "Poster"; q.transform.SetParent(g, false);
+        q.transform.localPosition = new Vector3(0, 0, 0.032f);
+        q.transform.localRotation = Quaternion.Euler(0, 180f, 0);
+        q.transform.localScale = new Vector3(w - 0.08f, h - 0.08f, 1f);
+        var r = q.GetComponent<MeshRenderer>(); r.sharedMaterial = mat; r.renderingLayerMask = propLayer;
     }
 
     static void DeskAndChair(Transform parent, Vector3 pos, float yaw)
@@ -410,7 +419,7 @@ public static partial class GreyboxGraphicsPass
             Frame(props, new Vector3(27.4f, 1.7f, -98.72f), 180, 0.5f, 0.7f);
             Frame(props, new Vector3(28.4f, 1.75f, -98.72f), 180, 0.7f, 0.5f);
             Frame(props, new Vector3(29.6f, 1.65f, -98.72f), 180, 0.45f, 0.6f);
-            Frame(props, new Vector3(20.17f, 1.7f, -111.6f), 90, 0.6f, 0.8f);
+            Frame(props, new Vector3(20.17f, 1.7f, -111.6f), 90, 0.6f, 0.8f, Img2D("Yellow", "Poster")); // 3:4 액자 = 포스터 비율
             YellowFill(props);
 
             var decals = Fresh(room.transform.Find(GenName), "Decals");

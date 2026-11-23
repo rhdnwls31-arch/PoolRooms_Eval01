@@ -42,10 +42,12 @@ public static partial class GreyboxGraphicsPass
         gz.changeWhenUnseen = true;
 
         // ---- 2) 벽의 그림자: 출구 벽의 방 쪽 면에 붙인 반투명 실루엣. 발끝이 바닥에 닿아 있다.
+        // 2026-11-23 VARCO 2D 실루엣(흐린 가장자리, 투명 여백을 잘라 둠). 색은 예전처럼 짙은 남색으로 곱한다.
+        var shadowImg = Img2D("Bedroom", "WallShadow_Cut");
         var shadowMat = Lit("GB_Bedroom_WallShadow", m =>
         {
             Plain(m, new Color(0.008f, 0.012f, 0.04f, 0.82f), 0f);
-            m.SetTexture("_BaseColorMap", ShadowTexture());
+            m.SetTexture("_BaseColorMap", shadowImg != null ? shadowImg : ShadowTexture());
             m.SetFloat("_SurfaceType", 1f); m.SetFloat("_BlendMode", 0f);
             m.SetFloat("_ZWrite", 0f); m.SetFloat("_TransparentZWrite", 0f);
             m.SetFloat("_AlphaCutoffEnable", 0f);
@@ -54,7 +56,7 @@ public static partial class GreyboxGraphicsPass
         var shadowRoot = new GameObject("Oddity_WallShadow");
         shadowRoot.transform.SetParent(props, true);
         shadowRoot.transform.position = new Vector3(BdX1 - 0.012f, 0.95f, CrZ + 0.05f);
-        var sil = Prim(PrimitiveType.Quad, shadowRoot.transform, "Silhouette", shadowRoot.transform.position, new Vector3(0.8f, 1.86f, 1f), shadowMat, LBedroom, false,
+        var sil = Prim(PrimitiveType.Quad, shadowRoot.transform, "Silhouette", shadowRoot.transform.position, new Vector3(shadowImg != null ? 1.86f * Img2DAspect(shadowImg) : 0.8f, 1.86f, 1f), shadowMat, LBedroom, false,
             new Vector3(0f, 90f, 0f)); // Quad의 보이는 면(-Z)이 방 쪽(-X)을 향한다
         var sg = AddGaze(shadowRoot, "BedroomShadow", gate, room);
         sg.gazeRenderers = new[] { sil.GetComponent<Renderer>() };

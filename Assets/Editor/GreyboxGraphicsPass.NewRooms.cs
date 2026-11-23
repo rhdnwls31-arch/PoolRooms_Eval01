@@ -449,6 +449,24 @@ public static partial class GreyboxGraphicsPass
             screen = Prim(PrimitiveType.Quad, tv, "Screen", tvPos + new Vector3(0.235f, 0.86f, 0), new Vector3(0.62f, 0.46f, 1f), screenMat, LLiving);
             screen.transform.rotation = Quaternion.LookRotation(Vector3.left); // 보이는 면(-Z)이 방 쪽(+x)
         }
+        // 2026-11-23 VARCO 2D TV 그림(소파에 얼굴 없는 사람, 4:3). 실시간 화면 2mm 앞에 같은 모양으로 덮는다.
+        // 찾으면 TV 속 사람이 사라지는 장치는 그대로: 이 그림도 사람과 함께 숨겨(hideOnFound) 아래의 실시간 화면(빈 소파)이 드러난다.
+        GameObject tvImage = null;
+        var tvImg = Img2D("LivingRoom", "TV_FacelessFigure");
+        if (tvImg != null)
+        {
+            var imgMat = Lit("GB_Living_TVImage", m =>
+            {
+                Plain(m, Color.black, 0f);
+                m.SetTexture("_EmissiveColorMap", tvImg); m.SetColor("_EmissiveColor", Color.white * 200f); // 90이면 실시간 화면보다 어두웠다(2026-11-23 Play)
+                m.SetFloat("_UseEmissiveIntensity", 0f); m.SetFloat("_EmissiveExposureWeight", 1f);
+            });
+            tvImage = Object.Instantiate(screen, screen.transform.parent);
+            tvImage.name = "Screen_Image";
+            tvImage.transform.SetPositionAndRotation(screen.transform.position, screen.transform.rotation);
+            tvImage.transform.position += crtScreen != null ? screen.transform.TransformDirection(Vector3.forward) * 0.002f : screen.transform.TransformDirection(Vector3.back) * 0.002f;
+            tvImage.GetComponent<MeshRenderer>().sharedMaterial = imgMat;
+        }
 
         var sofaPos = new Vector3(47.4f, 0f, -118.6f);
         var sofa = new GameObject("Sofa").transform; sofa.SetParent(props, true);
@@ -614,8 +632,8 @@ public static partial class GreyboxGraphicsPass
             new Bounds(new Vector3(BdInX, 1.2f, -124.15f), new Vector3(1.8f, 2.4f, 0.3f)), "GB_03b_Living/GFX_Generated/Shell/South/Seg_0");
         Box(gate.wall.transform, "Baseboard", new Vector3(BdInX, 0.05f, LvZ0 + 0.02f), new Vector3(1.8f, 0.1f, 0.04f), trim, LLiving);
         var gz = AddGaze(tv.gameObject, "LivingTV", gate, new Bounds(new Vector3((LvX0 + LvX1) / 2, LvH / 2, (LvZ0 + LvZ1) / 2), new Vector3(LvX1 - LvX0, LvH, LvZ1 - LvZ0)));
-        gz.hideOnFound = new[] { ghost.gameObject };
-        gz.blinkRenderers = new[] { screen.GetComponent<Renderer>() };
+        gz.hideOnFound = tvImage != null ? new[] { ghost.gameObject, tvImage } : new[] { ghost.gameObject };
+        gz.blinkRenderers = tvImage != null ? new[] { screen.GetComponent<Renderer>(), tvImage.GetComponent<Renderer>() } : new[] { screen.GetComponent<Renderer>() };
         gz.blinkCount = 3; gz.blinkOff = 0.12f;
         // 섬뜩함이 바로 끝나지 않게(2026-11-18 플레이 피드백): 찾은 뒤에도 TV 속 사람이 6초 더 앉아 있다가 사라지고,
         // 출구는 그 뒤 6초가 더 지나야 열린다. 당황한 플레이어가 방을 한 번 더 둘러보게 한다.
