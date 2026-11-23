@@ -638,7 +638,7 @@ public static partial class GreyboxGraphicsPass
         // 2026-11-20 방 채우기(넓은데 휑하다는 피드백). 모두 벽 쪽이고, 입구(서쪽 z -112.4) → TV → 출구(남쪽 x 40.6)의 서쪽 동선은 비운다.
         // 북쪽 벽: 가족사진 아래 장식장(꽃병·탁상시계) / 동쪽 벽 북쪽: 책장 / 소파 남쪽 끝: 협탁(재떨이) / TV를 보는 안락의자 / 남동쪽 모서리: 화분.
         var leaf = Lit("GB_Living_Plant", m => Plain(m, new Color(0.12f, 0.2f, 0.1f), 0.2f));
-        FillProp(props, "LivingRoom", "Sideboard", new Vector3(43.6f, 0f, LvZ1 - 0.25f), 180f, new Vector3(1.6f, 0.8f, 0.45f), g =>
+        FillProp(props, "LivingRoom", "Sideboard", new Vector3(43.6f, 0f, LvZ1 - 0.31f), 180f, new Vector3(1.6f, 0.8f, 0.45f), g =>
         {
             PBox(g, "Body", new Vector3(0, 0.42f, 0), new Vector3(1.6f, 0.72f, 0.45f), wood);
             PBox(g, "Top", new Vector3(0, 0.79f, 0.01f), new Vector3(1.64f, 0.03f, 0.48f), wood);
@@ -686,7 +686,8 @@ public static partial class GreyboxGraphicsPass
             PBox(g, "Back", new Vector3(0, 0.6f, -0.33f), new Vector3(0.85f, 0.7f, 0.19f), fabric);
             foreach (float x in new[] { -0.36f, 0.36f }) PBox(g, "Arm", new Vector3(x, 0.55f, 0.05f), new Vector3(0.13f, 0.22f, 0.75f), fabric);
         });
-        FillProp(props, "LivingRoom", "PottedPlant", new Vector3(LvX1 - 0.4f, 0f, LvZ0 + 0.4f), 0f, new Vector3(0.4f, 0.5f, 0.4f), g =>
+        // 2026-11-23 VARCO 화분은 잎이 1.05m로 퍼져 모서리 벽에 박혔다 → 모서리에서 더 띄움
+        FillProp(props, "LivingRoom", "PottedPlant", new Vector3(LvX1 - 0.56f, 0f, LvZ0 + 0.52f), 0f, new Vector3(0.4f, 0.5f, 0.4f), g =>
         {
             Part(g, PrimitiveType.Cylinder, "Pot", new Vector3(0, 0.2f, 0), new Vector3(0.34f, 0.2f, 0.34f), trim);
             Part(g, PrimitiveType.Sphere, "Leaves", new Vector3(0, 0.75f, 0), new Vector3(0.6f, 0.75f, 0.6f), leaf);

@@ -162,6 +162,13 @@ public static partial class GreyboxGraphicsPass
         }
         Box(bal, "Knot", E(-0.55f, 1.43f, -0.95f), new Vector3(0.05f, 0.05f, 0.05f), balloonMat, LCorr);
         Box(bal, "String", E(-0.55f, 1.0f, -0.95f), new Vector3(0.008f, 0.86f, 0.008f), plate, LCorr);
+        // 2026-11-23 VARCO 스마일 풍선(원점 = 줄 끝, 얼굴 +Z, 풍선 가운데 1.23m)이 있으면 더미를 지우고 바꾼다. 얼굴은 더미 눈이 보던 쪽.
+        if (VarcoPrefab("FloralCorridor", "SmileBalloon") != null)
+        {
+            for (int i = bal.childCount - 1; i >= 0; i--) Object.DestroyImmediate(bal.GetChild(i).gameObject);
+            var face = E(-1f, 0f, 0f) - E(0f, 0f, 0f);
+            VarcoInto(bal, "FloralCorridor", "SmileBalloon", LCorr, new Vector3(0f, -1.23f, 0f), new Vector3(0f, Mathf.Atan2(face.x, face.z) * Mathf.Rad2Deg, 0f), false);
+        }
 
         // 마지막 문 = 출구 벽(찾기 규칙). 끝 묶음 아래에 두어 같이 움직인다.
         var startLeafPath = "GB_02c_Corridor/GFX_Generated/Start/Leaf";

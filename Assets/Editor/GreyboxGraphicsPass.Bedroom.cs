@@ -274,10 +274,11 @@ public static partial class GreyboxGraphicsPass
 
         // 2026-11-20 방 채우기(넓은데 휑하다는 피드백). 비어 있던 서쪽 벽 남쪽·남쪽 벽에 둔다.
         // 입구(북쪽 x 40.6) → 침대의 시선, 동쪽 벽(그림자·복도 입구 CrZ)은 비운다.
+        // 2026-11-23 VARCO 모델이 더미보다 깊어(옷장 0.78, 상자 0.6) 벽에서 조금 띄웠다.
         // 서쪽 벽: 옷장 / 침대 남쪽 머리맡: 협탁과 작은 스탠드 / 남서쪽 모서리: 전신 거울 / 남쪽 벽 액자 아래: 장난감 상자.
         var mirrorGlass = Lit("GB_Bedroom_Mirror", m => Plain(m, new Color(0.08f, 0.1f, 0.2f), 0.95f, 0.9f));
         var lampShade = Lit("GB_Bedroom_LampShade", m => Emissive(m, new Color(0.55f, 0.65f, 1f), 120f));
-        FillProp(props, "Bedroom", "Wardrobe", new Vector3(BdX0 + 0.33f, 0f, -133.4f), 90f, new Vector3(1.2f, 2.0f, 0.6f), g =>
+        FillProp(props, "Bedroom", "Wardrobe", new Vector3(BdX0 + 0.42f, 0f, -133.4f), 90f, new Vector3(1.2f, 2.0f, 0.6f), g =>
         {
             PBox(g, "Body", new Vector3(0, 1.0f, 0), new Vector3(1.2f, 2.0f, 0.58f), furn);
             foreach (float x in new[] { -0.3f, 0.3f })
@@ -305,7 +306,7 @@ public static partial class GreyboxGraphicsPass
             Part(g, PrimitiveType.Cube, "Stand", new Vector3(0, 0.5f, -0.17f), new Vector3(0.04f, 1.0f, 0.04f), deep, new Vector3(-18f, 0, 0));
             PBox(g, "Foot", new Vector3(0, 0.02f, -0.05f), new Vector3(0.5f, 0.04f, 0.12f), deep);
         });
-        FillProp(props, "Bedroom", "ToyChest", new Vector3(45.8f, 0f, BdZ0 + 0.27f), 0f, new Vector3(0.9f, 0.5f, 0.45f), g =>
+        FillProp(props, "Bedroom", "ToyChest", new Vector3(45.8f, 0f, BdZ0 + 0.32f), 0f, new Vector3(0.9f, 0.5f, 0.45f), g =>
         {
             PBox(g, "Body", new Vector3(0, 0.22f, 0), new Vector3(0.9f, 0.44f, 0.45f), furn);
             PBox(g, "Lid", new Vector3(0, 0.47f, 0), new Vector3(0.94f, 0.06f, 0.49f), deep);

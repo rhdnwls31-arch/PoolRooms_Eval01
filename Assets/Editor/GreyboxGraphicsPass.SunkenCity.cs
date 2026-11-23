@@ -255,8 +255,19 @@ public static partial class GreyboxGraphicsPass
             Object.DestroyImmediate(g.GetComponent<MeshRenderer>());
         }
         // 다이빙대: 산책로에서 도시 쪽으로 튀어나왔다. 아래에 물은 없다(처음에는).
-        Box(walk, "DivingBoard", new Vector3(152f, walkY + 0.12f, -176f), new Vector3(4.2f, 0.12f, 0.7f), Lit("GB_City_Board", m => Plain(m, new Color(0.35f, 0.62f, 0.85f), 0.4f)), LCity);
-        Box(walk, "DivingBoardBase", new Vector3(154.6f, walkY + 0.05f, -176f), new Vector3(0.6f, 0.2f, 0.9f), ctTrim, LCity);
+        // 2026-11-23 VARCO 다이빙대: 모델은 길이 1m, 받침이 +X 끝(판이 -X 도시 쪽으로 뻗음) → 4.2배, 받침을 산책로 쪽(+X 154.6)에 둔다.
+        if (VarcoPrefab("SunkenCity", "DivingBoard") != null)
+        {
+            var db = new GameObject("DivingBoard").transform; db.SetParent(walk, true);
+            db.position = new Vector3(153.0f, walkY, -176f);
+            var dbm = VarcoInto(db, "SunkenCity", "DivingBoard", LCity, default, default, false);
+            dbm.transform.localScale = Vector3.one * 4.2f;
+        }
+        else
+        {
+            Box(walk, "DivingBoard", new Vector3(152f, walkY + 0.12f, -176f), new Vector3(4.2f, 0.12f, 0.7f), Lit("GB_City_Board", m => Plain(m, new Color(0.35f, 0.62f, 0.85f), 0.4f)), LCity);
+            Box(walk, "DivingBoardBase", new Vector3(154.6f, walkY + 0.05f, -176f), new Vector3(0.6f, 0.2f, 0.9f), ctTrim, LCity);
+        }
         // 산책로 끝에서 바닥까지 늘어진 수영장 사다리
         PoolLadder(walk, new Vector3(153.85f, 0f, -186f), walkY + 0.9f, rail, 90f);
         PoolLadder(walk, new Vector3(CtX0 + 0.25f, 0f, -158f), 9f, rail, 90f);   // 서쪽 벽: 아무 데도 안 가는 사다리
@@ -270,6 +281,17 @@ public static partial class GreyboxGraphicsPass
             var g = new GameObject("LifeRing").transform;
             g.SetParent(rings, true);
             g.SetPositionAndRotation(c, Quaternion.Euler(euler));
+            floaters.Add(g);
+            // 2026-11-23 VARCO 튜브(빨강·흰 두 가지를 번갈아). 모델은 바닥에 눕힌 지름 1m(축 Y, 원점 바닥) →
+            // 더미처럼 축을 로컬 Z로 세우고(X 90°) 지름 0.8m로 줄여 몸통 가운데를 원점에 맞춘다.
+            string ringName = floaters.Count % 2 == 0 ? "LifeRing_White" : "LifeRing_Red";
+            var vr = VarcoInto(g, "SunkenCity", ringName, LCity, default, new Vector3(90f, 0f, 0f), false);
+            if (vr != null)
+            {
+                vr.transform.localScale = Vector3.one * 0.8f;
+                vr.transform.localPosition = new Vector3(0f, 0f, -0.105f * 0.8f);
+                return;
+            }
             for (int i = 0; i < 8; i++)
             {
                 float a = i * Mathf.PI / 4f;
@@ -281,14 +303,13 @@ public static partial class GreyboxGraphicsPass
                 seg.transform.localScale = new Vector3(0.16f, 0.27f, 0.16f);
                 var r = seg.GetComponent<MeshRenderer>(); r.sharedMaterial = i % 2 == 0 ? red : ctTrim; r.renderingLayerMask = LCity;
             }
-            floaters.Add(g);
         }
         for (float z = wz0 - 2f; z > wz1 + 1f; z -= 6f) Ring(new Vector3(153.95f, walkY + 0.7f, z), new Vector3(0f, 90f, 0f));
         Ring(new Vector3(124.6f, 0.45f, -152f), new Vector3(-75f, 20f, 0f));
-        Ring(new Vector3(135.2f, 0.06f, -160f), new Vector3(-90f, 0f, 0f));
-        Ring(new Vector3(116f, 0.06f, -156.5f), new Vector3(-90f, 0f, 0f));
-        Ring(new Vector3(142.5f, 0.06f, -171f), new Vector3(-90f, 0f, 0f));
-        Ring(new Vector3(127f, 0.06f, -178f), new Vector3(-90f, 0f, 0f));
+        Ring(new Vector3(135.2f, 0.085f, -160f), new Vector3(-90f, 0f, 0f));
+        Ring(new Vector3(116f, 0.085f, -156.5f), new Vector3(-90f, 0f, 0f));
+        Ring(new Vector3(142.5f, 0.085f, -171f), new Vector3(-90f, 0f, 0f));
+        Ring(new Vector3(127f, 0.085f, -178f), new Vector3(-90f, 0f, 0f));
         // 2026-11-20 사용자 요청: 인트로 수영장 플라밍고 튜브를 길가 바닥에 하나 둔다. 물이 차면 구명 튜브처럼 떠오른다.
         // 모델은 콜라이더가 없어 시선 판정을 막지 않는다. 피벗이 바닥이라 floatDepth(0.15m)만큼 물에 잠긴다.
         var flSrc = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/prop_flamingo.prefab");
@@ -305,11 +326,14 @@ public static partial class GreyboxGraphicsPass
         var props = Group(gen, "Props");
         propLayer = LCity;
         var chair = PropGroup(props, "LifeguardChair", new Vector3(138f, 0f, -153f), 215f, new Vector3(1.4f, 2.4f, 1.4f));
-        foreach (var (lx, lz) in new[] { (-0.55f, -0.55f), (0.55f, -0.55f), (-0.55f, 0.55f), (0.55f, 0.55f) })
-            PBox(chair, "Leg", new Vector3(lx, 1.2f, lz), new Vector3(0.08f, 2.4f, 0.08f), ctTrim);
-        PBox(chair, "Seat", new Vector3(0f, 2.4f, 0f), new Vector3(1.2f, 0.08f, 1f), ctTrim);
-        PBox(chair, "BackRest", new Vector3(0f, 2.95f, -0.5f), new Vector3(1.2f, 1f, 0.08f), ctTrim);
-        for (int i = 0; i < 5; i++) PBox(chair, "Rung", new Vector3(0f, 0.4f + i * 0.4f, 0.55f), new Vector3(1.1f, 0.05f, 0.05f), ctTrim);
+        if (VarcoInto(chair, "SunkenCity", "LifeguardChair", LCity) == null) // 2026-11-23 VARCO 감시탑 의자(3.5m)
+        {
+            foreach (var (lx, lz) in new[] { (-0.55f, -0.55f), (0.55f, -0.55f), (-0.55f, 0.55f), (0.55f, 0.55f) })
+                PBox(chair, "Leg", new Vector3(lx, 1.2f, lz), new Vector3(0.08f, 2.4f, 0.08f), ctTrim);
+            PBox(chair, "Seat", new Vector3(0f, 2.4f, 0f), new Vector3(1.2f, 0.08f, 1f), ctTrim);
+            PBox(chair, "BackRest", new Vector3(0f, 2.95f, -0.5f), new Vector3(1.2f, 1f, 0.08f), ctTrim);
+            for (int i = 0; i < 5; i++) PBox(chair, "Rung", new Vector3(0f, 0.4f + i * 0.4f, 0.55f), new Vector3(1.1f, 0.05f, 0.05f), ctTrim);
+        }
         foreach (var p in new[] { new Vector3(126f, 0f, -150f), new Vector3(134f, 0f, -157f), new Vector3(121f, 0f, -170f), new Vector3(139f, 0f, -174f), new Vector3(130f, 0f, -186f), new Vector3(116f, 0f, -186f), new Vector3(150f, 0f, -158f) })
         {
             Box(props, "Drain", p + new Vector3(0f, 0.01f, 0f), new Vector3(0.7f, 0.02f, 0.7f), drain, LCity);
