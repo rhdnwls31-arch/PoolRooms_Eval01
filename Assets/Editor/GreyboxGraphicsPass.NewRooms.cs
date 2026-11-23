@@ -527,8 +527,16 @@ public static partial class GreyboxGraphicsPass
         }
         Box(props, "Window_Glass", new Vector3(LvX1 - 0.02f, 1.5f, -116.4f), new Vector3(0.02f, 1.1f, 1.6f), night, LLiving);
         Box(props, "Window_Frame", new Vector3(LvX1 - 0.03f, 1.5f, -116.4f), new Vector3(0.03f, 1.2f, 1.7f), wood, LLiving);
+        // 2026-11-23 VARCO 커튼(봉 포함, 2.21×2.4×0.28, 원점 = 뒷면 가운데). 창 가운데에 걸고 정면(+Z)이 방 안(서쪽)을 본다. 콜라이더 없음.
+        var curtain = new GameObject("Curtains").transform;
+        curtain.SetParent(props, true);
+        curtain.SetPositionAndRotation(new Vector3(LvX1 - 0.01f, 1.45f, -116.4f), Quaternion.Euler(0f, -90f, 0f));
+        if (VarcoInto(curtain, "LivingRoom", "Curtains", LLiving, default, default, false) == null)
+        {
+        Object.DestroyImmediate(curtain.gameObject);
         Box(props, "Curtain_L", new Vector3(LvX1 - 0.08f, 1.45f, -115.4f), new Vector3(0.06f, 1.9f, 0.5f), Lit("GB_Living_Curtain", m => Plain(m, new Color(0.35f, 0.08f, 0.08f), 0.1f)), LLiving);
         Box(props, "Curtain_R", new Vector3(LvX1 - 0.08f, 1.45f, -117.4f), new Vector3(0.06f, 1.9f, 0.5f), AssetDatabase.LoadAssetAtPath<Material>($"{MatDir}/GB_Living_Curtain.mat"), LLiving);
+        }
 
         // 2026-11-20 방 채우기(넓은데 휑하다는 피드백). 모두 벽 쪽이고, 입구(서쪽 z -112.4) → TV → 출구(남쪽 x 40.6)의 서쪽 동선은 비운다.
         // 북쪽 벽: 가족사진 아래 장식장(꽃병·탁상시계) / 동쪽 벽 북쪽: 책장 / 소파 남쪽 끝: 협탁(재떨이) / TV를 보는 안락의자 / 남동쪽 모서리: 화분.

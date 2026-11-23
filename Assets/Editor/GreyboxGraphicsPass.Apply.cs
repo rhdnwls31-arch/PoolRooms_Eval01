@@ -40,6 +40,7 @@ public static partial class GreyboxGraphicsPass
         ApplyCrtScreen();
         ApplyPlaytestFixes();
         SwapPoolParasols();
+        SwapPoolPalms(); // 2026-11-23 VARCO 물속 야자수
         SwapPoolLoungers(); // 2026-11-20 VARCO 선베드: 인트로·같은 수영장 더미를 바꾼다(같은 수영장 복사본이 만들어진 뒤라 맨 끝)
         AssetDatabase.SaveAssets();
         EditorSceneManager.MarkSceneDirty(scene);

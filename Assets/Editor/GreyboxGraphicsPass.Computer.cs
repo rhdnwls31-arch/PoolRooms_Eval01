@@ -209,9 +209,13 @@ public static partial class GreyboxGraphicsPass
         }
         }
         var pcIcon = PropGroup(deco, "Icon_MyComputer", new Vector3(46.5f, 2.6f, -151.5f), 50f);
+        // 2026-11-23 VARCO 내 컴퓨터 아이콘(본체+모니터, 1.66×1.1×1.14). 더미 바닥(-0.2)에 맞춘다. 콜라이더 없음(더미와 같음).
+        if (VarcoInto(pcIcon, "Computer", "MyComputerIcon", LComputer, new Vector3(0f, -0.2f, 0f), default, false) == null)
+        {
         PBox(pcIcon, "Case", new Vector3(0f, 0.6f, 0f), new Vector3(1.4f, 1.2f, 1.1f), beige);
         PBox(pcIcon, "Screen", new Vector3(0f, 0.65f, 0.56f), new Vector3(1.05f, 0.8f, 0.02f), screen);
         PBox(pcIcon, "Stand", new Vector3(0f, -0.1f, 0f), new Vector3(0.9f, 0.2f, 0.8f), beigeDark);
+        }
         pcIcon.gameObject.AddComponent<FloatDrift>().phase = 5.2f;
 
         // 종이비행기: 하늘을 천천히 돈다.
@@ -219,9 +223,13 @@ public static partial class GreyboxGraphicsPass
         {
             var pl = new GameObject("PaperPlane").transform;
             pl.SetParent(deco, true); pl.position = c;
+            // 2026-11-23 VARCO 종이비행기(0.91×0.32×1.1, 코 = +Z = FloatDrift가 도는 방향). 날개 높이(0)에 가운데를 맞춘다.
+            if (VarcoInto(pl, "Computer", "PaperPlane", LComputer, new Vector3(0f, -0.16f, 0f), default, false) == null)
+            {
             Part(pl, PrimitiveType.Cube, "Wing_L", new Vector3(-0.22f, 0f, 0f), new Vector3(0.45f, 0.02f, 1.1f), paper, new Vector3(0f, 0f, 12f));
             Part(pl, PrimitiveType.Cube, "Wing_R", new Vector3(0.22f, 0f, 0f), new Vector3(0.45f, 0.02f, 1.1f), paper, new Vector3(0f, 0f, -12f));
             Part(pl, PrimitiveType.Cube, "Keel", new Vector3(0f, -0.08f, -0.05f), new Vector3(0.02f, 0.16f, 1f), paper);
+            }
             var fd = pl.gameObject.AddComponent<FloatDrift>();
             fd.orbitRadius = r; fd.orbitPeriod = period; fd.phase = phase; fd.bobHeight = 0.5f; fd.swayDegrees = 8f;
         }

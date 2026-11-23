@@ -228,6 +228,43 @@ public static partial class GreyboxGraphicsPass
         Debug.Log($"[GreyboxGraphicsPass] VARCO 파라솔 {n}개");
     }
 
+    // ---------------------------------------------------------------- 물속 야자수
+    // 2026-11-23 VARCO 야자수(2.92×4.5×3.04, 줄기 밑동 = 원점에서 x -0.13). 인트로·같은 수영장의 Prop_WaterPalm_*, Lagoon_Palm_*.
+    // 더미 줄기는 수영장 바닥(그룹 y -0.9)에서 시작하므로 밑동을 거기 맞추고, 높이 = 더미 줄기 + 1.2m(잎)로 배율을 정한다.
+    // 줄기 콜라이더(0.5 × 줄기 높이)는 그대로 둔다(잎은 스치고 지나감). 그룹마다 이름으로 정한 방향으로 돌려 똑같아 보이지 않게 한다.
+    const string PalmVarcoName = "VARCO_Palm";
+    static void SwapPoolPalms()
+    {
+        if (VarcoPrefab("Pool", "WaterPalm_A") == null) return;
+        int n = 0;
+        foreach (var t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include))
+        {
+            if (t == null) continue;
+            if (!(t.name.StartsWith("Prop_WaterPalm_") || t.name.StartsWith("Lagoon_Palm_"))) continue;
+            var old = t.Find(PalmVarcoName);
+            if (old != null) Object.DestroyImmediate(old.gameObject);
+            var trunk = t.Find("Trunk");
+            float trunkH = trunk != null ? trunk.localScale.y * 2f : 3.4f;
+            uint layer = 1u;
+            foreach (Transform c in t)
+                if (c.TryGetComponent<MeshRenderer>(out var r)) { layer = r.renderingLayerMask; r.enabled = false; EditorUtility.SetDirty(r); }
+            // 2026-11-23 B(잎이 풍성, 3.95×4.5×4.15, 밑동 (0.374, 0.126))를 섞는다: 수영장마다 8그루 중 3그루.
+            bool b = VarcoPrefab("Pool", "WaterPalm_B") != null && (t.name == "Prop_WaterPalm_2" || t.name == "Prop_WaterPalm_4" || t.name == "Lagoon_Palm_2");
+            var baseOff = b ? new Vector3(-0.374f, 0f, -0.126f) : new Vector3(0.13f, 0f, 0f);
+            float s = (trunkH + 1.2f) / 4.5f;
+            int h = 7; foreach (char ch in t.name) h = h * 31 + ch; // 실행마다 같은 값(string.GetHashCode는 보장 안 됨)
+            float yaw = (h & 0xffff) / 65535f * 360f;
+            var holder = new GameObject(PalmVarcoName).transform;
+            holder.SetParent(t, false);
+            holder.localPosition = new Vector3(0f, trunk != null ? trunk.localPosition.y - trunkH / 2f : -0.9f, 0f);
+            holder.localRotation = Quaternion.Euler(0f, yaw, 0f);
+            holder.localScale = Vector3.one * s;
+            VarcoInto(holder, "Pool", b ? "WaterPalm_B" : "WaterPalm_A", layer, baseOff, default, false);
+            n++;
+        }
+        Debug.Log($"[GreyboxGraphicsPass] VARCO 야자수 {n}개");
+    }
+
     // ---------------------------------------------------------------- 컴퓨터 속 거대한 모니터
     // 2026-11-20 VARCO 거대 브라운관(9.4×7.12×9.85)은 화면 유리가 막힌 통짜라, 출구 연출(화면 벽이 사라지고 빛의 방이 드러남)에 맞게
     // 유리 면 삼각형만 지운 메쉬를 만든다(프리팹 원점 기준, 처음 한 번만). 유리 = x ±3.2, y 1.5~5.95, 앞면(z 4.93)에서 0.3~0.6 들어감.

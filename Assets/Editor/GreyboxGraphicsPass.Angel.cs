@@ -130,10 +130,41 @@ public static partial class GreyboxGraphicsPass
             float r = Hash(i, 3, 501), r2 = Hash(i, 7, 503);
             float w = 1.8f + 1.8f * r;
             var p = new Vector3(west ? 19.2f + 0.5f * r2 : 37.1f - 0.5f * r2, 0.2f, z);
-            Prim(PrimitiveType.Sphere, puffs, $"Puff_{i:00}", p, new Vector3(w * 0.8f, 0.8f + 0.8f * r2, w), cloudMat, LAngel);
+            if (!CloudVarco(puffs, $"Puff_{i:00}", p, w, i, Hash(i, 11, 505) * 360f))
+                Prim(PrimitiveType.Sphere, puffs, $"Puff_{i:00}", p, new Vector3(w * 0.8f, 0.8f + 0.8f * r2, w), cloudMat, LAngel);
         }
+        int si = 0;
         foreach (float x in new[] { 21.5f, 34.6f }) // 출구 벽 양옆(문 자리 26.65~29.65는 비운다)
-            Prim(PrimitiveType.Sphere, puffs, $"Puff_S_{x:F0}", new Vector3(x, 0.25f, -142.2f), new Vector3(2.6f, 1.1f, 1.4f), cloudMat, LAngel);
+            if (!CloudVarco(puffs, $"Puff_S_{x:F0}", new Vector3(x, 0.25f, -142.2f), 2.6f, si++, x < 28f ? 10f : 190f))
+                Prim(PrimitiveType.Sphere, puffs, $"Puff_S_{x:F0}", new Vector3(x, 0.25f, -142.2f), new Vector3(2.6f, 1.1f, 1.4f), cloudMat, LAngel);
+    }
+
+    // 2026-11-23 VARCO 구름 두 종(납작한 CloudBank 2.5×1.0, 봉긋한 CloudBank2 2.0×1.4)을 번갈아 쓴다.
+    // 폭이 더미 구(w)와 같게 배율을 맞추고, 밑이 구름 바닥에 묻히게 10cm 내린다. 콜라이더 없음(더미와 같음).
+    static bool CloudVarco(Transform parent, string name, Vector3 pos, float width, int i, float yaw)
+    {
+        bool flat = i % 2 == 0;
+        string model = flat ? "CloudBank" : "CloudBank2";
+        if (VarcoPrefab("Angel", model) == null) return false;
+        var g = new GameObject(name).transform;
+        g.SetParent(parent, true);
+        g.SetPositionAndRotation(new Vector3(pos.x, -0.1f, pos.z), Quaternion.Euler(0f, yaw, 0f));
+        g.localScale = Vector3.one * (flat ? width / 2.5f : width * 0.85f / 1.98f);
+        var go = VarcoInto(g, "Angel", model, LAngel, default, default, false);
+        // 오목한 뭉게 틈이 그늘져 회색 돌처럼 보였다(2026-11-23 Play). 바닥 구름처럼 같은 그림을 발광으로도 입히고, 자기 그림자는 끈다.
+        foreach (var r in go.GetComponentsInChildren<Renderer>())
+        {
+            r.shadowCastingMode = ShadowCastingMode.Off;
+            var m = r.sharedMaterial;
+            m.SetTexture("_EmissiveColorMap", m.GetTexture("_BaseColorMap"));
+            m.EnableKeyword("_EMISSIVE_COLOR_MAP");
+            m.SetFloat("_UVEmissive", 0f);
+            m.SetColor("_EmissiveColor", Color.white * ((flat ? 700f : 900f) * AngelK)); // CloudBank2가 더 어두운 그림이라 더 세게
+            m.SetFloat("_UseEmissiveIntensity", 0f);
+            m.SetFloat("_EmissiveExposureWeight", 1f);
+            UnityEditor.EditorUtility.SetDirty(m);
+        }
+        return true;
     }
 
     /// <summary>날개 달린 눈 하나(더미). 앞(+Z)이 눈동자 방향. 날개는 양옆에서 아래로 늘어진다(참고 이미지 09).</summary>
