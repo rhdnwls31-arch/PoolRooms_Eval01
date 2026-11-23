@@ -182,6 +182,62 @@ public static partial class GreyboxGraphicsPass
         return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
     }
 
+    // 김 서린 거울(가로 4.5m : 세로 0.8m): 뿌연 회청색 김 + 아래로 흘러내린 물줄기(맑은 유리가 드러나 어둡다) + 손으로 한 번 닦은 자국 + 물방울.
+    // VARCO 그림이 들어오기 전 자리표시. 같은 결과가 나오도록 PerlinNoise만 쓴다.
+    static Texture2D FoggedMirrorTexture()
+    {
+        const int w = 2048, h = 364;
+        string path = $"{TexDir}/GB_Shower_FoggedMirror.png";
+        var fog = new Color(0.80f, 0.84f, 0.86f);
+        var glass = new Color(0.22f, 0.27f, 0.30f);
+        var px = new Color[w * h];
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                float u = (x + 0.5f) / w * 4.5f, v = (y + 0.5f) / h * 0.8f; // 미터
+                float n = Mathf.PerlinNoise(u * 3f, v * 3f) * 0.6f + Mathf.PerlinNoise(u * 11f + 7f, v * 11f) * 0.4f;
+                float clear = 0.08f + 0.18f * n; // 김이 옅은 정도(0=완전 뿌옇다)
+                // 물줄기: 위에서 시작해 아래로 흐른 가는 줄. 칸마다 다른 곳에서 시작한다.
+                float lane = u * 9f;
+                float cell = Mathf.Floor(lane), fx = lane - cell;
+                float start = 0.15f + 0.55f * Mathf.PerlinNoise(cell * 1.7f, 3.3f); // 위에서부터 줄이 시작되는 높이(m, 위=0)
+                float cx = 0.5f + 0.3f * (Mathf.PerlinNoise(cell * 2.3f, 9.1f) - 0.5f) + 0.02f * Mathf.Sin(v * 25f + cell);
+                float top = 0.8f - v;
+                float end = start + 0.12f + 0.45f * Mathf.PerlinNoise(cell * 3.1f, 5.7f); // 줄이 멈춘 곳(끝에 물방울)
+                float width = (0.06f + 0.05f * Mathf.PerlinNoise(cell, v * 4f)) * (0.6f + 0.4f * Mathf.Clamp01((top - start) / 0.15f));
+                if (Mathf.PerlinNoise(cell * 0.9f, 1.1f) > 0.4f && top > start && top < end)
+                    clear = Mathf.Max(clear, Mathf.Clamp01(1f - Mathf.Abs(fx - cx) / width) * 0.8f);
+                float bx = (fx - cx) / 0.11f, by = (top - end) / 0.018f; // 줄 끝 물방울
+                if (Mathf.PerlinNoise(cell * 0.9f, 1.1f) > 0.4f) clear = Mathf.Max(clear, Mathf.Clamp01(1f - Mathf.Sqrt(bx * bx + by * by)) * 1.5f);
+                // 손으로 닦은 자국: 가운데 칸에 가로 손바닥 획 두 번. 가장자리는 거칠고, 손가락 결(가로 줄무늬) 사이에 김이 조금 남는다.
+                float wipe = 0f;
+                foreach (var (wx, wy, rx, ry) in new[] { (2.2f, 0.52f, 0.5f, 0.09f), (2.45f, 0.36f, 0.42f, 0.08f) })
+                {
+                    float edgeN = 0.25f * (Mathf.PerlinNoise(u * 14f, wy * 9f) - 0.5f);
+                    float du = (u - wx) / rx, dv = (v - wy) / (ry * (1f + edgeN * 2f));
+                    float k = Mathf.Clamp01((1f - Mathf.Sqrt(du * du * du * du + dv * dv)) * 4f); // 납작한 타원, 가장자리 거칠게
+                    float grain = 0.55f + 0.45f * Mathf.PerlinNoise(u * 3f, v * 140f); // 손가락 결
+                    wipe = Mathf.Max(wipe, k * grain);
+                }
+                clear = Mathf.Max(clear, wipe * (0.7f + 0.2f * n));
+                // 물방울: 작은 맑은 점
+                float d = Mathf.PerlinNoise(u * 60f, v * 60f);
+                if (d > 0.78f) clear = Mathf.Max(clear, (d - 0.78f) * 3.5f);
+                var g = Color.Lerp(glass, new Color(0.42f, 0.5f, 0.54f), v / 0.8f * 0.7f); // 맑은 곳에 비친 방: 위가 조금 밝다(형광등)
+                px[y * w + x] = Color.Lerp(fog, g, Mathf.Clamp01(clear));
+            }
+        System.IO.Directory.CreateDirectory(TexDir);
+        var t = new Texture2D(w, h, TextureFormat.RGB24, false);
+        t.SetPixels(px); t.Apply();
+        System.IO.File.WriteAllBytes(path, t.EncodeToPNG());
+        Object.DestroyImmediate(t);
+        AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+        var imp = (TextureImporter)AssetImporter.GetAtPath(path);
+        imp.wrapMode = TextureWrapMode.Clamp; imp.sRGBTexture = true; imp.mipmapEnabled = true; imp.npotScale = TextureImporterNPOTScale.None;
+        imp.SaveAndReimport();
+        return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+    }
+
     // 천장의 젖은 얼룩: 가운데가 진하고 가장자리로 갈수록 흐려지는 불규칙한 원 + 옅은 물결 테. 알파 = 젖은 정도.
     static Texture2D WetStainTexture()
     {
@@ -352,7 +408,21 @@ public static partial class GreyboxGraphicsPass
             Box(gen, "Bench", new Vector3(12.5f, 0.45f, -98.5f), new Vector3(4.2f, 0.08f, 0.45f), bench, LShower, true);
             foreach (float x in new[] { 10.7f, 14.3f }) Box(gen, "BenchLeg", new Vector3(x, 0.22f, -98.5f), new Vector3(0.08f, 0.44f, 0.4f), metal, LShower);
         }
-        Box(gen, "Mirror", new Vector3(ShX0 + 0.015f, 1.6f, -96.5f), new Vector3(0.03f, 0.8f, 4.5f), mirror, LShower);
+        // 김 서린 거울(서쪽 벽, 4.5×0.8m): 회색 판 대신 그림을 씌우고 금속 틀로 세 칸으로 나눈다.
+        // VARCO 그림(Assets/VARCO/Shower/2D/VAR_Shower_FoggedMirror.png)이 있으면 그것, 없으면 코드로 만든 그림.
+        var fogTex = Img2D("Shower", "FoggedMirror") ?? FoggedMirrorTexture();
+        mirror = Lit("GB_Shower_Mirror", m => { Plain(m, Color.white, 0.55f); m.SetTexture("_BaseColorMap", fogTex); });
+        Box(gen, "MirrorBack", new Vector3(ShX0 + 0.01f, 1.6f, -96.5f), new Vector3(0.02f, 0.84f, 4.54f), metal, LShower);
+        var mq = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        Object.DestroyImmediate(mq.GetComponent<Collider>());
+        mq.name = "Mirror"; mq.layer = gen.gameObject.layer;
+        mq.transform.SetParent(gen, true);
+        mq.transform.SetPositionAndRotation(new Vector3(ShX0 + 0.021f, 1.6f, -96.5f), Quaternion.LookRotation(Vector3.left)); // 보이는 면이 방(+X)을 본다
+        mq.transform.localScale = new Vector3(4.5f, 0.8f, 1f);
+        var mqr = mq.GetComponent<MeshRenderer>();
+        mqr.sharedMaterial = mirror; mqr.renderingLayerMask = LShower; mqr.shadowCastingMode = ShadowCastingMode.Off;
+        foreach (float z in new[] { -97.25f, -95.75f }) // 칸막이 두 줄
+            Box(gen, "MirrorMullion", new Vector3(ShX0 + 0.03f, 1.6f, z), new Vector3(0.025f, 0.8f, 0.03f), metal, LShower);
 
         // 차가운 청록 형광등 2개 + 약한 보조광
         var lights = Group(gen, "Lights");
@@ -418,10 +488,19 @@ public static partial class GreyboxGraphicsPass
         // VARCO 브라운관 TV가 있으면 받침대 위에 올리고, TV 카메라 화면(Quad)을 브라운관 유리 위에 맞춘다.
         // 유리 = 모델 로컬 x +0.05, 높이 0.33 가운데, 폭 0.58 · 높이 0.44(둥근 모서리라 조금 작게 덮는다), 앞면 z 0.35.
         bool crt = VarcoPrefab("LivingRoom", "CRTTV") != null;
+        float tvY = 0.5f; // TV를 올리는 높이(받침 윗면)
         if (crt)
         {
-            PBox(tv, "Stand", new Vector3(0, 0.25f, 0), new Vector3(1.1f, 0.5f, 0.7f), wood);
-            VarcoInto(tv, "LivingRoom", "CRTTV", LLiving, new Vector3(0, 0.5f, 0), default, false);
+            // 2026-11-23 사용자 요청: 받침은 노란 방 TV 받침(VARCO)을 떼어 같은 것을 쓴다. 없으면 예전 나무 상자.
+            var standMesh = TvStandOnlyMesh(out var standMat, out float standTop);
+            if (standMesh != null)
+            {
+                MeshPart(tv, "Stand", standMesh, standMat, LLiving, 1f);
+                TvStandTopBoard(tv, LLiving);
+                tvY = standTop + 0.005f;
+            }
+            else PBox(tv, "Stand", new Vector3(0, 0.25f, 0), new Vector3(1.1f, 0.5f, 0.7f), wood);
+            VarcoInto(tv, "LivingRoom", "CRTTV", LLiving, new Vector3(0, tvY, 0), default, false);
         }
         else
         {
@@ -441,7 +520,7 @@ public static partial class GreyboxGraphicsPass
         if (crtScreen != null)
         {
             screen = MeshPart(tv, "Screen", crtScreen, screenMat, LLiving, 1f);
-            screen.transform.localPosition = new Vector3(0, 0.5f, 0); // 받침대 위 TV 원점
+            screen.transform.localPosition = new Vector3(0, tvY, 0); // 받침대 위 TV 원점
             screen.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
         }
         else

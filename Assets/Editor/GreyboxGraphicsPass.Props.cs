@@ -104,7 +104,23 @@ public static partial class GreyboxGraphicsPass
     static void LifeRing(Transform parent, Vector3 pos, float yaw)
     {
         var g = PropGroup(parent, "LifeRingHolder", pos, yaw);
-        if (VarcoInto(g, "PoolHall", "LifeRingHolder", propLayer)) return;
+        // 2026-11-23 사용자 피드백: 받침(걸이) 쪽이 방을 보고 있었다. 모델 앞뒤가 반대라 180도 돌리고, 원점(뒷면)이 벽에서 떨어지지 않게 두께만큼 앞으로.
+        var lr = VarcoPrefab("PoolHall", "LifeRingHolder");
+        if (lr != null)
+        {
+            float depth = 0f;
+            foreach (var mr in lr.GetComponentsInChildren<MeshRenderer>())
+            {
+                var mfb = mr.GetComponent<MeshFilter>().sharedMesh.bounds;
+                for (int i = 0; i < 8; i++)
+                {
+                    var c = mfb.center + Vector3.Scale(mfb.extents, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
+                    depth = Mathf.Max(depth, lr.transform.InverseTransformPoint(mr.transform.TransformPoint(c)).z);
+                }
+            }
+            VarcoInto(g, "PoolHall", "LifeRingHolder", propLayer, new Vector3(0f, 0f, depth), new Vector3(0f, 180f, 0f));
+            return;
+        }
         PBox(g, "Board", new Vector3(0, 0, 0.012f), new Vector3(0.8f, 0.8f, 0.024f), pWhite);
         Part(g, PrimitiveType.Cylinder, "Ring", new Vector3(0, 0, 0.07f), new Vector3(0.62f, 0.045f, 0.62f), pRed, new Vector3(90, 0, 0));
         Part(g, PrimitiveType.Cylinder, "RingHole", new Vector3(0, 0, 0.072f), new Vector3(0.34f, 0.046f, 0.34f), pWhite, new Vector3(90, 0, 0));
@@ -130,7 +146,7 @@ public static partial class GreyboxGraphicsPass
     static void Clock(Transform parent, Vector3 pos, float yaw)
     {
         var g = PropGroup(parent, "WallClock_NoHands", pos, yaw);
-        if (VarcoInto(g, "PoolHall", "WallClock_NoHands", propLayer)) return;
+        if (VarcoInto(g, "PoolHall", "WallClock_NoHands", propLayer)) { g.localScale = Vector3.one * 1.5f; return; } // 2026-11-23 사용자 요청: 1.5배(원점이 뒷면이라 벽에 붙은 채 커진다)
         Part(g, PrimitiveType.Cylinder, "Rim", new Vector3(0, 0, 0.02f), new Vector3(0.4f, 0.02f, 0.4f), pDark, new Vector3(90, 0, 0));
         Part(g, PrimitiveType.Cylinder, "Face", new Vector3(0, 0, 0.03f), new Vector3(0.35f, 0.021f, 0.35f), pWhite, new Vector3(90, 0, 0));
     }
@@ -156,6 +172,20 @@ public static partial class GreyboxGraphicsPass
         q.transform.localRotation = Quaternion.Euler(0, 180f, 0);
         q.transform.localScale = new Vector3(w - 0.08f, h - 0.08f, 1f);
         var r = q.GetComponent<MeshRenderer>(); r.sharedMaterial = mat; r.renderingLayerMask = propLayer;
+    }
+
+    /// <summary>틀 없는 종이 포스터 한 장. pos = 벽 앞 그림 가운데, yaw = 방 안쪽을 보는 방향.</summary>
+    static void Poster(Transform parent, Vector3 pos, float yaw, float w, float h, Texture2D img)
+    {
+        var g = PropGroup(parent, "Poster_" + img.name, pos, yaw);
+        var mat = Lit("GB_Prop_Poster_" + img.name, m => { Plain(m, Color.white, 0.15f); m.SetTexture("_BaseColorMap", img); });
+        var q = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        Object.DestroyImmediate(q.GetComponent<Collider>());
+        q.name = "Paper"; q.transform.SetParent(g, false);
+        q.transform.localRotation = Quaternion.Euler(0, 180f, 0); // Quad의 보이는 면(-Z)이 방 안(+Z)을 보게
+        q.transform.localScale = new Vector3(w, h, 1f);
+        var r = q.GetComponent<MeshRenderer>(); r.sharedMaterial = mat; r.renderingLayerMask = propLayer;
+        r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
     }
 
     static void DeskAndChair(Transform parent, Vector3 pos, float yaw)
@@ -185,7 +215,7 @@ public static partial class GreyboxGraphicsPass
     {
         var g = PropGroup(parent, "TV_Off", pos, yaw, new Vector3(1.1f, 1.15f, 0.45f));
         // 2026-11-20 VARCO 받침대 달린 브라운관 TV(한 덩어리, 1.07×1.1×0.78)가 있으면 그것 하나로.
-        if (VarcoInto(g, "Yellow", "CRTTV_Stand", propLayer) != null) return;
+        if (VarcoInto(g, "Yellow", "CRTTV_Stand", propLayer) != null) { TvStandTopBoard(g, propLayer); return; } // 2026-11-23 번진 받침 윗면을 윗판으로 덮는다
         if (VarcoPrefab("LivingRoom", "CRTTV") != null)
         {
             // 받침대(더미) 위에 VARCO 브라운관 TV. 콜라이더는 받침대 + TV 높이.
@@ -419,7 +449,10 @@ public static partial class GreyboxGraphicsPass
             Frame(props, new Vector3(27.4f, 1.7f, -98.72f), 180, 0.5f, 0.7f);
             Frame(props, new Vector3(28.4f, 1.75f, -98.72f), 180, 0.7f, 0.5f);
             Frame(props, new Vector3(29.6f, 1.65f, -98.72f), 180, 0.45f, 0.6f);
-            Frame(props, new Vector3(20.17f, 1.7f, -111.6f), 90, 0.6f, 0.8f, Img2D("Yellow", "Poster")); // 3:4 액자 = 포스터 비율
+            // 2026-11-23 사용자 요청: 포스터는 액자 틀 없이(틀 텍스처가 깨져 보였다) 1.5배(0.78×1.04). 벽 덮개(x 20.20) 1.5cm 앞에 붙인다.
+            var posterImg = Img2D("Yellow", "Poster");
+            if (posterImg != null) Poster(props, new Vector3(20.215f, 1.65f, -111.6f), 90, 0.78f, 1.04f, posterImg);
+            else Frame(props, new Vector3(20.17f, 1.7f, -111.6f), 90, 0.6f, 0.8f);
             YellowFill(props);
 
             var decals = Fresh(room.transform.Find(GenName), "Decals");

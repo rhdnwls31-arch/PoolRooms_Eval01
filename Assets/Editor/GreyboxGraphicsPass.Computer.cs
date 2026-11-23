@@ -146,7 +146,11 @@ public static partial class GreyboxGraphicsPass
         Box(mon, "Inside_R", new Vector3(sx1 - 0.01f, ScrH / 2, (cz0 + cz1) / 2), new Vector3(0.02f, ScrH, cz0 - cz1), glow, LComputer);
         // 2026-11-20 VARCO 거대 브라운관: 유리를 지운 메쉬를 화면 아래가 땅에 닿게 1.5m 묻고, 유리 자리가 출구 벽(화면) 바로 뒤에 오게 둔다.
         // 더미 상자들은 콜라이더(벽)로만 남기고 보이지 않게 한다. 화면 속 빛의 방(Inside_*)은 그대로 보인다.
-        var openMon = GiantMonitorOpenMesh(out var monMat);
+        // 2026-11-23 사용자 피드백: 유리를 지운 VARCO 모니터는 가장자리가 울퉁불퉁하게 깨지고 아래가 땅에 파묻혀 어색하다 → 예전 네모 더미로 되돌린다.
+        // 코드는 남겨 두고 꺼 둔다(UseVarcoGiantMonitor). 프리팹·잘라 낸 메쉬 파일도 그대로 둔다.
+        const bool UseVarcoGiantMonitor = false;
+        Material monMat = null;
+        var openMon = UseVarcoGiantMonitor ? GiantMonitorOpenMesh(out monMat) : null;
         if (openMon != null)
         {
             foreach (Transform c in mon)

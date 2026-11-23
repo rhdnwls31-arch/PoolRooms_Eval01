@@ -117,15 +117,17 @@ public static partial class GreyboxGraphicsPass
     // 평평한 네모 판을 유리 앞에 띄우면 모서리가 테두리 위로 튀어나와 티가 났다(2026-11-19 사용자 피드백).
     // 그래서 모델 유리를 앞(+Z)에서 쏘아 표면을 따라가는 둥근 모서리 메쉬를 만든다(유리 위 4mm). CRTTV 프리팹 원점 기준.
     // 유리 = 가운데 (0.055, 0.32), 가로 반폭 0.27, 세로 반높이 0.19, 모서리 반지름 0.08. 보는 사람 왼쪽이 모델 +X.
-    static UnityEngine.Mesh CrtScreenMesh() => GlassScreenMesh("LivingRoom", "CRTTV", 0.055f, 0.32f, 0.27f, 0.19f, 0.08f);
+    // 2026-11-23 사용자 피드백 "화면 위에 여백": 앞에서 깊이를 재 보니 유리는 x -0.22~0.35, y 0.13~0.545라 예전 판(위 0.51)이 위쪽 3.5cm를 못 덮었다.
+    // 잰 유리에 맞춰 다시 굽는다(새 파일 _Screen2).
+    static UnityEngine.Mesh CrtScreenMesh() => GlassScreenMesh("LivingRoom", "CRTTV", 0.065f, 0.337f, 0.284f, 0.206f, 0.08f, "2");
 
     /// <summary>
     /// VARCO 화면 달린 물건(TV, 모니터)의 유리 면을 앞(+Z)에서 쏘아 따라가는 둥근 모서리 메쉬. 프리팹 원점 기준, 유리 위 4mm.
     /// cx, cy = 유리 가운데, hw/hh = 반폭/반높이, r = 모서리 반지름. 만든 메쉬는 Models/VAR_&lt;방&gt;_&lt;이름&gt;_Screen.asset에 둔다.
     /// </summary>
-    static UnityEngine.Mesh GlassScreenMesh(string room, string name, float cx, float cy, float hw, float hh, float r)
+    static UnityEngine.Mesh GlassScreenMesh(string room, string name, float cx, float cy, float hw, float hh, float r, string version = "")
     {
-        string path = $"Assets/VARCO/{room}/Models/VAR_{room}_{name}_Screen.asset";
+        string path = $"Assets/VARCO/{room}/Models/VAR_{room}_{name}_Screen{version}.asset";
         var cached = AssetDatabase.LoadAssetAtPath<UnityEngine.Mesh>(path);
         if (cached != null) return cached;
         var prefab = VarcoPrefab(room, name);
@@ -186,6 +188,9 @@ public static partial class GreyboxGraphicsPass
     static void SwapPoolLoungers()
     {
         if (VarcoPrefab("Pool", "Bench") == null) return;
+        var clean = BenchCleanMesh(out var cleanMats);
+        RemoveIntroTowels();
+        FixIntroRadio();
         int n = 0;
         foreach (var t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include))
         {
@@ -198,6 +203,12 @@ public static partial class GreyboxGraphicsPass
                 if (c.TryGetComponent<MeshRenderer>(out var r)) { layer = r.renderingLayerMask; r.enabled = false; EditorUtility.SetDirty(r); }
             var go = VarcoInto(t, "Pool", "Bench", layer);
             go.name = LoungerVarcoName;
+            if (clean != null) // 받침대만 단색인 메쉬로 바꿔 끼운다(프리팹 원점 기준이라 루트에 바로 붙인다)
+            {
+                foreach (var mr in go.GetComponentsInChildren<MeshRenderer>()) mr.enabled = false;
+                var cp = MeshPart(go.transform, "Clean", clean, cleanMats[0], layer, 1f);
+                cp.GetComponent<MeshRenderer>().sharedMaterials = cleanMats;
+            }
             n++;
         }
         Debug.Log($"[GreyboxGraphicsPass] VARCO 선베드 {n}개");
@@ -294,6 +305,166 @@ public static partial class GreyboxGraphicsPass
         m.SetTriangles(keep, 0); m.RecalculateBounds();
         AssetDatabase.CreateAsset(m, path); AssetDatabase.SaveAssets();
         Debug.Log($"[GreyboxGraphicsPass] 거대 모니터 유리 삼각형 {(tri.Length - keep.Count) / 3}개 지움");
+        return m;
+    }
+
+    // 2026-11-23 사용자 피드백 "라디오가 바닥을 본다": 모델이 Z-up인데 Y 회전만 들어가 뒤로 누워 있었다.
+    // 인트로·같은 수영장의 Prop_Radio를 X -90으로 세우고 앞면이 수영장 쪽(로컬 yaw 70)을 보게, 밑면은 협탁 윗면 그대로.
+    static void FixIntroRadio()
+    {
+        foreach (var t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include))
+        {
+            if (t == null || t.name != "Prop_Radio") continue;
+            var r = t.GetComponentInChildren<Renderer>();
+            float bottom = r.bounds.min.y;
+            t.localEulerAngles = new Vector3(-90f, 70f, 0f);
+            t.position += Vector3.up * (bottom - r.bounds.min.y);
+            EditorUtility.SetDirty(t);
+        }
+    }
+
+    // 2026-11-23 사용자 요청: 선베드 위 수건 더미(Prop_Towels_*, 인트로·같은 수영장)를 지운다. IntroMapBuilder에서도 뺐다.
+    static void RemoveIntroTowels()
+    {
+        var dead = new System.Collections.Generic.List<GameObject>();
+        foreach (var t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include))
+            if (t != null && t.name.StartsWith("Prop_Towels_")) dead.Add(t.gameObject);
+        foreach (var g in dead) Object.DestroyImmediate(g);
+        if (dead.Count > 0) Debug.Log($"[GreyboxGraphicsPass] 수건 더미 {dead.Count}개 지움");
+    }
+
+    // ---------------------------------------------------------------- 선베드: 등받이 아래 받침대만 깨끗한 단색으로
+    // 2026-11-23 사용자 피드백 "벤치 뒤가 더러운 느낌". 재질은 정상(HDRP/Lit, 노멀맵 설정 정상)이고 받침대 부분 그림 자체가 얼룩져 있다.
+    // 이 모델은 UV를 여러 부분이 겹쳐 써서(받침대 삼각형이 텍스처 절반 넓이와 겹침) 그림만 칠하면 프레임까지 번진다.
+    // 그래서 받침대 삼각형(등받이 쪽 z < -0.2, 등받이 판보다 6cm 아래, 옆 레일 안쪽)을 두 번째 서브메쉬로 떼어 단색 재질을 준다.
+    // 프리팹 원점 기준으로 굽고 Pool/Models/VAR_Pool_Bench_Clean.asset에 둔다(처음 한 번만).
+    static UnityEngine.Mesh BenchCleanMesh(out Material[] mats)
+    {
+        mats = null;
+        var prefab = VarcoPrefab("Pool", "Bench");
+        if (prefab == null) return null;
+        var mf = prefab.GetComponentInChildren<MeshFilter>();
+        var baseMat = mf.GetComponent<MeshRenderer>().sharedMaterial;
+        const string plainPath = "Assets/VARCO/Pool/Materials/VAR_Pool_Bench_Plain.mat";
+        var plain = AssetDatabase.LoadAssetAtPath<Material>(plainPath);
+        if (plain == null)
+        {
+            // 텍스처의 밝은 부분(프레임 흰색) 평균을 단색으로 쓴다
+            var tex = new Texture2D(2, 2); tex.LoadImage(System.IO.File.ReadAllBytes(AssetDatabase.GetAssetPath(baseMat.GetTexture("_BaseColorMap"))));
+            var px = tex.GetPixels(); Color s = Color.black; int c = 0;
+            for (int i = 0; i < px.Length; i += 13) if (px[i].grayscale > 0.6f) { s += px[i]; c++; }
+            var col = c > 0 ? s / c : new Color(0.85f, 0.83f, 0.8f); col.a = 1f;
+            plain = new Material(baseMat) { name = "VAR_Pool_Bench_Plain" };
+            plain.SetTexture("_BaseColorMap", null); plain.SetTexture("_NormalMap", null); plain.DisableKeyword("_NORMALMAP");
+            plain.SetColor("_BaseColor", col);
+            AssetDatabase.CreateAsset(plain, plainPath);
+        }
+        mats = new[] { baseMat, plain };
+        const string path = "Assets/VARCO/Pool/Models/VAR_Pool_Bench_Clean.asset";
+        var cached = AssetDatabase.LoadAssetAtPath<UnityEngine.Mesh>(path);
+        if (cached != null) return cached;
+        var src = mf.sharedMesh;
+        var M = prefab.transform.worldToLocalMatrix * mf.transform.localToWorldMatrix;
+        var v = src.vertices; var n = src.normals; var t = src.tangents;
+        for (int i = 0; i < v.Length; i++) v[i] = M.MultiplyPoint3x4(v[i]);
+        for (int i = 0; i < n.Length; i++) n[i] = M.MultiplyVector(n[i]).normalized;
+        for (int i = 0; i < t.Length; i++) { var d = M.MultiplyVector(t[i]).normalized; t[i] = new Vector4(d.x, d.y, d.z, t[i].w); }
+        var tri = src.triangles; var a = new System.Collections.Generic.List<int>(); var b = new System.Collections.Generic.List<int>();
+        for (int i = 0; i < tri.Length; i += 3)
+        {
+            var ce = (v[tri[i]] + v[tri[i + 1]] + v[tri[i + 2]]) / 3f;
+            float surf = 0.38f + (-0.2f - ce.z) * 0.63f; // 등받이 윗면 높이(z -0.2에서 0.38m → -0.96에서 0.86m)
+            bool strut = ce.z < -0.2f && ce.y > 0.12f && ce.y < surf - 0.06f && Mathf.Abs(ce.x) < 0.33f;
+            (strut ? b : a).AddRange(new[] { tri[i], tri[i + 1], tri[i + 2] });
+        }
+        var m = new UnityEngine.Mesh { name = "VAR_Pool_Bench_Clean", indexFormat = src.indexFormat, subMeshCount = 2 };
+        m.vertices = v; m.normals = n; m.tangents = t; m.uv = src.uv;
+        m.SetTriangles(a, 0); m.SetTriangles(b, 1); m.RecalculateBounds();
+        AssetDatabase.CreateAsset(m, path); AssetDatabase.SaveAssets();
+        Debug.Log($"[GreyboxGraphicsPass] 선베드 받침대 삼각형 {b.Count / 3}개를 단색으로");
+        return m;
+    }
+
+    // ---------------------------------------------------------------- 노란 방 TV 받침대: 받침만 떼기 + 윗판
+    // 2026-11-23 사용자 피드백 "모니터 아래 선반 텍스처 깨짐": 재질은 정상(HDRP/Lit, 베이스·노멀)이고, AI 모델이 TV 밑동과 받침 윗면을
+    // 한 덩어리로 섞어 만들어 윗면 그림이 번져 있다(원래 그런 것). 받침 윗면에 얇은 나무 윗판(무늬 없는 받침 색)을 덮어 가린다.
+    // 거실 TV도 이 받침을 쓴다(사용자 요청): 모든 꼭짓점이 받침 윗면보다 낮은 삼각형만 떼어 낸 메쉬(Yellow/Models/..._StandOnly.asset).
+    /// <summary>노란 방 TV+받침 모델의 받침 윗면 높이·받침 발자국(프리팹 원점 기준), 받침 색 재질.</summary>
+    static bool TvStandInfo(out float top, out Rect foot, out Material plain)
+    {
+        top = 0f; foot = default; plain = null;
+        var prefab = VarcoPrefab("Yellow", "CRTTV_Stand");
+        if (prefab == null) return false;
+        var mf = prefab.GetComponentInChildren<MeshFilter>();
+        var M = prefab.transform.worldToLocalMatrix * mf.transform.localToWorldMatrix;
+        var v = mf.sharedMesh.vertices;
+        float x0 = 9, x1 = -9, z0 = 9, z1 = -9;
+        foreach (var a in v)
+        {
+            var w = M.MultiplyPoint3x4(a);
+            if (w.z > 0.365f) top = Mathf.Max(top, w.y);          // 받침 앞면은 TV(앞 0.35)보다 앞으로 나와 있다
+            if (w.y < 0.3f) { x0 = Mathf.Min(x0, w.x); x1 = Mathf.Max(x1, w.x); z0 = Mathf.Min(z0, w.z); z1 = Mathf.Max(z1, w.z); }
+        }
+        foot = Rect.MinMaxRect(x0, z0, x1, z1);
+        const string matPath = "Assets/VARCO/Yellow/Materials/VAR_Yellow_CRTTV_StandTop.mat";
+        plain = AssetDatabase.LoadAssetAtPath<Material>(matPath);
+        if (plain == null)
+        {
+            var baseMat = mf.GetComponent<MeshRenderer>().sharedMaterial;
+            var tex = new Texture2D(2, 2); tex.LoadImage(System.IO.File.ReadAllBytes(AssetDatabase.GetAssetPath(baseMat.GetTexture("_BaseColorMap"))));
+            var uv = mf.sharedMesh.uv; Color s = Color.black; int c = 0;
+            for (int i = 0; i < v.Length; i += 3)
+            {
+                var w = M.MultiplyPoint3x4(v[i]);
+                if (w.y > 0.12f && w.y < 0.32f) { s += tex.GetPixelBilinear(uv[i].x, uv[i].y); c++; } // 받침 옆면 색
+            }
+            var col = c > 0 ? s / c : new Color(0.45f, 0.3f, 0.2f); col.a = 1f;
+            plain = new Material(baseMat) { name = "VAR_Yellow_CRTTV_StandTop" };
+            plain.SetTexture("_BaseColorMap", null); plain.SetTexture("_NormalMap", null); plain.DisableKeyword("_NORMALMAP");
+            plain.SetColor("_BaseColor", col); plain.SetFloat("_Smoothness", 0.3f);
+            AssetDatabase.CreateAsset(plain, matPath);
+        }
+        return true;
+    }
+
+    /// <summary>받침 윗면을 덮는 2cm 윗판. parent는 받침 프리팹 원점과 같은 공간이어야 한다.</summary>
+    static GameObject TvStandTopBoard(Transform parent, uint layer)
+    {
+        if (!TvStandInfo(out float top, out Rect foot, out Material plain)) return null;
+        var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        Object.DestroyImmediate(go.GetComponent<Collider>());
+        go.name = "StandTop";
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = new Vector3(foot.center.x, top - 0.005f, foot.center.y);
+        go.transform.localScale = new Vector3(foot.width + 0.01f, 0.02f, foot.height + 0.01f);
+        var r = go.GetComponent<MeshRenderer>(); r.sharedMaterial = plain; r.renderingLayerMask = layer;
+        return go;
+    }
+
+    /// <summary>노란 방 TV+받침 모델에서 받침만 떼어 낸 메쉬(프리팹 원점 기준). 처음 한 번 굽는다.</summary>
+    static UnityEngine.Mesh TvStandOnlyMesh(out Material mat, out float top)
+    {
+        mat = null; top = 0f;
+        if (!TvStandInfo(out top, out _, out _)) return null;
+        var prefab = VarcoPrefab("Yellow", "CRTTV_Stand");
+        var mf = prefab.GetComponentInChildren<MeshFilter>();
+        mat = mf.GetComponent<MeshRenderer>().sharedMaterial;
+        const string path = "Assets/VARCO/Yellow/Models/VAR_Yellow_CRTTV_StandOnly.asset";
+        var cached = AssetDatabase.LoadAssetAtPath<UnityEngine.Mesh>(path);
+        if (cached != null) return cached;
+        var src = mf.sharedMesh;
+        var M = prefab.transform.worldToLocalMatrix * mf.transform.localToWorldMatrix;
+        var v = src.vertices; var n = src.normals; var t = src.tangents;
+        for (int i = 0; i < v.Length; i++) v[i] = M.MultiplyPoint3x4(v[i]);
+        for (int i = 0; i < n.Length; i++) n[i] = M.MultiplyVector(n[i]).normalized;
+        for (int i = 0; i < t.Length; i++) { var d = M.MultiplyVector(t[i]).normalized; t[i] = new Vector4(d.x, d.y, d.z, t[i].w); }
+        var tri = src.triangles; var keep = new System.Collections.Generic.List<int>();
+        for (int i = 0; i < tri.Length; i += 3)
+            if (v[tri[i]].y <= top + 0.01f && v[tri[i + 1]].y <= top + 0.01f && v[tri[i + 2]].y <= top + 0.01f) keep.AddRange(new[] { tri[i], tri[i + 1], tri[i + 2] });
+        var m = new UnityEngine.Mesh { name = "VAR_Yellow_CRTTV_StandOnly", indexFormat = src.indexFormat };
+        m.vertices = v; m.normals = n; m.tangents = t; m.uv = src.uv;
+        m.SetTriangles(keep, 0); m.RecalculateBounds();
+        AssetDatabase.CreateAsset(m, path); AssetDatabase.SaveAssets();
         return m;
     }
 

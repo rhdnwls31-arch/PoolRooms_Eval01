@@ -272,15 +272,15 @@ public static partial class IntroMapBuilder
             SideTable(d, "Prop_SideTable_E" + (i + 1), new Vector3(10.6f, 0, tableZ[i]));
         }
         // 라디오는 협탁 위 (협탁 윗면 y 0.5)
-        PlacePrefab(d, "Assets/Prefabs/prop_radio.prefab", "Prop_Radio", new Vector3(-10.6f, 0.52f, -12f), 20f);
+        // 2026-11-23: 모델이 Z-up이라 X -90을 넣어야 선다(전에는 Y만 넣어 뒤로 누워 있었다). 앞면(+Z)이 수영장(+X) 쪽.
+        var radio = PlacePrefab(d, "Assets/Prefabs/prop_radio.prefab", "Prop_Radio", new Vector3(-10.6f, 0.52f, -12f), 70f);
+        if (radio != null) radio.transform.localEulerAngles = new Vector3(-90f, 70f, 0f);
         foreach (float z in new[] { -18f, 18f })
         {
             Parasol(d, "Prop_Parasol_W" + z.ToString("0"), new Vector3(-14.0f, 0, z));
             Parasol(d, "Prop_Parasol_E" + z.ToString("0"), new Vector3(14.0f, 0, z));
         }
-        TowelStack(d, "Prop_Towels_1", new Vector3(-10.6f, 0.42f, -15f));
-        TowelStack(d, "Prop_Towels_2", new Vector3(10.6f, 0.42f, 15f));
-        TowelStack(d, "Prop_Towels_3", new Vector3(-10.6f, 0.42f, 9f));
+        // 2026-11-23 사용자 요청: 선베드 위 수건 더미는 뺀다(VARCO로 잘 안 뽑히고 선베드 위에서 어색함).
 
         // 남/북 데크: 수영장 쪽을 보는 벤치 (계단 폭 ±3 바깥에 둔다)
         Bench(d, "Prop_Bench_S1", new Vector3(-6f, 0, 17.5f), 180f);

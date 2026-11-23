@@ -17,7 +17,7 @@ public static partial class GreyboxGraphicsPass
     static readonly Vector3 CityArrivalPos = new Vector3(CtCx, 0f, CtZ1 + 0.15f); // 북쪽 벽(두께 가운데). 컴퓨터 화면이 여기로 이어진다
     // 물 찬 집(이상한 점 + 출구): 앞면 z, 크기
     const float FhX = 130f, FhFront = -164.5f, FhW = 8f, FhD = 7f, FhH = 5f, FhDoorW = 1.6f, FhDoorH = 2.4f;
-    const float FloodTop = 70f, FloodTime = 40f;
+    const float FloodTop = 70f, FloodTime = 28f; // 2026-11-23 사용자 요청 "조금 더 빠르게": 40 → 28초(문 열림도 같이 당겨진다)
 
     static Material ctDark, ctLitWin, ctTrim;
 
@@ -369,7 +369,7 @@ public static partial class GreyboxGraphicsPass
         var uv = flood.transform.Find("UnderwaterVolume").GetComponent<Volume>();
         uv.weight = 0f;
         var fr = flood.AddComponent<FloodRise>();
-        fr.surface = surf.transform; fr.startY = -0.3f; fr.endY = FloodTop; fr.duration = FloodTime; fr.easePower = 3f; // 발목~무릎에 10초쯤 머문다
+        fr.surface = surf.transform; fr.startY = -0.3f; fr.endY = FloodTop; fr.duration = FloodTime; fr.easePower = 2.5f; // 발목~무릎에 잠깐 머문다(2026-11-23: 3 → 2.5, 처음이 덜 느리게)
         fr.underwater = uv; fr.city = room; fr.floaters = floaters.ToArray();
         EditorUtility.SetDirty(fr); EditorUtility.SetDirty(uv);
         flood.SetActive(false);

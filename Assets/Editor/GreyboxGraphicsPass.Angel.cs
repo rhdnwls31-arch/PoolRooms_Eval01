@@ -132,6 +132,12 @@ public static partial class GreyboxGraphicsPass
             var p = new Vector3(west ? 19.2f + 0.5f * r2 : 37.1f - 0.5f * r2, 0.2f, z);
             if (!CloudVarco(puffs, $"Puff_{i:00}", p, w, i, Hash(i, 11, 505) * 360f))
                 Prim(PrimitiveType.Sphere, puffs, $"Puff_{i:00}", p, new Vector3(w * 0.8f, 0.8f + 0.8f * r2, w), cloudMat, LAngel);
+            // 2026-11-23 사용자 피드백 "띄엄띄엄 비어 보인다": 큰 구름마다 작은 구름 하나를 방 안쪽으로 붙여 무리를 만든다(VARCO가 있을 때만).
+            // 가벼운 CloudBank(1.8만 삼각형)만 써서 늘려도 부담이 작다. 동쪽 문틀(z -135~-131.8) 앞은 비운다.
+            float cz = z + (Hash(i, 13, 507) > 0.5f ? 1.4f : -1.4f) * (0.8f + 0.4f * r);
+            if (!west && cz > -135.2f && cz < -131.6f) cz = z + (z < -133.4f ? -1.4f : 1.4f);
+            var cp = new Vector3(west ? p.x + 0.9f : p.x - 0.9f, 0.2f, cz);
+            CloudVarco(puffs, $"Puff_{i:00}_b", cp, w * (0.45f + 0.2f * r2), i + 1, Hash(i, 17, 509) * 360f);
         }
         int si = 0;
         foreach (float x in new[] { 21.5f, 34.6f }) // 출구 벽 양옆(문 자리 26.65~29.65는 비운다)
@@ -141,15 +147,17 @@ public static partial class GreyboxGraphicsPass
 
     // 2026-11-23 VARCO 구름 두 종(납작한 CloudBank 2.5×1.0, 봉긋한 CloudBank2 2.0×1.4)을 번갈아 쓴다.
     // 폭이 더미 구(w)와 같게 배율을 맞추고, 밑이 구름 바닥에 묻히게 10cm 내린다. 콜라이더 없음(더미와 같음).
+    // 2026-11-23: CloudBank2는 50만 삼각형이라(6개면 300만) 빼고, 모두 CloudBank(1.8만)로 쓴다. 똑같아 보이지 않게 높이를 0.8~1.6배로 바꾼다.
     static bool CloudVarco(Transform parent, string name, Vector3 pos, float width, int i, float yaw)
     {
-        bool flat = i % 2 == 0;
-        string model = flat ? "CloudBank" : "CloudBank2";
+        const bool flat = true;
+        string model = "CloudBank";
         if (VarcoPrefab("Angel", model) == null) return false;
         var g = new GameObject(name).transform;
         g.SetParent(parent, true);
         g.SetPositionAndRotation(new Vector3(pos.x, -0.1f, pos.z), Quaternion.Euler(0f, yaw, 0f));
-        g.localScale = Vector3.one * (flat ? width / 2.5f : width * 0.85f / 1.98f);
+        float s = width / 2.5f;
+        g.localScale = new Vector3(s, s * (0.8f + 0.8f * Hash(i, 19, 511)), s);
         var go = VarcoInto(g, "Angel", model, LAngel, default, default, false);
         // 오목한 뭉게 틈이 그늘져 회색 돌처럼 보였다(2026-11-23 Play). 바닥 구름처럼 같은 그림을 발광으로도 입히고, 자기 그림자는 끈다.
         foreach (var r in go.GetComponentsInChildren<Renderer>())
@@ -162,6 +170,7 @@ public static partial class GreyboxGraphicsPass
             m.SetColor("_EmissiveColor", Color.white * ((flat ? 700f : 900f) * AngelK)); // CloudBank2가 더 어두운 그림이라 더 세게
             m.SetFloat("_UseEmissiveIntensity", 0f);
             m.SetFloat("_EmissiveExposureWeight", 1f);
+            m.enableInstancing = true; // 같은 메쉬·재질 22개를 한 번에 그린다
             UnityEditor.EditorUtility.SetDirty(m);
         }
         return true;

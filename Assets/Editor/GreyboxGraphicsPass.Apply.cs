@@ -42,6 +42,7 @@ public static partial class GreyboxGraphicsPass
         SwapPoolParasols();
         SwapPoolPalms(); // 2026-11-23 VARCO 물속 야자수
         ApplyCrackArrowImage(); // 2026-11-23 VARCO 2D: 금 간 복도 화살표(씬에 손으로 놓은 판)
+        FixTunnelSeams(); // 2026-11-23 인트로·같은 수영장 아치 터널이 벽과 겹쳐 깨져 보이던 것
         SwapPoolLoungers(); // 2026-11-20 VARCO 선베드: 인트로·같은 수영장 더미를 바꾼다(같은 수영장 복사본이 만들어진 뒤라 맨 끝)
         AssetDatabase.SaveAssets();
         EditorSceneManager.MarkSceneDirty(scene);

@@ -215,6 +215,16 @@ public class HiddenEnding : MonoBehaviour
 
         tvRt = new RenderTexture(640, 480, 24) { name = "VhsTv" };
         cam.targetTexture = tvRt;
+        // 2026-11-23: 메인 카메라가 TV 텍스처로만 그리면 화면(Display 1)을 그리는 카메라가 없어 에디터 Game 뷰에
+        // "No cameras rendering" 글자가 떴다. 아무것도 안 찍고 검게 지우기만 하는 카메라를 둔다(TV 캔버스와 함께 지워진다).
+        var dispGo = new GameObject("VhsDisplayCam");
+        dispGo.transform.SetParent(tvCanvas.transform, false);
+        var disp = dispGo.AddComponent<Camera>();
+        disp.cullingMask = 0; disp.clearFlags = CameraClearFlags.SolidColor; disp.backgroundColor = Color.black; disp.depth = -100f;
+        var hd = dispGo.AddComponent<UnityEngine.Rendering.HighDefinition.HDAdditionalCameraData>();
+        hd.clearColorMode = UnityEngine.Rendering.HighDefinition.HDAdditionalCameraData.ClearColorMode.Color;
+        hd.backgroundColorHDR = Color.black;
+        hd.volumeLayerMask = 0;
         tvScreen = NewUi<RawImage>("Screen", frame); Stretch(tvScreen.rectTransform);
         tvScreen.texture = tvRt; tvScreen.color = new Color(0.93f, 0.95f, 1f);
 

@@ -160,3 +160,25 @@ VARCO FBX를 `Assets/VARCO/VAR_<방>_<이름>.fbx`로 올리면 같은 자리의
 | Nightstand | small bedside nightstand with one drawer, nothing on top | painted wood | pale grey-blue, dark blue |
 | StandingMirror | full-length standing mirror leaning on a back stand | painted wood, glass | pale grey-blue, dark mirror |
 | ToyChest | wooden toy chest with a lid and a small ball beside it | painted wood | pale grey-blue, dark blue |
+
+## 7. 수영장 소품 다시 정리 (2026-11-23 추가)
+
+플레이 피드백(2026-11-23)으로 인트로·마지막 수영장에 남은 더미를 다시 본 결과다. 원래 목록(`object-list-and-prompt-guide.md` §3)에 있었지만 남은 목록에서 빠졌던 것과, 경로가 틀렸던 것을 바로잡는다.
+
+| 파일 이름 | 설명 | 크기(m) | 우선 | 바꿀 더미 |
+|---|---|---|---|---|
+| `VAR_Pool_SideTable` | 작은 원형 흰 탁자(받침 기둥 하나). 위에 라디오를 올린다 | 0.6 × 0.5 | B | `Prop_SideTable_W/E`, `LagoonCourt_Table` |
+| `VAR_Pool_DeckBench` | 데크의 흰 등받이 벤치(타일 또는 칠한 나무). `VAR_Pool_Bench`는 이미 선베드 이름이라 다른 이름을 쓴다 | 2.1 × 0.9 × 0.6 | B | `Prop_Bench_S1·S2·N1·N2` |
+| `VAR_Pool_PlanterTree` | 낮은 흰 원형 화분에 심은 작은 야자수(줄기 하나, 잎 5~6장) | 화분 0.75 × 0.6, 전체 높이 2.2~3.8 | B | `Prop_Planter_*`, `LagoonCourt_Planter_*` |
+| `VAR_Pool_BowlTree` | 넓고 낮은 흰 원형 화분(지름 2.2m)에 심은 큰 나무. 곧은 갈색 줄기 위에 둥근 잎 덩어리 | 높이 5.5~6.7 | B | `ChannelHall_Tree_N1~4·S1~4`(수로 홀, 같은 수영장에도 복사) |
+
+- 큰 나무(`BowlTree`)도 오브젝트 하나라 VARCO로 뽑을 수 있다. 크기는 Unity에서 맞추므로 모델은 비율만 맞으면 된다. 원래 목록에서 이 나무를 `물속 야자수` 더미 경로로 적은 것은 잘못이다(물속 야자수가 아니라 화분 나무다).
+- 수건 더미(`Prop_Towels`)는 2026-11-23 사용자 요청으로 지웠다. 만들지 않는다.
+- 라디오는 이미 진짜 모델(`Assets/Prefabs/prop_radio.prefab`)이다. 누워 있던 회전만 2026-11-23에 고쳤다.
+
+| 파일 이름 | [오브젝트 영문 설명] | [재질] | [색] |
+|---|---|---|---|
+| SideTable | small round poolside side table on a single pedestal with a round base | painted metal, plastic top | off-white, pale grey |
+| DeckBench | long poolside bench with a low backrest | painted wood or white tile | off-white, pale peach |
+| PlanterTree | small palm tree in a low round white planter pot | ceramic pot, leaves | off-white pot, soft green leaves |
+| BowlTree | tall tree with a straight trunk and a round leafy crown, planted in a wide low round white planter bowl | ceramic bowl, bark, leaves | off-white bowl, brown trunk, soft green leaves |

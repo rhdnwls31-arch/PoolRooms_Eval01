@@ -118,8 +118,13 @@ public static partial class GreyboxGraphicsPass
                 bool dead = (z == -106.55f && x < 30f) || (x > 30f && z == -101.45f) || (x < 25f && z == -111.65f);
                 if (dead)
                 {
-                    l.gameObject.SetActive(false);
-                    l.transform.parent.Find("Tube").GetComponent<MeshRenderer>().sharedMaterial = deadTube;
+                    // 2026-11-23 사용자 요청: 나간 등은 가끔 깜빡인다(LightFlicker). 평소엔 꺼져 있어 방 모서리는 그대로 어둡다.
+                    var tube = l.transform.parent.Find("Tube").GetComponent<MeshRenderer>();
+                    var fl = l.transform.parent.gameObject.AddComponent<LightFlicker>();
+                    fl.lamp = l; fl.tube = tube; fl.onMaterial = tube.sharedMaterial; fl.offMaterial = deadTube;
+                    fl.seed = Mathf.RoundToInt(x * 10f - z * 7f);
+                    l.enabled = false;
+                    tube.sharedMaterial = deadTube;
                 }
             }
         // 바닥 반사광 흉내: 그림자 없는 점광을 바닥 아래에 두면 바닥 윗면은 등지고 천장과 벽 아래쪽만 고르게 밝힌다.
