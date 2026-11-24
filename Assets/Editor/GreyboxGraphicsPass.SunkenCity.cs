@@ -17,6 +17,7 @@ public static partial class GreyboxGraphicsPass
     static readonly Vector3 CityArrivalPos = new Vector3(CtCx, 0f, CtZ1 + 0.15f); // 북쪽 벽(두께 가운데). 컴퓨터 화면이 여기로 이어진다
     // 물 찬 집(이상한 점 + 출구): 앞면 z, 크기
     const float FhX = 130f, FhFront = -164.5f, FhW = 8f, FhD = 7f, FhH = 5f, FhDoorW = 1.6f, FhDoorH = 2.4f;
+    const float CityBeamNits = 1600f, CitySpillLumen = 600000f, CityBeamLumen = 2500000f; // 2026-11-24 문 열림 빛(플레이 캡처로 맞춤)
     const float FloodTop = 70f, FloodTime = 28f; // 2026-11-23 사용자 요청 "조금 더 빠르게": 40 → 28초(문 열림도 같이 당겨진다)
 
     static Material ctDark, ctLitWin, ctTrim;
@@ -271,7 +272,7 @@ public static partial class GreyboxGraphicsPass
         // 산책로 끝에서 바닥까지 늘어진 수영장 사다리
         PoolLadder(walk, new Vector3(153.85f, 0f, -186f), walkY + 0.9f, rail, 90f);
         PoolLadder(walk, new Vector3(CtX0 + 0.25f, 0f, -158f), 9f, rail, 90f);   // 서쪽 벽: 아무 데도 안 가는 사다리
-        PoolLadder(walk, new Vector3(145.2f, 0f, -150f), 4.2f, rail, -90f);
+        PoolLadder(walk, new Vector3(146.86f, 0f, -150f), 4.7f, rail, -90f); // 2026-11-24 집 벽(x 146.75)에서 1.7m 떠 있던 것을 붙이고 처마까지
 
         // ---- 구명 튜브(물이 차면 떠오른다)
         var floaters = new System.Collections.Generic.List<Transform>();
@@ -397,6 +398,39 @@ public static partial class GreyboxGraphicsPass
         fr.underwater = uv; fr.city = room; fr.floaters = floaters.ToArray();
         EditorUtility.SetDirty(fr); EditorUtility.SetDirty(uv);
         flood.SetActive(false);
+
+        // 2026-11-24 사용자 피드백: 문이 열렸다는 걸 눈으로 알게. 열릴 때(showOnReveal) 문 앞에서 수면까지 빛기둥이 솟고,
+        // 문에서 빛이 쏟아지며, 뜬 튜브들이 문 위 수면으로 흘러가 모인다(DoorBeacon).
+        {
+            var beacon = new GameObject("DoorBeacon");
+            beacon.transform.SetParent(gen, true);
+            var beamMat = Lit("GB_City_DoorBeam", m =>
+            {
+                m.SetFloat("_SurfaceType", 1f); m.SetFloat("_BlendMode", 1f); m.SetFloat("_DoubleSidedEnable", 1f);
+                Emissive(m, new Color(0.8f, 0.95f, 1f), CityBeamNits * K);
+                m.SetColor("_BaseColor", new Color(0f, 0f, 0f, 1f));
+                m.SetFloat("_EnableFogOnTransparent", 1f);
+            });
+            var col = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            col.name = "Beam"; Object.DestroyImmediate(col.GetComponent<Collider>());
+            col.transform.SetParent(beacon.transform, false);
+            col.transform.position = new Vector3(FhX, FloodTop / 2f + 1f, FhFront + 1.4f);
+            col.transform.localScale = new Vector3(2.2f, FloodTop / 2f + 1f, 2.2f);
+            var cr = col.GetComponent<MeshRenderer>(); cr.sharedMaterial = beamMat; cr.renderingLayerMask = LCity;
+            cr.shadowCastingMode = ShadowCastingMode.Off;
+            var spill = MakeLight(beacon.transform, "DoorSpill", LightType.Spot, new Vector3(FhX, 1.6f, FhFront - 0.6f), new Vector3(-8f, 0f, 0f), new Color(0.8f, 0.95f, 1f), CitySpillLumen * K, 30f, LCity);
+            spill.spotAngle = 70f;
+            var up = MakeLight(beacon.transform, "BeamUp", LightType.Spot, new Vector3(FhX, 0.3f, FhFront + 1.4f), new Vector3(-90f, 0f, 0f), new Color(0.8f, 0.95f, 1f), CityBeamLumen * K, FloodTop + 5f, LCity);
+            up.spotAngle = 14f;
+            var db = beacon.AddComponent<DoorBeacon>();
+            db.flood = fr; db.gatherAt = new Vector3(FhX, 0f, FhFront + 3.5f);
+            db.lights = new[] { spill, up }; db.column = col.transform;
+            EditorUtility.SetDirty(db);
+            beacon.SetActive(false);
+            var list = new System.Collections.Generic.List<GameObject>(gate.showOnReveal ?? new GameObject[0]) { beacon };
+            gate.showOnReveal = list.ToArray();
+            EditorUtility.SetDirty(gate);
+        }
         gz.showOnFound = new[] { flood };
         EditorUtility.SetDirty(gz);
 

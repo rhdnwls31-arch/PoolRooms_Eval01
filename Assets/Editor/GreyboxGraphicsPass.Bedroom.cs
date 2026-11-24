@@ -269,7 +269,10 @@ public static partial class GreyboxGraphicsPass
         foreach (var z in new[] { -126.8f, -128.4f }) Box(props, "Dresser_Line", new Vector3(BdX0 + 0.545f, 0.5f, z), new Vector3(0.01f, 0.02f, 0.7f), deep, LBedroom);
         Box(props, "Note", new Vector3(BdX0 + 0.3f, 0.845f, -128.1f), new Vector3(0.22f, 0.004f, 0.3f), paper, LBedroom, false, new Vector3(0, 14f, 0));
         }
-        Box(props, "Frame", new Vector3(45.8f, 1.6f, BdZ0 + 0.03f), new Vector3(0.9f, 0.7f, 0.04f), black, LBedroom);
+        // 2026-11-24 남쪽 벽 검은 액자(장난감 상자 위): 그림이 있으면 틀 없는 포스터로 바꾼다(크기 액자의 1.2배, 가로는 그림 비율).
+        var bdPoster = Img2D("Bedroom", "Poster");
+        if (bdPoster != null) { propLayer = LBedroom; Poster(props, new Vector3(45.8f, 1.6f, BdZ0 + 0.02f), 0f, 0.84f * Img2DAspect(bdPoster), 0.84f, bdPoster); }
+        else Box(props, "Frame", new Vector3(45.8f, 1.6f, BdZ0 + 0.03f), new Vector3(0.9f, 0.7f, 0.04f), black, LBedroom);
         Box(props, "Rug_Under_Table", new Vector3(46.4f, 0.004f, -131.2f), new Vector3(2.2f, 0.008f, 2.0f), deep, LBedroom);
 
         // 2026-11-20 방 채우기(넓은데 휑하다는 피드백). 비어 있던 서쪽 벽 남쪽·남쪽 벽에 둔다.

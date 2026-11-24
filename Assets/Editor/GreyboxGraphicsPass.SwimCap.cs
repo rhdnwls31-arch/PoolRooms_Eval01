@@ -208,12 +208,13 @@ public static partial class GreyboxGraphicsPass
 public static partial class GreyboxGraphicsPass
 {
     const string SwimGlowName = "FaceGlow";
-    static readonly Vector3 SwimGlowCenter = new Vector3(-0.01f, 2.06f, -0.005f); // 프리팹 기준 얼굴 높이의 머리 가운데
-    const float SwimGlowForward = 0.2f, SwimGlowSize = 0.62f, SwimGlowNits = 1500f;
+    // 2026-11-24 사용자: 빛이 머리 전체(수영모~턱)를 덮을 만큼 크게. 가운데를 머리 가운데로 올리고 판을 키우고 가장자리를 덜 급하게 줄인다.
+    static readonly Vector3 SwimGlowCenter = new Vector3(-0.01f, 2.13f, -0.005f); // 프리팹 기준 머리 가운데
+    const float SwimGlowForward = 0.22f, SwimGlowSize = 0.95f, SwimGlowNits = 1500f;
 
     static Texture2D FaceGlowTexture()
     {
-        string path = $"{TexDir}/GB_FaceGlow.png";
+        string path = $"{TexDir}/GB_FaceGlow2.png";
         var t = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
         if (t != null) return t;
         const int size = 128;
@@ -223,7 +224,7 @@ public static partial class GreyboxGraphicsPass
             {
                 float dx = (x + 0.5f) / size * 2f - 1f, dy = ((y + 0.5f) / size * 2f - 1f) * 1.15f; // 살짝 세로로 긴 타원
                 float r = Mathf.Sqrt(dx * dx + dy * dy);
-                float f = Mathf.Clamp01(1f - r); f = f * f * (3f - 2f * f); f = Mathf.Pow(f, 1.6f);
+                float f = Mathf.Clamp01(1f - r); f = f * f * (3f - 2f * f); f = Mathf.Pow(f, 0.9f); // 가운데가 넓게 밝다
                 px[y * size + x] = new Color(f, f, f, f);
             }
         System.IO.Directory.CreateDirectory(TexDir);

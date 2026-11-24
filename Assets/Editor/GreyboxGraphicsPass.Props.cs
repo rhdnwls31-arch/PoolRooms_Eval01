@@ -446,9 +446,15 @@ public static partial class GreyboxGraphicsPass
             var props = PropsRoot(room, LYellow);
             DeskAndChair(props, new Vector3(23.4f, 0, -99.2f), 180);
             TvOnStand(props, new Vector3(35.1f, 0, -112.4f), 300);
-            Frame(props, new Vector3(27.4f, 1.7f, -98.72f), 180, 0.5f, 0.7f);
-            Frame(props, new Vector3(28.4f, 1.75f, -98.72f), 180, 0.7f, 0.5f);
-            Frame(props, new Vector3(29.6f, 1.65f, -98.72f), 180, 0.45f, 0.6f);
+            // 2026-11-24 빈 액자 3개 → 틀 없는 포스터(그림이 있으면). 크기는 액자 높이의 1.2배, 가로는 그림 비율.
+            (Vector3 pos, float w, float h)[] yFrames = { (new Vector3(27.4f, 1.7f, -98.72f), 0.5f, 0.7f), (new Vector3(28.4f, 1.75f, -98.72f), 0.7f, 0.5f), (new Vector3(29.6f, 1.65f, -98.72f), 0.45f, 0.6f) };
+            for (int fi = 0; fi < yFrames.Length; fi++)
+            {
+                var img = Img2D("Yellow", "Poster_" + (char)('A' + fi));
+                var f = yFrames[fi];
+                if (img != null) { float ph = f.h * 1.2f; Poster(props, new Vector3(f.pos.x, f.pos.y, -98.735f), 180, ph * Img2DAspect(img), ph, img); }
+                else Frame(props, f.pos, 180, f.w, f.h);
+            }
             // 2026-11-23 사용자 요청: 포스터는 액자 틀 없이(틀 텍스처가 깨져 보였다) 1.5배(0.78×1.04). 벽 덮개(x 20.20) 1.5cm 앞에 붙인다.
             var posterImg = Img2D("Yellow", "Poster");
             if (posterImg != null) Poster(props, new Vector3(20.215f, 1.65f, -111.6f), 90, 0.78f, 1.04f, posterImg);

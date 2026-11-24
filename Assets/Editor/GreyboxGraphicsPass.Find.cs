@@ -197,6 +197,14 @@ public static partial class GreyboxGraphicsPass
         flight.riseToY = 2.1f;                               // 풍선 끝 ≈ 2.94m(천장 3m 바로 아래)
         flight.stopAt = new Vector3(35.75f, 2.1f, LvInZ);    // 출구(동쪽 벽 36.15) 문 위, 풍선이 벽에 닿기 직전
         EditorUtility.SetDirty(flight);
+        // 2026-11-24 멘토 피드백: 삐에로가 흔들흔들. 몸만 흔들고 풍선 축은 손 자리를 따라간다(날아가면 놓는다).
+        var body = doll.Find("Body");
+        if (body != null)
+        {
+            var sway = body.gameObject.AddComponent<PierrotSway>();
+            sway.follower = pivot; sway.stopSignal = release;
+            EditorUtility.SetDirty(sway);
+        }
 
         var g = AddGaze(doll.gameObject, "YellowClown", gate, room);
         g.showOnFound = new[] { release };

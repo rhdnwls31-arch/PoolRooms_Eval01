@@ -26,6 +26,9 @@ public class FloodRise : MonoBehaviour
     [Tooltip("뜬 물건이 수면 아래로 잠기는 깊이와 출렁임.")]
     public float floatDepth = 0.15f, bobHeight = 0.12f, bobPeriod = 3.2f;
 
+    [Tooltip("StartDrift 뒤 뜬 물건이 목표 쪽으로 흘러가는 속도(m/s)와 목표 둘레에 모이는 반지름(m).")]
+    public float driftSpeed = 0.9f, driftGatherRadius = 3f;
+
     /// <summary>지금 수면 높이.</summary>
     public float WaterY { get; private set; }
     /// <summary>다 찼는지.</summary>
@@ -33,6 +36,15 @@ public class FloodRise : MonoBehaviour
 
     float elapsed;
     Vector3[] floatStart = new Vector3[0];
+    Vector3[] floatOrigin = new Vector3[0]; // 처음 자리(흘러가도 그대로)
+    bool drifting;
+    Vector3 driftTarget;
+
+    /// <summary>뜬 물건들을 target(월드, 높이는 무시) 쪽으로 천천히 흘려보낸다. 출구가 열렸다는 걸 눈으로 알려 줄 때 쓴다.</summary>
+    public void StartDrift(Vector3 target) { drifting = true; driftTarget = target; }
+
+    /// <summary>흘려보내기를 멈춘다(물건은 지금 자리에 머문다).</summary>
+    public void StopDrift() => drifting = false;
     Camera cam;
 
     /// <summary>0~1 진행도를 0~1 수위로 바꾼다. 처음은 느리고 끝으로 갈수록 빠르다.</summary>
@@ -42,6 +54,7 @@ public class FloodRise : MonoBehaviour
     {
         floatStart = new Vector3[floaters.Length];
         for (int i = 0; i < floaters.Length; i++) if (floaters[i] != null) floatStart[i] = floaters[i].position;
+        floatOrigin = (Vector3[])floatStart.Clone();
     }
 
     void OnEnable()
@@ -53,7 +66,8 @@ public class FloodRise : MonoBehaviour
     void OnDisable()
     {
         // 처음 상태: 마른 도시.
-        for (int i = 0; i < floaters.Length && i < floatStart.Length; i++) if (floaters[i] != null) floaters[i].position = floatStart[i];
+        drifting = false;
+        for (int i = 0; i < floaters.Length && i < floatOrigin.Length; i++) { floatStart[i] = floatOrigin[i]; if (floaters[i] != null) floaters[i].position = floatOrigin[i]; }
         if (underwater != null) underwater.weight = 0f;
         if (surface != null) SetSurface(startY);
     }
@@ -61,6 +75,7 @@ public class FloodRise : MonoBehaviour
     void Update()
     {
         elapsed = Mathf.Min(elapsed + Time.deltaTime, duration);
+        if (drifting) Drift(Time.deltaTime);
         Apply(Mathf.Lerp(startY, endY, Fill(elapsed / duration, easePower)));
     }
 
@@ -82,6 +97,20 @@ public class FloodRise : MonoBehaviour
         {
             var c = cam.transform.position;
             underwater.weight = city.Contains(c) && c.y < y ? 1f : 0f;
+        }
+    }
+
+    /// <summary>뜬 물건의 가로 자리를 목표 쪽으로 옮긴다. 물건마다 목표 둘레의 다른 자리로 가서 한 점에 겹치지 않는다.</summary>
+    void Drift(float dt)
+    {
+        for (int i = 0; i < floatStart.Length; i++)
+        {
+            float a = i * 2.399f; // 황금각으로 둘레에 흩는다
+            var goal = new Vector3(driftTarget.x + Mathf.Cos(a) * driftGatherRadius * (0.4f + 0.6f * ((i * 7) % 5) / 4f), 0f,
+                                   driftTarget.z + Mathf.Sin(a) * driftGatherRadius * (0.4f + 0.6f * ((i * 3) % 5) / 4f));
+            var cur = new Vector3(floatStart[i].x, 0f, floatStart[i].z);
+            var next = Vector3.MoveTowards(cur, goal, driftSpeed * dt);
+            floatStart[i] = new Vector3(next.x, floatStart[i].y, next.z);
         }
     }
 

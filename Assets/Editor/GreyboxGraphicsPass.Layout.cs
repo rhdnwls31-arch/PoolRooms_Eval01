@@ -201,6 +201,18 @@ public static partial class GreyboxGraphicsPass
         fr.respawnPoint = spawn;
         EditorUtility.SetDirty(fr);
 
+        // 2026-11-24 사용자 선택 기믹: 문을 보며 오르면 거의 나아가지 않다가, 뒤를 돌아본 사이 꼭대기 가까이로 옮겨진다(StairsTreadmill).
+        {
+            var tm = new GameObject("StairsTreadmill").AddComponent<StairsTreadmill>();
+            tm.transform.SetParent(gen, true);
+            tm.stairs = new Bounds(new Vector3(28.15f, SkyRise / 2f + 1f, (zStair + zTop) / 2f), new Vector3(dE - dW + 0.4f, SkyRise + 6f, zStair - zTop));
+            tm.door = new Bounds(new Vector3(28.15f, SkyRise + doorH / 2f, zS), new Vector3(dE - dW, doorH, 0.4f));
+            tm.slope = (SkyRise - rise) / (run * (steps - 1));
+            tm.jumpToZ = zStair - run * 55;   // 60칸 중 55번째(꼭대기 1m 아래), 문까지 약 6m
+            tm.resetZ = zStair + 0.4f;
+            EditorUtility.SetDirty(tm);
+        }
+
         // 천사 방과 같은 노출·안개
         var angelProfile = AssetDatabase.LoadAssetAtPath<VolumeProfile>("Assets/Settings/HDRP_GB_Angel_Profile.asset");
         LocalVolume(gen, "LocalVolume", new Vector3((x0 + x1) / 2, (yB + yT) / 2, (zN + zS) / 2), new Vector3(x1 - x0, yT - yB, zN - zS), 1f, 125f, angelProfile);
