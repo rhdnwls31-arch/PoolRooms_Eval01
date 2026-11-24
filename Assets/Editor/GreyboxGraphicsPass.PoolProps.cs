@@ -90,6 +90,7 @@ public static partial class GreyboxGraphicsPass
                 foreach (var mr in go.GetComponentsInChildren<MeshRenderer>()) mr.enabled = false;
                 MeshPart(go.transform, "Clean", clean, mats[0], layer, 1f).GetComponent<MeshRenderer>().sharedMaterials = mats;
             }
+            AddSwimFaceGlow(go.transform, layer); // 남은 얼굴 깨짐을 빛 번짐으로 가린다
             n++;
         }
         Debug.Log($"[GreyboxGraphicsPass] 수영장 홀 끝 마네킹 → 수영모 인외 {n}개");

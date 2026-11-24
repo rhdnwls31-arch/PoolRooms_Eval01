@@ -201,3 +201,74 @@ public static partial class GreyboxGraphicsPass
         return mesh;
     }
 }
+
+// 2026-11-24 얼굴 빛 번짐(사용자 결정): 메쉬를 고쳐도 얼굴(코·턱)에 남은 깨짐을, 얼굴 앞에 띄운 부드러운 흰 빛 판으로 가린다.
+// 판은 머리 가운데에 둔 받침(FacePlayer, 늘 카메라를 본다) 아래에서 카메라 쪽으로 조금 나와 있어, 어느 방향에서 봐도 얼굴 앞에 온다.
+// 가운데가 밝고 가장자리로 흐려지는 그림을 발광으로 쓰고, 블룸이 퍼뜨려 얼굴 윤곽이 하얗게 날아간 것처럼 보인다. 그림자·콜라이더 없음.
+public static partial class GreyboxGraphicsPass
+{
+    const string SwimGlowName = "FaceGlow";
+    static readonly Vector3 SwimGlowCenter = new Vector3(-0.01f, 2.06f, -0.005f); // 프리팹 기준 얼굴 높이의 머리 가운데
+    const float SwimGlowForward = 0.2f, SwimGlowSize = 0.62f, SwimGlowNits = 1500f;
+
+    static Texture2D FaceGlowTexture()
+    {
+        string path = $"{TexDir}/GB_FaceGlow.png";
+        var t = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        if (t != null) return t;
+        const int size = 128;
+        var px = new Color[size * size];
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float dx = (x + 0.5f) / size * 2f - 1f, dy = ((y + 0.5f) / size * 2f - 1f) * 1.15f; // 살짝 세로로 긴 타원
+                float r = Mathf.Sqrt(dx * dx + dy * dy);
+                float f = Mathf.Clamp01(1f - r); f = f * f * (3f - 2f * f); f = Mathf.Pow(f, 1.6f);
+                px[y * size + x] = new Color(f, f, f, f);
+            }
+        System.IO.Directory.CreateDirectory(TexDir);
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.SetPixels(px); tex.Apply();
+        System.IO.File.WriteAllBytes(path, tex.EncodeToPNG());
+        Object.DestroyImmediate(tex);
+        AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+        var imp = (TextureImporter)AssetImporter.GetAtPath(path);
+        imp.wrapMode = TextureWrapMode.Clamp; imp.sRGBTexture = true; imp.alphaIsTransparency = true; imp.mipmapEnabled = true;
+        imp.SaveAndReimport();
+        return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+    }
+
+    static void AddSwimFaceGlow(Transform figure, uint layer)
+    {
+        var old = figure.Find(SwimGlowName);
+        if (old != null) Object.DestroyImmediate(old.gameObject);
+        var tex = FaceGlowTexture();
+        var mat = Lit("GB_SwimCap_FaceGlow", m =>
+        {
+            m.SetFloat("_SurfaceType", 1f); m.SetFloat("_BlendMode", 1f); // 투명, 더하기
+            m.SetColor("_BaseColor", new Color(0f, 0f, 0f, 1f)); m.SetTexture("_BaseColorMap", tex);
+            Emissive(m, new Color(1f, 0.97f, 0.92f), SwimGlowNits);
+            m.SetColor("_BaseColor", new Color(0f, 0f, 0f, 1f));
+            m.SetTexture("_EmissiveColorMap", tex);
+            m.SetFloat("_ReceivesSSRTransparent", 0f); m.SetFloat("_TransparentDepthPrepassEnable", 0f);
+            m.SetFloat("_EnableFogOnTransparent", 1f);
+        });
+
+        var pivot = new GameObject(SwimGlowName);
+        pivot.transform.SetParent(figure, false);
+        pivot.transform.localPosition = SwimGlowCenter;
+        var fp = pivot.AddComponent<FacePlayer>();
+        fp.turnSpeed = 3600f; fp.bobAmplitude = 0f; fp.bobPeriod = 0f;
+
+        var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        quad.name = "Glow";
+        Object.DestroyImmediate(quad.GetComponent<Collider>());
+        quad.transform.SetParent(pivot.transform, false);
+        quad.transform.localPosition = new Vector3(0f, 0f, SwimGlowForward);
+        quad.transform.localRotation = Quaternion.Euler(0f, 180f, 0f); // 쿼드 앞면이 카메라를 보게
+        quad.transform.localScale = Vector3.one * SwimGlowSize;
+        var mr = quad.GetComponent<MeshRenderer>();
+        mr.sharedMaterial = mat; mr.renderingLayerMask = layer;
+        mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; mr.receiveShadows = false;
+    }
+}
