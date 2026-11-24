@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-6480763419149274836
+--- !u!114 &-6124663602781509590
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -151,7 +151,7 @@ MonoBehaviour:
   proceduralSoftness:
     m_OverrideState: 1
     m_Value: 0.5
---- !u!114 &-2936022078324041493
+--- !u!114 &-4506646943669675148
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -258,11 +258,11 @@ MonoBehaviour:
   m_Name: HDRP_GB_Yellow_Profile
   m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.VolumeProfile
   components:
-  - {fileID: -6480763419149274836}
-  - {fileID: 3680183227035121235}
-  - {fileID: -2936022078324041493}
-  - {fileID: 6219465824276190039}
---- !u!114 &3680183227035121235
+  - {fileID: -6124663602781509590}
+  - {fileID: 320450642251355475}
+  - {fileID: -4506646943669675148}
+  - {fileID: 493356017709666420}
+--- !u!114 &320450642251355475
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -290,7 +290,7 @@ MonoBehaviour:
   reflectionProbeIntensityMultiplier:
     m_OverrideState: 1
     m_Value: 1
---- !u!114 &6219465824276190039
+--- !u!114 &493356017709666420
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}

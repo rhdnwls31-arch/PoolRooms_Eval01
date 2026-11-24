@@ -46,6 +46,7 @@ public static partial class GreyboxGraphicsPass
         FixLivingBookcase(); // 2026-11-24 거실 VARCO 책장: 틀만 남기고 책은 새로
         SwapPoolDeckProps(); // 2026-11-24 VARCO 데크 벤치·화분 야자수·큰 그릇 나무
         RaiseIntroWalls(); TidyYellowPlaceholders(); AngelCloudFog(); ApplyLivingImages(); // 2026-11-24 플레이 피드백(GreyboxGraphicsPass.Feedback1124.cs)
+        ApplyIntroLight(); // 2026-11-24 후처리: 인트로 전용 볼륨(SSGI·SSR·옅은 안개)과 해 높이
         SwapDistantMannequin(); // 2026-11-24 수영장 홀 끝 마네킹 → VARCO 수영모 인외(모델이 오면)
         SwapPoolLoungers(); // 2026-11-20 VARCO 선베드: 인트로·같은 수영장 더미를 바꾼다(같은 수영장 복사본이 만들어진 뒤라 맨 끝)
         AssetDatabase.SaveAssets();
