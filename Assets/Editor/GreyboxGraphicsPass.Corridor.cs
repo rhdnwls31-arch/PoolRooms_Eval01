@@ -91,6 +91,9 @@ public static partial class GreyboxGraphicsPass
                 var go = Box(g, pn, g.TransformPoint(local), size, m, LCorr, false, rot.eulerAngles);
                 return go;
             }
+            // 2026-11-24 VARCO 문(VAR_FloralCorridor_Door, 틀 포함 1.10×2.20×0.26, 원점 = 뒷면 가운데 높이 1.1m, 정면 +Z).
+            // 이 그룹은 +Z가 벽 안쪽이라 180° 돌려 정면이 복도를 보게 하고, 12cm를 벽에 묻어 복도로 14cm만 나오게 한다.
+            if (VarcoInto(g, "FloralCorridor", "Door", LCorr, new Vector3(0f, 1.1f, 0.12f), new Vector3(0f, 180f, 0f), false) != null) return;
             // 로컬: x = 문 가로, y = 위, -z = 복도 쪽
             P("Frame_L", new Vector3(-0.56f, 1.1f, -0.03f), new Vector3(0.1f, 2.2f, 0.06f), frameMat);
             P("Frame_R", new Vector3(0.56f, 1.1f, -0.03f), new Vector3(0.1f, 2.2f, 0.06f), frameMat);
@@ -171,11 +174,25 @@ public static partial class GreyboxGraphicsPass
         }
 
         // 마지막 문 = 출구 벽(찾기 규칙). 끝 묶음 아래에 두어 같이 움직인다.
-        var startLeafPath = "GB_02c_Corridor/GFX_Generated/Start/Leaf";
+        // 2026-11-24: 문짝 재질은 직접 넣는다(예전엔 시작 문 더미 문짝 Start/Leaf에서 빌렸는데 VARCO 문으로 바뀌며 사라졌다).
         var gate = FindGate(end, "FindGate_Corridor", 5, "CorridorPuddle",
-            new Bounds(E(0.1f, dh / 2, 0f), new Vector3(0.2f, dh, dw)), startLeafPath);
+            new Bounds(E(0.1f, dh / 2, 0f), new Vector3(0.2f, dh, dw)), "GB_02c_Corridor/GFX_Generated/End/Frame_L");
+        foreach (var r in gate.wall.GetComponentsInChildren<MeshRenderer>()) r.sharedMaterial = doorMat;
         Box(gate.wall.transform, "Handle", E(-0.04f, 1.0f, 0.36f), new Vector3(0.05f, 0.04f, 0.14f), chrome, LCorr);
         Box(gate.wall.transform, "Peephole", E(-0.01f, 1.5f, 0f), new Vector3(0.01f, 0.04f, 0.04f), chrome, LCorr);
+        // VARCO 문이 있으면 출구 문도 같은 모양으로: 문(틀 포함)을 열리는 벽 안에 넣어 같이 사라지게 하고, 더미 문짝·손잡이는 숨긴다(콜라이더는 그대로).
+        // 문이 열리면(showOnReveal) 더미 문틀이 나타나 빈 문간이 맨벽으로 보이지 않게 한다.
+        var endDoor = VarcoInto(gate.wall.transform, "FloralCorridor", "Door", LCorr, default, default, false);
+        if (endDoor != null)
+        {
+            endDoor.transform.SetPositionAndRotation(E(0.12f, 1.1f, 0f), end.rotation * Quaternion.Euler(0f, -90f, 0f)); // 정면(+Z)이 복도(-x)를 본다
+            foreach (var r in gate.wall.GetComponentsInChildren<MeshRenderer>())
+                if (!r.transform.IsChildOf(endDoor.transform)) r.enabled = false;
+            var frames = new System.Collections.Generic.List<GameObject>(gate.showOnReveal ?? new GameObject[0]);
+            foreach (var fn in new[] { "Frame_L", "Frame_R", "Frame_T" }) { var f = end.Find(fn); if (f != null) frames.Add(f.gameObject); }
+            gate.showOnReveal = frames.ToArray();
+            EditorUtility.SetDirty(gate);
+        }
 
         // ---- 이상한 점: 카펫 위 물웅덩이(반복 구간 안). 위에 떠 있는 풍선이 비치는데 위에는 아무것도 없다.
         var pud = new GameObject("Oddity_PuddleReflection").transform;
