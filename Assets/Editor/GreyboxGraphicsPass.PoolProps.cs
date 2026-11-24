@@ -88,9 +88,20 @@ public static partial class GreyboxGraphicsPass
             if (clean != null)
             {
                 foreach (var mr in go.GetComponentsInChildren<MeshRenderer>()) mr.enabled = false;
-                MeshPart(go.transform, "Clean", clean, mats[0], layer, 1f).GetComponent<MeshRenderer>().sharedMaterials = mats;
+                // 2026-11-24 2차: 얼굴 앞 빛 판 대신 얼굴을 지운 듯 매끈한 살로(사용자 선택 "문질러 지운 얼굴", Feedback1124b.cs)
+                var erased = SwimCapErasedMesh(clean);
+                if (erased != null) { mats[1].SetFloat("_Smoothness", 0.05f); EditorUtility.SetDirty(mats[1]); } // 지운 얼굴에 반짝임(굴곡 단서)이 없게
+                var useMats = mats;
+                if (erased != null && erased.subMeshCount > mats.Length)
+                {
+                    // 4차: 얼굴 칸 = 검은 무광(얼굴이 안 보이게)
+                    var voidMat = Lit("GB_SwimCap_FaceVoid", m => Plain(m, SwimVoidColor, 0f));
+                    useMats = new Material[mats.Length + 1]; mats.CopyTo(useMats, 0); useMats[mats.Length] = voidMat;
+                }
+                MeshPart(go.transform, "Clean", erased ?? clean, mats[0], layer, 1f).GetComponent<MeshRenderer>().sharedMaterials = useMats;
             }
-            AddSwimFaceGlow(go.transform, layer); // 남은 얼굴 깨짐을 빛 번짐으로 가린다
+            if (SwimFaceGlowOn) AddSwimFaceGlow(go.transform, layer); // (꺼 둠) 남은 얼굴 깨짐을 빛 번짐으로 가리던 판
+            AddSwimFaceShade(go.transform, layer); // 4차: 얼굴을 덮는 부드러운 검은 그림자(Feedback1124b.cs)
             n++;
         }
         Debug.Log($"[GreyboxGraphicsPass] 수영장 홀 끝 마네킹 → 수영모 인외 {n}개");

@@ -9,6 +9,8 @@ public static partial class GreyboxGraphicsPass
     // 천사 방과 같은 수영장(GB_05) 사이에 계단 구역을 넣으려고 GB_05 전체를 뒤(-z)로, 위(+y)로 옮긴다.
     // 계단은 바닥(y 0)에서 SkyRise만큼 올라가 같은 수영장 입구(높이 SkyRise)로 이어진다.
     // 2026-11-18 2차: 계단을 길게(8m → 12m, 40 → 60칸), 아래 발판도 길게. 같은 수영장은 그만큼 더 민다.
+    const int StairExtra = 18;          // 위 끝 너머 덧칸 수(= 기믹이 뒤로 되돌릴 수 있는 길이 / 0.3m보다 넉넉히)
+    const float StairMaxBack = 0f;      // 문을 보며 오를 때 방을 뒤로 되돌리는 거리(m). 2026-11-24 플레이 캡처: 되돌리면 선반이 하늘 벽보다 내려가 틈으로 천사 방 벽이 보여 0으로 껐다
     const float SkyRise = 12f;     // 계단이 올라가는 높이(m). 0.2m 계단 60개.
     const float SkyShift = -28f;   // 같은 수영장을 뒤로 미는 거리(m)
     static readonly Vector3 SameBasePos = new Vector3(28.15f, 0f, -215f); // 옮기기 전 GB_05 루트 위치
@@ -57,6 +59,38 @@ public static partial class GreyboxGraphicsPass
     // 위쪽 벽·천장은 천사 방과 같은 하늘이고, 발판 아래로는 칸칸이 선반이 층층이 쌓인 깊은 수직 통로다.
     // 난간은 없다. 떨어지면 화면이 검게 바뀌고 천사 방에서 다시 시작한다(FallRespawn).
     // 걷는 면은 계단 대신 보이지 않는 경사로다.
+    // 2026-11-24 계단 기믹은 방을 플레이어와 함께 옮기는데, 하늘 벽은 고정이고 구름 무늬가 월드 좌표(Triplanar)라
+    // 옮긴 순간 벽의 구름 무늬가 바뀌어 보였다. 계단 방 하늘만 구름 없는 평평한 하늘색으로 한다(무드보드의 평평한 하늘).
+    static Material StairsFlatSky(Material angelSky)
+    {
+        if (angelSky == null) return null;
+        var tex = angelSky.GetTexture("_BaseColorMap") as Texture2D;
+        Color blue = new Color(0.45f, 0.62f, 0.9f);
+        if (tex != null)
+        {
+            var img = new Texture2D(2, 2);
+            if (img.LoadImage(System.IO.File.ReadAllBytes(AssetDatabase.GetAssetPath(tex))))
+            {
+                Color s = Color.black; int n = 0;
+                foreach (var c in img.GetPixels()) if (c.b - c.r > 0.15f) { s += c; n++; } // 구름(흰색) 말고 하늘 부분만
+                if (n > 0) { blue = s / n; blue.a = 1f; }
+            }
+            Object.DestroyImmediate(img);
+        }
+        var lin = blue.linear;
+        var baseCol = angelSky.GetColor("_BaseColor");
+        var emis = angelSky.GetColor("_EmissiveColor");
+        float nits = Mathf.Max(emis.r, Mathf.Max(emis.g, emis.b));
+        return Lit("GB_Stairs_FlatSky", m =>
+        {
+            m.CopyPropertiesFromMaterial(angelSky);
+            m.SetTexture("_BaseColorMap", null); m.SetTexture("_EmissiveColorMap", null); m.SetTexture("_NormalMap", null); m.SetTexture("_MaskMap", null);
+            m.SetFloat("_UVBase", 0f); m.SetFloat("_UVEmissive", 0f);
+            m.SetColor("_BaseColor", new Color(baseCol.r * lin.r, baseCol.g * lin.g, baseCol.b * lin.b, 1f));
+            m.SetColor("_EmissiveColor", new Color(lin.r * nits, lin.g * nits, lin.b * nits, 1f));
+        });
+    }
+
     static void ApplySkyStairs()
     {
         const float x0 = 22.15f, x1 = 34.15f, yB = -60f, yShelf = -1.5f;
@@ -72,7 +106,7 @@ public static partial class GreyboxGraphicsPass
         root.transform.position = new Vector3(28.15f, 0f, zN);
         var gen = Fresh(root.transform, GenName);
 
-        var sky = AssetDatabase.LoadAssetAtPath<Material>($"{MatDir}/GB_Angel_Sky.mat");
+        var sky = StairsFlatSky(AssetDatabase.LoadAssetAtPath<Material>($"{MatDir}/GB_Angel_Sky.mat"));
         var stone = Lit("GB_Stair_Stone", m => Plain(m, new Color(0.86f, 0.86f, 0.84f), 0.25f));
         var shelfMats = new[]
         {
@@ -164,25 +198,34 @@ public static partial class GreyboxGraphicsPass
         // 걷는 곳: 아래 발판, 계단, 위 발판. 난간 없음.
         var walk = Group(gen, "Walkway");
         Box(walk, "Landing_Bottom", new Vector3(28.15f, -0.15f, (zN + zStair) / 2), new Vector3(dE - dW, 0.3f, zN - zStair), stone, LAngel, true);
-        for (int i = 0; i < steps; i++)
-            Box(walk, $"Step_{i:00}", new Vector3(28.15f, rise * (i + 1) - rise / 2, zStair - run * i - run / 2), new Vector3(sw, rise, run), stone, LAngel);
-        // 계단 밑판(뒤 모서리를 잇는 기울어진 판). 보기용.
+        // 계단 칸은 한 묶음(Steps)에 둔다: 계단 기믹(StairsTreadmill)이 방과 함께 통째로 옮긴다.
+        // 위 끝 너머 덧칸(StairExtra개)은 렌더러를 꺼 두고, 기믹이 방을 뒤로 되돌렸을 때 위 끝 빈자리를 채운다.
+        var stepGroup = Group(walk, "Steps");
+        var stepRenderers = new System.Collections.Generic.List<Renderer>();
+        for (int i = 0; i < steps + StairExtra; i++)
         {
-            var a = new Vector3(28.15f, 0f, zStair - run);
-            var b = new Vector3(28.15f, SkyRise - rise, zTop);
+            var st = Box(stepGroup, i < steps ? $"Step_{i:00}" : $"StepExtra_{i - steps:00}", new Vector3(28.15f, rise * (i + 1) - rise / 2, zStair - run * i - run / 2), new Vector3(sw, rise, run), stone, LAngel);
+            var sr = st.GetComponent<MeshRenderer>(); sr.enabled = i < steps; stepRenderers.Add(sr);
+        }
+        // 계단 밑판(뒤 모서리를 잇는 기울어진 판). 보기용.
+        Vector3 strA = new Vector3(28.15f, 0f, zStair - run), strB = new Vector3(28.15f, SkyRise - rise, zTop);
+        Transform stringer;
+        {
+            var a = strA; var b = strB;
             var d = (b - a).normalized; var n = Vector3.Cross(d, Vector3.right).normalized; if (n.y < 0) n = -n;
             var c = (a + b) / 2 - n * 0.125f;
-            Box(walk, "Stringer", c, new Vector3(sw, 0.25f, (b - a).magnitude + 0.3f), stone, LAngel, false, Quaternion.LookRotation(d, n).eulerAngles);
+            stringer = Box(walk, "Stringer", c, new Vector3(sw, 0.25f, (b - a).magnitude + 0.3f), stone, LAngel, false, Quaternion.LookRotation(d, n).eulerAngles).transform;
         }
         // 보이지 않는 경사로: 계단 앞 모서리를 잇는 면 위를 걷는다
+        Vector3 rampA = new Vector3(28.15f, rise, zStair), rampB = new Vector3(28.15f, SkyRise, zStair - run * (steps - 1));
+        BoxCollider rampCol;
         {
-            var a = new Vector3(28.15f, rise, zStair);
-            var b = new Vector3(28.15f, SkyRise, zStair - run * (steps - 1));
+            var a = rampA; var b = rampB;
             var d = (b - a).normalized; var n = Vector3.Cross(d, Vector3.right).normalized; if (n.y < 0) n = -n;
             var ramp = new GameObject("Ramp_Collider");
             ramp.transform.SetParent(walk, true);
             ramp.transform.SetPositionAndRotation((a + b) / 2 - n * 0.1f, Quaternion.LookRotation(d, n));
-            ramp.AddComponent<BoxCollider>().size = new Vector3(sw, 0.2f, (b - a).magnitude);
+            rampCol = ramp.AddComponent<BoxCollider>(); rampCol.size = new Vector3(sw, 0.2f, (b - a).magnitude);
         }
         // 위 발판은 같은 수영장 북쪽 벽 두께(0.3m)까지 들어가 그쪽 바닥 끝(z -173.0)과 맞닿는다. 벽 앞면에서 끊으면 문 아래가 비어 보인다(2026-11-18).
         float topLen = zTop - (zS - 0.3f);
@@ -201,15 +244,25 @@ public static partial class GreyboxGraphicsPass
         fr.respawnPoint = spawn;
         EditorUtility.SetDirty(fr);
 
-        // 2026-11-24 사용자 선택 기믹: 문을 보며 오르면 거의 나아가지 않다가, 뒤를 돌아본 사이 꼭대기 가까이로 옮겨진다(StairsTreadmill).
+        // 2026-11-24 계단 기믹(StairsTreadmill). 1차(느려지다 꼭대기로 옮겨짐)는 "돌아보자마자 맨 끝이라 버그 같다"는 피드백으로 바꿨다(사용자 선택 "문이 나에게 다가와 있음"):
+        // 계단·아래 발판·선반 통로·뒤쪽(북쪽) 벽을 플레이어와 함께 옮긴다. 보이는 장면은 그대로이고 위쪽 문(고정)과의 거리만 바뀐다.
+        // 위 발판·하늘 벽(무늬 없음)·남쪽 벽은 고정. 경사로와 밑판은 기믹이 "옮긴 아래 끝 ~ 고정된 위 끝"으로 다시 맞춘다.
         {
             var tm = new GameObject("StairsTreadmill").AddComponent<StairsTreadmill>();
             tm.transform.SetParent(gen, true);
             tm.stairs = new Bounds(new Vector3(28.15f, SkyRise / 2f + 1f, (zStair + zTop) / 2f), new Vector3(dE - dW + 0.4f, SkyRise + 6f, zStair - zTop));
             tm.door = new Bounds(new Vector3(28.15f, SkyRise + doorH / 2f, zS), new Vector3(dE - dW, doorH, 0.4f));
-            tm.slope = (SkyRise - rise) / (run * (steps - 1));
+            tm.slope = rise / run;
+            tm.zTop = zTop;
+            tm.maxBack = StairMaxBack;
             tm.jumpToZ = zStair - run * 55;   // 60칸 중 55번째(꼭대기 1m 아래), 문까지 약 6m
             tm.resetZ = zStair + 0.4f;
+            var movers = new System.Collections.Generic.List<Transform> { stepGroup, walk.Find("Landing_Bottom"), shaft };
+            foreach (var nm in new[] { "North_W", "North_E", "North_Below", "North_Above" }) { var w = shell.Find(nm); if (w != null) movers.Add(w); }
+            tm.movers = movers.ToArray();
+            tm.steps = stepRenderers.ToArray();
+            tm.ramp = rampCol; tm.rampBottom = rampA; tm.rampTop = rampB; tm.rampDrop = 0.1f; tm.rampThickness = 0.2f; tm.rampWidth = sw;
+            tm.stringer = stringer; tm.stringerBottom = strA; tm.stringerTop = strB; tm.stringerDrop = 0.125f; tm.stringerThickness = 0.25f; tm.stringerWidth = sw;
             EditorUtility.SetDirty(tm);
         }
 

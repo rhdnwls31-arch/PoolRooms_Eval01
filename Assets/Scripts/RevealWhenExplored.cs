@@ -19,6 +19,14 @@ public class RevealWhenExplored : MonoBehaviour
     [Tooltip("몇 번째 방의 출구인지(인트로 0, 수영장 홀 1, ...). 개발용 방 옮기기에서 앞 방 출구를 열어 둘 때 쓴다.")]
     public int order;
 
+    [Header("보는 앞에서 열기(2026-11-24)")]
+    [Tooltip("0보다 크면 화면에 보여도 연다. 벽이 이 시간(초)에 걸쳐 스르르 걷히고(벽의 FadeAway) spill 빛이 켜진다. 0이면 예전처럼 벽이 화면 밖일 때 한 번에 열린다.")]
+    public float openTime = 0f;
+    [Tooltip("열릴 때 켜지며 밝아지는 빛(문틈에서 새는 빛). 처음에는 꺼 둔다.")]
+    public Light[] spill = new Light[0];
+
+    float[] spillBase = new float[0];
+
     /// <summary>출구가 열렸는지.</summary>
     public bool Revealed { get; private set; }
     /// <summary>지금까지 둘러본 곳 수.</summary>
@@ -31,6 +39,8 @@ public class RevealWhenExplored : MonoBehaviour
     {
         if (wall != null) wall.SetActive(true);
         foreach (var go in showOnReveal) if (go != null) go.SetActive(false);
+        spillBase = new float[spill.Length];
+        for (int i = 0; i < spill.Length; i++) if (spill[i] != null) { spillBase[i] = spill[i].intensity; spill[i].gameObject.SetActive(false); }
     }
 
     /// <summary>VisitZone이 플레이어가 들어왔을 때 부른다.</summary>
@@ -47,7 +57,7 @@ public class RevealWhenExplored : MonoBehaviour
     }
 
     /// <summary>열어도 되는지. 모두 둘러봤고, 벽 자리가 화면에 없을 때만 참이다.</summary>
-    public bool CanReveal(bool wallInView) => !Revealed && AllVisited() && !wallInView;
+    public bool CanReveal(bool wallInView) => !Revealed && AllVisited() && (openTime > 0f || !wallInView);
 
     void Update()
     {
@@ -74,21 +84,49 @@ public class RevealWhenExplored : MonoBehaviour
         return false;
     }
 
-    /// <summary>벽을 끄고 통로를 연다.</summary>
-    public void Reveal()
+    /// <summary>벽을 끄고 통로를 연다. instant면 천천히 걷히지 않고 바로 연다(개발용 방 옮기기).</summary>
+    public void Reveal(bool instant = false)
     {
         Revealed = true;
-        if (wall != null) wall.SetActive(false);
         foreach (var go in showOnReveal) if (go != null) go.SetActive(true);
+        if (openTime > 0f && !instant && isActiveAndEnabled) { StartCoroutine(Open()); return; }
+        if (wall != null) wall.SetActive(false);
+        SetSpill(1f);
+    }
+
+    System.Collections.IEnumerator Open()
+    {
+        var fade = wall != null ? wall.GetComponent<FadeAway>() : null;
+        if (fade != null && wall.activeInHierarchy) fade.Begin(1f, 0f, openTime, true);
+        // 빛은 벽보다 조금 먼저 밝아져 틈으로 새는 것처럼 보이게 한다.
+        for (float t = 0f; t < openTime; t += Time.deltaTime)
+        {
+            SetSpill(Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / (openTime * 0.7f))));
+            yield return null;
+        }
+        SetSpill(1f);
+        if (wall != null && (fade == null || !fade.Running)) wall.SetActive(false);
+    }
+
+    void SetSpill(float k)
+    {
+        for (int i = 0; i < spill.Length; i++)
+        {
+            if (spill[i] == null || i >= spillBase.Length) continue;
+            spill[i].gameObject.SetActive(k > 0f);
+            spill[i].intensity = spillBase[i] * k;
+        }
     }
 
     /// <summary>처음 상태(닫힘, 아무 곳도 안 둘러봄)로 되돌린다. 개발용 방 옮기기에서 쓴다.</summary>
     public void ResetReveal()
     {
+        StopAllCoroutines();
         Revealed = false;
         visited.Clear();
         if (wall != null) wall.SetActive(true);
         foreach (var go in showOnReveal) if (go != null) go.SetActive(false);
+        SetSpill(0f);
     }
 
     void OnDrawGizmos()

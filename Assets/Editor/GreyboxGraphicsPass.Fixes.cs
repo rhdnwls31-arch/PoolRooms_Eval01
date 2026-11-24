@@ -217,6 +217,14 @@ public static partial class GreyboxGraphicsPass
         var fall = Find(StairsRoot + "/" + GenName + "/FallRespawn").GetComponent<FallRespawn>();
         fall.resetSeals = new[] { angelToStairs };
         EditorUtility.SetDirty(fall);
+        // 2026-11-24 계단 기믹은 북쪽 벽을 플레이어와 함께 옮긴다. 막이판도 같이 옮겨야 벽에 네모 구멍이 안 보인다.
+        var tread = Find(StairsRoot + "/" + GenName + "/StairsTreadmill").GetComponent<StairsTreadmill>();
+        if (angelToStairs.plug != null && System.Array.IndexOf(tread.movers, angelToStairs.plug.transform) < 0)
+        {
+            var list = new System.Collections.Generic.List<Transform>(tread.movers) { angelToStairs.plug.transform };
+            tread.movers = list.ToArray();
+            EditorUtility.SetDirty(tread);
+        }
 
         // 하늘 계단 → 같은 수영장: 북쪽 벽(옮기기 전 z -145.3~-144.7)의 3×4.3m 구멍. 앞면을 2cm 들여 아치 모서리 덩어리와 겹치지 않게 한다.
         // 아치 발광판(Goal_ArchN2)은 그대로라, 막히면 양옆 막힌 아치(N1, N3)와 똑같아 보인다.

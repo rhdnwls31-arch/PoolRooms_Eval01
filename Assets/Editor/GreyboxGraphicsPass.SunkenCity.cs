@@ -399,32 +399,25 @@ public static partial class GreyboxGraphicsPass
         EditorUtility.SetDirty(fr); EditorUtility.SetDirty(uv);
         flood.SetActive(false);
 
-        // 2026-11-24 사용자 피드백: 문이 열렸다는 걸 눈으로 알게. 열릴 때(showOnReveal) 문 앞에서 수면까지 빛기둥이 솟고,
-        // 문에서 빛이 쏟아지며, 뜬 튜브들이 문 위 수면으로 흘러가 모인다(DoorBeacon).
+        // 2026-11-24 사용자 피드백: 문이 열렸다는 걸 눈으로 알게. 열릴 때(showOnReveal) 뜬 튜브들이 문 위 수면으로 흘러가 모인다(DoorBeacon).
+        // 같은 날 2차 피드백 "빛기둥이 너무 물기둥 같다": 기둥은 뺐다. 대신 열린 문 안쪽에서 따뜻한 빛이 새어 나와 앞 바닥·수면을 길게 비추고,
+        // 문 위 작은 등이 켜진다(사용자 선택 "문틈에서 새는 빛").
         {
             var beacon = new GameObject("DoorBeacon");
             beacon.transform.SetParent(gen, true);
-            var beamMat = Lit("GB_City_DoorBeam", m =>
-            {
-                m.SetFloat("_SurfaceType", 1f); m.SetFloat("_BlendMode", 1f); m.SetFloat("_DoubleSidedEnable", 1f);
-                Emissive(m, new Color(0.8f, 0.95f, 1f), CityBeamNits * K);
-                m.SetColor("_BaseColor", new Color(0f, 0f, 0f, 1f));
-                m.SetFloat("_EnableFogOnTransparent", 1f);
-            });
-            var col = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            col.name = "Beam"; Object.DestroyImmediate(col.GetComponent<Collider>());
-            col.transform.SetParent(beacon.transform, false);
-            col.transform.position = new Vector3(FhX, FloodTop / 2f + 1f, FhFront + 1.4f);
-            col.transform.localScale = new Vector3(2.2f, FloodTop / 2f + 1f, 2.2f);
-            var cr = col.GetComponent<MeshRenderer>(); cr.sharedMaterial = beamMat; cr.renderingLayerMask = LCity;
-            cr.shadowCastingMode = ShadowCastingMode.Off;
-            var spill = MakeLight(beacon.transform, "DoorSpill", LightType.Spot, new Vector3(FhX, 1.6f, FhFront - 0.6f), new Vector3(-8f, 0f, 0f), new Color(0.8f, 0.95f, 1f), CitySpillLumen * K, 30f, LCity);
-            spill.spotAngle = 70f;
-            var up = MakeLight(beacon.transform, "BeamUp", LightType.Spot, new Vector3(FhX, 0.3f, FhFront + 1.4f), new Vector3(-90f, 0f, 0f), new Color(0.8f, 0.95f, 1f), CityBeamLumen * K, FloodTop + 5f, LCity);
-            up.spotAngle = 14f;
+            var warm = new Color(1f, 0.8f, 0.55f);
+            // 문 안(통로)에서 바깥(+Z)으로, 조금 아래를 향해 = 문 앞 바닥과 물 위에 빛 줄기가 깔린다.
+            var spill = MakeLight(beacon.transform, "DoorSpill", LightType.Spot, new Vector3(FhX, FhDoorH * 0.75f, FhFront - 1.2f), new Vector3(14f, 0f, 0f), warm, CitySpillLumen * K, 30f, LCity);
+            spill.spotAngle = 55f;
+            // 문 위 작은 등: 빛나는 갓(발광 구) + 은은한 점광
+            var lampMat = Lit("GB_City_DoorLamp", m => { Plain(m, new Color(0.1f, 0.08f, 0.06f), 0.4f); Emissive(m, warm, CityBeamNits * K); });
+            var bulb = Prim(PrimitiveType.Sphere, beacon.transform, "Lamp", new Vector3(FhX, FhDoorH + 0.42f, FhFront + 0.2f), new Vector3(0.26f, 0.2f, 0.26f), lampMat, LCity);
+            bulb.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+            var lamp = MakeLight(beacon.transform, "LampGlow", LightType.Point, new Vector3(FhX, FhDoorH + 0.3f, FhFront + 0.5f), Vector3.zero, warm, CitySpillLumen * 0.15f * K, 7f, LCity);
             var db = beacon.AddComponent<DoorBeacon>();
             db.flood = fr; db.gatherAt = new Vector3(FhX, 0f, FhFront + 3.5f);
-            db.lights = new[] { spill, up }; db.column = col.transform;
+            db.lights = new[] { spill, lamp }; db.column = null;
+            db.depth = 0.15f; // 숨 쉬는 폭을 줄인다(등이 깜빡이는 것처럼 보이지 않게)
             EditorUtility.SetDirty(db);
             beacon.SetActive(false);
             var list = new System.Collections.Generic.List<GameObject>(gate.showOnReveal ?? new GameObject[0]) { beacon };

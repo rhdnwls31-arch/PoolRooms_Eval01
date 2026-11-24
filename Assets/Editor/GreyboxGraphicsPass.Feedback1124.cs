@@ -177,6 +177,17 @@ public static partial class GreyboxGraphicsPass
                 EditorUtility.SetDirty(m);
             }
         }
+        // 2026-11-24 사용자 "거실 러그 그림 새로": VAR_LivingRoom_Rug.png(3:2, 러그 한 장 전체)가 오면 탁자 밑 러그(3.4×2.4m 판) 윗면에 한 장 그대로 붙인다.
+        var rugImg = Img2D("LivingRoom", "Rug");
+        var rugMat = AssetDatabase.LoadAssetAtPath<Material>($"{MatDir}/GB_Living_Rug.mat");
+        if (rugImg != null && rugMat != null)
+        {
+            rugMat.SetTexture("_BaseColorMap", rugImg);
+            rugMat.SetColor("_BaseColor", Color.white);
+            rugMat.SetFloat("_UVBase", 0f); rugMat.SetFloat("_Smoothness", 0.1f);
+            UnityEditor.Rendering.HighDefinition.HDShaderUtils.ResetMaterialKeywords(rugMat);
+            EditorUtility.SetDirty(rugMat);
+        }
         var view = Img2D("LivingRoom", "WindowView");
         var living = GameObject.Find("GB_03b_Living");
         if (view == null || living == null) return;

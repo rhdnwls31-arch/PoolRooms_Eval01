@@ -62,6 +62,8 @@ public class GazeTarget : MonoBehaviour
     public bool changeWhenUnseen = false;
     [Tooltip("찾은 뒤 출구에 알리기까지 기다리는 시간(초).")]
     public float notifyDelay = 0f;
+    [Tooltip("0보다 크면 hideOnFound는 이 시간(초)에 걸쳐 스르르 사라지고 showOnFound는 스르르 나타난다(각 오브젝트의 FadeAway). 2026-11-24 깜빡임 대신.")]
+    public float fadeTime = 0f;
 
     /// <summary>찾았는지.</summary>
     public bool Found { get; private set; }
@@ -183,7 +185,7 @@ public class GazeTarget : MonoBehaviour
     {
         Found = true;
         float start = Time.time;
-        if (hideDelay <= 0f && !changeWhenUnseen) ApplyState(Swapped, true);
+        if (hideDelay <= 0f && !changeWhenUnseen) StartCoroutine(ApplyFound());
         if (notifyDelay <= 0f && gate != null) gate.MarkVisited(id);
 
         if (dropTarget != null)
@@ -214,7 +216,7 @@ public class GazeTarget : MonoBehaviour
                 var b = CurrentBounds();
                 while (cam != null && GeometryUtility.TestPlanesAABB(GeometryUtility.CalculateFrustumPlanes(cam), b)) yield return null;
             }
-            ApplyState(Swapped, true);
+            StartCoroutine(ApplyFound());
         }
         if (notifyDelay > 0f)
         {
@@ -223,10 +225,40 @@ public class GazeTarget : MonoBehaviour
         }
     }
 
+    /// <summary>찾은 뒤 상태로 바꾼다. fadeTime이 있으면 사라질 것은 스르르 지우고 나타날 것은 스르르 띄운 뒤 확정한다.</summary>
+    IEnumerator ApplyFound()
+    {
+        if (fadeTime <= 0f) { ApplyState(Swapped, true); yield break; }
+        bool any = false;
+        foreach (var go in showOnFound)
+        {
+            if (go == null) continue;
+            go.SetActive(true);
+            var f = go.GetComponent<FadeAway>();
+            if (f != null) { f.Begin(0f, 1f, fadeTime, false); any = true; }
+        }
+        foreach (var go in hideOnFound)
+        {
+            if (go == null || !go.activeInHierarchy) continue;
+            var f = go.GetComponent<FadeAway>();
+            if (f != null) { f.Begin(1f, 0f, fadeTime, true); any = true; }
+            else go.SetActive(false);
+        }
+        if (any) yield return new WaitForSeconds(fadeTime + 0.05f);
+        ApplyState(Swapped, true);
+    }
+
+    void RestoreFades()
+    {
+        foreach (var go in hideOnFound) if (go != null) { var f = go.GetComponent<FadeAway>(); if (f != null) f.Restore(); }
+        foreach (var go in showOnFound) if (go != null) { var f = go.GetComponent<FadeAway>(); if (f != null) f.Restore(); }
+    }
+
     /// <summary>처음 상태로 되돌린다(개발용 방 옮기기에서 쓴다).</summary>
     public void ResetGaze()
     {
         StopAllCoroutines();
+        RestoreFades();
         Found = false; Swapped = false; seen = false;
         dwell = unseen = roomTime = hintClock = 0f;
         SetHintVisible(true);
@@ -240,6 +272,7 @@ public class GazeTarget : MonoBehaviour
     public void CompleteSilently()
     {
         StopAllCoroutines();
+        RestoreFades();
         Found = true; Swapped = NeedsSwap;
         SetHintVisible(true);
         ApplyState(Swapped, true);

@@ -82,7 +82,7 @@ public class RoomStartDebug : MonoBehaviour
         // 출구 잠금(§4-1): 앞 방들의 출구는 찾은 상태로 열어 두고, 이 방부터는 처음 상태로 되돌린다.
         foreach (var gate in FindObjectsByType<RevealWhenExplored>(FindObjectsInactive.Include))
         {
-            if (gate.order < room) { if (!gate.Revealed) gate.Reveal(); }
+            if (gate.order < room) { if (!gate.Revealed) gate.Reveal(true); }
             else gate.ResetReveal();
         }
         foreach (var g in FindObjectsByType<GazeTarget>(FindObjectsInactive.Include))

@@ -145,7 +145,11 @@ public static partial class GreyboxGraphicsPass
         foreach (float x in new[] { 21.5f, 34.6f }) // 출구 벽 양옆(문 자리 26.65~29.65는 비운다)
             if (!CloudVarco(puffs, $"Puff_S_{x:F0}", new Vector3(x, 0.25f, -142.2f), 2.6f, si++, x < 28f ? 10f : 190f))
                 Prim(PrimitiveType.Sphere, puffs, $"Puff_S_{x:F0}", new Vector3(x, 0.25f, -142.2f), new Vector3(2.6f, 1.1f, 1.4f), cloudMat, LAngel);
+        // 2026-11-24 사용자 피드백 "구름방은 그냥 구름 없애자. 아래 안개 깔려 있는 것만 있어도 될 듯": 구름 덩어리는 두지 않는다(바닥 안개 AngelCloudFog는 그대로).
+        if (!AngelCloudPuffs) Object.DestroyImmediate(puffs.gameObject);
     }
+
+    const bool AngelCloudPuffs = false;
 
     // 2026-11-23 VARCO 구름 두 종(납작한 CloudBank 2.5×1.0, 봉긋한 CloudBank2 2.0×1.4)을 번갈아 쓴다.
     // 폭이 더미 구(w)와 같게 배율을 맞추고, 밑이 구름 바닥에 묻히게 10cm 내린다. 콜라이더 없음(더미와 같음).
