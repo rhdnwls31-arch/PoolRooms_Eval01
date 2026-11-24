@@ -617,8 +617,19 @@ public static partial class GreyboxGraphicsPass
         Prim(PrimitiveType.Cylinder, props, "Lamp_Shade", lampPos + new Vector3(0, 1.55f, 0), new Vector3(0.42f, 0.16f, 0.42f), shade, LLiving);
         }
         // 북쪽 벽 가족사진(빈 액자), 동쪽 벽 밤 창문과 커튼
-        foreach (var f in new[] { new Vector3(42.6f, 1.7f, 0.5f), new Vector3(43.5f, 1.6f, 0.4f), new Vector3(44.6f, 1.75f, 0.55f) })
+        // 2026-11-24 사용자 요청: 노란 방처럼 틀 없이 포스터(그림)만. VARCO 2D(LivingRoom/2D/VAR_LivingRoom_Poster_A~C.png)가 있으면 그것,
+        // 없으면 예전 빈 액자. 크기는 액자 높이의 1.2배, 가로는 그림 비율.
+        var photoSlots = new[] { new Vector3(42.6f, 1.7f, 0.5f), new Vector3(43.5f, 1.6f, 0.4f), new Vector3(44.6f, 1.75f, 0.55f) };
+        for (int pi = 0; pi < photoSlots.Length; pi++)
         {
+            var f = photoSlots[pi];
+            var img = Img2D("LivingRoom", "Poster_" + (char)('A' + pi));
+            if (img != null)
+            {
+                float ph = f.z * 1.25f * 1.2f;
+                Poster(props, new Vector3(f.x, f.y, LvZ1 - 0.012f), 180f, ph * Img2DAspect(img), ph, img);
+                continue;
+            }
             Box(props, "PhotoFrame", new Vector3(f.x, f.y, LvZ1 - 0.02f), new Vector3(f.z, f.z * 1.25f, 0.03f), wood, LLiving);
             Box(props, "Photo", new Vector3(f.x, f.y, LvZ1 - 0.04f), new Vector3(f.z * 0.8f, f.z, 0.01f), pale, LLiving);
         }
@@ -649,10 +660,15 @@ public static partial class GreyboxGraphicsPass
         });
         // 장식장 위 작은 스탠드(따로 둔다: VARCO 장식장이 와도 불빛 자리는 같게). 스탠드 빛을 줄이자 장식장·사진이 어둠에 묻혀서
         // 이 작은 빛으로 북쪽 벽 가구 주변만 밝힌다(아래 Lights의 SideboardLamp).
+        // 2026-11-24 사용자 요청: 스탠드 모양은 없앤다(VARCO 장식장은 꽃병·시계까지 한 덩어리라 윗면이 낮아 스탠드가 떠 보였다).
+        // 빛(SideboardLamp)은 남기되 벽에 빛 얼룩이 맺히지 않게 장식장 앞 위쪽으로 옮겨 은은한 채움 빛으로 쓴다.
         var sbLampPos = new Vector3(43.75f, 0.81f, LvZ1 - 0.25f);
-        var sbLamp = PropGroup(props, "SideboardLamp", sbLampPos, 0f);
-        Part(sbLamp, PrimitiveType.Cylinder, "Base", new Vector3(0, 0.12f, 0), new Vector3(0.1f, 0.12f, 0.1f), dark);
-        Part(sbLamp, PrimitiveType.Cylinder, "Shade", new Vector3(0, 0.3f, 0), new Vector3(0.24f, 0.08f, 0.24f), shade);
+        if (VarcoPrefab("LivingRoom", "Sideboard") == null)
+        {
+            var sbLamp = PropGroup(props, "SideboardLamp", sbLampPos, 0f);
+            Part(sbLamp, PrimitiveType.Cylinder, "Base", new Vector3(0, 0.12f, 0), new Vector3(0.1f, 0.12f, 0.1f), dark);
+            Part(sbLamp, PrimitiveType.Cylinder, "Shade", new Vector3(0, 0.3f, 0), new Vector3(0.24f, 0.08f, 0.24f), shade);
+        }
         FillProp(props, "LivingRoom", "Bookcase", new Vector3(LvX1 - 0.18f, 0f, -112.3f), -90f, new Vector3(0.9f, 1.9f, 0.34f), g =>
         {
             foreach (float x in new[] { -0.43f, 0.43f }) PBox(g, "Side", new Vector3(x, 0.95f, 0), new Vector3(0.04f, 1.9f, 0.34f), wood);
@@ -702,7 +718,7 @@ public static partial class GreyboxGraphicsPass
         MakeLight(lights, "Lamp", LightType.Point, lampPos + new Vector3(0, 1.45f, 0), Vector3.zero, new Color(1f, 0.62f, 0.32f), 110000f, 8f, LLiving, true);
         MakeLight(lights, "TV_Glow", LightType.Point, tvPos + new Vector3(0.7f, 0.9f, 0), Vector3.zero, new Color(0.6f, 0.72f, 1f), 10000f, 6f, LLiving, false, false);
         MakeLight(lights, "Fill", LightType.Point, new Vector3(44.4f, 1.4f, -118f), Vector3.zero, new Color(0.9f, 0.7f, 0.5f), 9000f, 6f, LLiving, false, false);
-        MakeLight(lights, "SideboardLamp", LightType.Point, sbLampPos + new Vector3(0, 0.28f, 0.15f), Vector3.zero, new Color(1f, 0.62f, 0.32f), 6000f, 3.5f, LLiving, false, false);
+        MakeLight(lights, "SideboardLamp", LightType.Point, sbLampPos + (VarcoPrefab("LivingRoom", "Sideboard") != null ? new Vector3(0, 1.0f, -1.0f) : new Vector3(0, 0.28f, 0.15f)), Vector3.zero, new Color(1f, 0.62f, 0.32f), 6000f, VarcoPrefab("LivingRoom", "Sideboard") != null ? 4f : 3.5f, LLiving, false, false);
         var profile = RoomProfile("Living", 6.8f, 0.01f, 0.04f, new Color(0.7f, 0.55f, 0.42f), 40f, new Color(0.02f, 0.015f, 0.01f), 8f, 0f);
         LocalVolume(gen, "LocalVolume", new Vector3((LvX0 + LvX1) / 2, LvH / 2, (LvZ0 + LvZ1) / 2), new Vector3(LvX1 - LvX0, LvH, LvZ1 - LvZ0), 1f, 125f, profile);
 
