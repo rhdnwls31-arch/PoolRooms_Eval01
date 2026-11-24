@@ -189,7 +189,8 @@ public static partial class GreyboxGraphicsPass
         propLayer = gr.renderingLayerMask;
         gr.enabled = false; EditorUtility.SetDirty(gr);
         // 유리 앞면(-X, 방 쪽)에 1.6×1.1 그림. 동쪽 벽이라 방 안(-X)을 본다.
-        Poster(glass.parent, glass.position + new Vector3(-0.015f, 0f, 0f), 270f, 1.6f, 1.1f, view);
+        // 창틀(Window_Frame)이 유리 앞 3cm까지 나와 있어 그 앞에 붙인다(-0.015로 붙였더니 틀에 가려 안 보였다, 2026-11-24 플레이 확인). 커튼(49.71~)보다는 뒤.
+        Poster(glass.parent, glass.position + new Vector3(-0.04f, 0f, 0f), 270f, 1.6f, 1.1f, view);
         var mat = AssetDatabase.LoadAssetAtPath<Material>($"{MatDir}/GB_Prop_Poster_{view.name}.mat");
         if (mat != null)
         {
