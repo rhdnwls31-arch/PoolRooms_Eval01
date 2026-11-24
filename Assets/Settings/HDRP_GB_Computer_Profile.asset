@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-6843695599969886146
+--- !u!114 &-4559163394636209320
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -151,7 +151,7 @@ MonoBehaviour:
   proceduralSoftness:
     m_OverrideState: 1
     m_Value: 0.5
---- !u!114 &-4321398035605855155
+--- !u!114 &-2042340663969423737
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -179,31 +179,6 @@ MonoBehaviour:
   reflectionProbeIntensityMultiplier:
     m_OverrideState: 1
     m_Value: 1
---- !u!114 &-1861936193483049134
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 598e2d32e2c7b0c418e030c3236d663a, type: 3}
-  m_Name: ChromaticAberration
-  m_EditorClassIdentifier: Unity.RenderPipelines.HighDefinition.Runtime::UnityEngine.Rendering.HighDefinition.ChromaticAberration
-  active: 1
-  quality:
-    m_OverrideState: 1
-    m_Value: 1
-  spectralLut:
-    m_OverrideState: 1
-    m_Value: {fileID: 0}
-  intensity:
-    m_OverrideState: 1
-    m_Value: 0.3
-  m_MaxSamples:
-    m_OverrideState: 1
-    m_Value: 6
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -217,12 +192,31 @@ MonoBehaviour:
   m_Name: HDRP_GB_Computer_Profile
   m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.VolumeProfile
   components:
-  - {fileID: -6843695599969886146}
-  - {fileID: -4321398035605855155}
-  - {fileID: 4703123508148053858}
-  - {fileID: 7048125050490097899}
-  - {fileID: -1861936193483049134}
---- !u!114 &4703123508148053858
+  - {fileID: -4559163394636209320}
+  - {fileID: -2042340663969423737}
+  - {fileID: 3411640959130055004}
+  - {fileID: 775236803773521462}
+  - {fileID: 8838430365002846701}
+--- !u!114 &775236803773521462
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b51a78e223a2e504bb88a059b55229ea, type: 3}
+  m_Name: WhiteBalance
+  m_EditorClassIdentifier: Unity.RenderPipelines.HighDefinition.Runtime::UnityEngine.Rendering.HighDefinition.WhiteBalance
+  active: 1
+  temperature:
+    m_OverrideState: 1
+    m_Value: 0
+  tint:
+    m_OverrideState: 1
+    m_Value: 0
+--- !u!114 &3411640959130055004
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -316,7 +310,7 @@ MonoBehaviour:
   volumetricLightingDensityCutoff:
     m_OverrideState: 1
     m_Value: 0
---- !u!114 &7048125050490097899
+--- !u!114 &8838430365002846701
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -325,13 +319,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b51a78e223a2e504bb88a059b55229ea, type: 3}
-  m_Name: WhiteBalance
-  m_EditorClassIdentifier: Unity.RenderPipelines.HighDefinition.Runtime::UnityEngine.Rendering.HighDefinition.WhiteBalance
+  m_Script: {fileID: 11500000, guid: 598e2d32e2c7b0c418e030c3236d663a, type: 3}
+  m_Name: ChromaticAberration
+  m_EditorClassIdentifier: Unity.RenderPipelines.HighDefinition.Runtime::UnityEngine.Rendering.HighDefinition.ChromaticAberration
   active: 1
-  temperature:
+  quality:
     m_OverrideState: 1
-    m_Value: 0
-  tint:
+    m_Value: 1
+  spectralLut:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: {fileID: 0}
+  intensity:
+    m_OverrideState: 1
+    m_Value: 0.3
+  m_MaxSamples:
+    m_OverrideState: 1
+    m_Value: 6
