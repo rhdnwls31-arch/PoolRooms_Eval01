@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-7758866408829385202
+--- !u!114 &-7842243366463376193
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -151,7 +151,7 @@ MonoBehaviour:
   proceduralSoftness:
     m_OverrideState: 1
     m_Value: 0.5
---- !u!114 &-7724915482192195731
+--- !u!114 &-4285353845564654856
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -245,7 +245,7 @@ MonoBehaviour:
   volumetricLightingDensityCutoff:
     m_OverrideState: 1
     m_Value: 0
---- !u!114 &-6358452618202672168
+--- !u!114 &-2314509408192688733
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -277,6 +277,6 @@ MonoBehaviour:
   m_Name: HDRP_GB_PoolHall_Profile
   m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.VolumeProfile
   components:
-  - {fileID: -7758866408829385202}
-  - {fileID: -7724915482192195731}
-  - {fileID: -6358452618202672168}
+  - {fileID: -7842243366463376193}
+  - {fileID: -4285353845564654856}
+  - {fileID: -2314509408192688733}

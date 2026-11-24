@@ -137,7 +137,9 @@ public static partial class GreyboxGraphicsPass
             float cz = z + (Hash(i, 13, 507) > 0.5f ? 1.4f : -1.4f) * (0.8f + 0.4f * r);
             if (!west && cz > -135.2f && cz < -131.6f) cz = z + (z < -133.4f ? -1.4f : 1.4f);
             var cp = new Vector3(west ? p.x + 0.9f : p.x - 0.9f, 0.2f, cz);
-            CloudVarco(puffs, $"Puff_{i:00}_b", cp, w * (0.45f + 0.2f * r2), i + 1, Hash(i, 17, 509) * 360f);
+            float bw = w * (0.45f + 0.2f * r2);
+            if (!CloudVarco(puffs, $"Puff_{i:00}_b", cp, bw, i + 1, Hash(i, 17, 509) * 360f))
+                Prim(PrimitiveType.Sphere, puffs, $"Puff_{i:00}_b", cp, new Vector3(bw * 0.8f, 0.5f + 0.5f * r, bw), cloudMat, LAngel); // 더미도 큰 구름 옆에 작은 덩어리를 붙여 무리를 만든다
         }
         int si = 0;
         foreach (float x in new[] { 21.5f, 34.6f }) // 출구 벽 양옆(문 자리 26.65~29.65는 비운다)
@@ -148,11 +150,14 @@ public static partial class GreyboxGraphicsPass
     // 2026-11-23 VARCO 구름 두 종(납작한 CloudBank 2.5×1.0, 봉긋한 CloudBank2 2.0×1.4)을 번갈아 쓴다.
     // 폭이 더미 구(w)와 같게 배율을 맞추고, 밑이 구름 바닥에 묻히게 10cm 내린다. 콜라이더 없음(더미와 같음).
     // 2026-11-23: CloudBank2는 50만 삼각형이라(6개면 300만) 빼고, 모두 CloudBank(1.8만)로 쓴다. 똑같아 보이지 않게 높이를 0.8~1.6배로 바꾼다.
+    // 2026-11-24 사용자 결정: 천사 방 구름은 VARCO 대신 더미(흰 구름 바닥 재질의 납작한 타원 덩어리)로 되돌린다. 모델 파일은 그대로 둔다.
+    const bool AngelCloudsVarco = false;
+
     static bool CloudVarco(Transform parent, string name, Vector3 pos, float width, int i, float yaw)
     {
         const bool flat = true;
         string model = "CloudBank";
-        if (VarcoPrefab("Angel", model) == null) return false;
+        if (!AngelCloudsVarco || VarcoPrefab("Angel", model) == null) return false;
         var g = new GameObject(name).transform;
         g.SetParent(parent, true);
         g.SetPositionAndRotation(new Vector3(pos.x, -0.1f, pos.z), Quaternion.Euler(0f, yaw, 0f));
