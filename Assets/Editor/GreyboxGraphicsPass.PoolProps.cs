@@ -82,6 +82,14 @@ public static partial class GreyboxGraphicsPass
             if (old != null) Object.DestroyImmediate(old.gameObject);
             uint layer = 1u;
             foreach (var r in t.GetComponentsInChildren<Renderer>()) { layer = r.renderingLayerMask; r.enabled = false; EditorUtility.SetDirty(r); }
+            // 2026-11-25 5차: VARCO 두건 모델(수건을 머리까지 덮어 얼굴이 어둠 속)이 있으면 그대로 세운다. 깨진 얼굴 손질·동그란 그림자 없음.
+            if (VarcoPrefab("PoolHall", "SwimCapFigure_Hood") != null)
+            {
+                var hood = VarcoInto(t, "PoolHall", "SwimCapFigure_Hood", layer, default, default, false);
+                hood.name = SwimCapName;
+                n++;
+                continue;
+            }
             var go = VarcoInto(t, "PoolHall", "SwimCapFigure", layer, default, default, false);
             go.name = SwimCapName;
             var clean = SwimCapCleanMesh(out var mats); // 떠 있는 조각 빼고 물안경 새로(GreyboxGraphicsPass.SwimCap.cs)

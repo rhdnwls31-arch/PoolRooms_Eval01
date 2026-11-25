@@ -84,7 +84,9 @@ public static partial class GreyboxGraphicsPass
             UnityEditor.EditorUtility.SetDirty(fog);
             UnityEditor.EditorUtility.SetDirty(profile);
         }
-        LocalVolume(gen, "LocalVolume", new Vector3(AngelCx, 6f, -128.6f), new Vector3(20f, 12f, 27.8f), 3f, 125f, profile);
+        // 2026-11-25 사용자 "거실 TV에 가까이 가니 확 밝아짐": 번짐 3m가 벽을 넘어 거실 서쪽(TV)·침실 서쪽까지 하늘빛 간접광(×19)을 섞었다.
+        // 옆방과 0.6m 떨어져 있으므로 번짐을 0.3m로 줄인다(천사 방은 순간이동·통로 막기로만 드나들어 부드러운 넘어감이 필요 없다).
+        LocalVolume(gen, "LocalVolume", new Vector3(AngelCx, 6f, -128.6f), new Vector3(20f, 12f, 27.8f), 0.3f, 125f, profile);
 
         // ---- 소품: 날개 달린 눈, 벽 아래 구름 ----
         var props = PropsRoot(root, LAngel);

@@ -1,6 +1,75 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-6138911347138628821
+--- !u!114 &-8137661958413957313
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f034cba68ab55e046ae1445a42f18c0e, type: 3}
+  m_Name: IndirectLightingController
+  m_EditorClassIdentifier: Unity.RenderPipelines.HighDefinition.Runtime::UnityEngine.Rendering.HighDefinition.IndirectLightingController
+  active: 1
+  indirectDiffuseLightingMultiplier:
+    m_OverrideState: 1
+    m_Value: 0.01
+  indirectDiffuseLightingLayers:
+    m_OverrideState: 1
+    m_Value: 65535
+  reflectionLightingMultiplier:
+    m_OverrideState: 1
+    m_Value: 0.04
+  reflectionLightingLayers:
+    m_OverrideState: 1
+    m_Value: 65535
+  reflectionProbeIntensityMultiplier:
+    m_OverrideState: 1
+    m_Value: 1
+--- !u!114 &-4801462823680180597
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da5ab44aadfb1804db5fd470983ac1b8, type: 3}
+  m_Name: LiftGammaGain
+  m_EditorClassIdentifier: Unity.RenderPipelines.HighDefinition.Runtime::UnityEngine.Rendering.HighDefinition.LiftGammaGain
+  active: 1
+  lift:
+    m_OverrideState: 1
+    m_Value: {x: 1, y: 1, z: 1, w: 0.012}
+  gamma:
+    m_OverrideState: 0
+    m_Value: {x: 1, y: 1, z: 1, w: 0}
+  gain:
+    m_OverrideState: 0
+    m_Value: {x: 1, y: 1, z: 1, w: 0}
+--- !u!114 &-1670444954301685817
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b51a78e223a2e504bb88a059b55229ea, type: 3}
+  m_Name: WhiteBalance
+  m_EditorClassIdentifier: Unity.RenderPipelines.HighDefinition.Runtime::UnityEngine.Rendering.HighDefinition.WhiteBalance
+  active: 1
+  temperature:
+    m_OverrideState: 1
+    m_Value: 8
+  tint:
+    m_OverrideState: 1
+    m_Value: 0
+--- !u!114 &-1117014903506424539
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -107,12 +176,12 @@ MonoBehaviour:
   m_Name: HDRP_GB_Living_Profile
   m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.VolumeProfile
   components:
-  - {fileID: 136452875081713554}
-  - {fileID: 6014148682047915452}
-  - {fileID: -6138911347138628821}
-  - {fileID: 6309331109050758803}
-  - {fileID: 3276310668070435071}
---- !u!114 &136452875081713554
+  - {fileID: 6663744310464706247}
+  - {fileID: -8137661958413957313}
+  - {fileID: -1117014903506424539}
+  - {fileID: -1670444954301685817}
+  - {fileID: -4801462823680180597}
+--- !u!114 &6663744310464706247
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -263,72 +332,3 @@ MonoBehaviour:
   proceduralSoftness:
     m_OverrideState: 1
     m_Value: 0.5
---- !u!114 &3276310668070435071
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da5ab44aadfb1804db5fd470983ac1b8, type: 3}
-  m_Name: LiftGammaGain
-  m_EditorClassIdentifier: Unity.RenderPipelines.HighDefinition.Runtime::UnityEngine.Rendering.HighDefinition.LiftGammaGain
-  active: 1
-  lift:
-    m_OverrideState: 1
-    m_Value: {x: 1, y: 1, z: 1, w: 0.012}
-  gamma:
-    m_OverrideState: 0
-    m_Value: {x: 1, y: 1, z: 1, w: 0}
-  gain:
-    m_OverrideState: 0
-    m_Value: {x: 1, y: 1, z: 1, w: 0}
---- !u!114 &6014148682047915452
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f034cba68ab55e046ae1445a42f18c0e, type: 3}
-  m_Name: IndirectLightingController
-  m_EditorClassIdentifier: Unity.RenderPipelines.HighDefinition.Runtime::UnityEngine.Rendering.HighDefinition.IndirectLightingController
-  active: 1
-  indirectDiffuseLightingMultiplier:
-    m_OverrideState: 1
-    m_Value: 0.01
-  indirectDiffuseLightingLayers:
-    m_OverrideState: 1
-    m_Value: 65535
-  reflectionLightingMultiplier:
-    m_OverrideState: 1
-    m_Value: 0.04
-  reflectionLightingLayers:
-    m_OverrideState: 1
-    m_Value: 65535
-  reflectionProbeIntensityMultiplier:
-    m_OverrideState: 1
-    m_Value: 1
---- !u!114 &6309331109050758803
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b51a78e223a2e504bb88a059b55229ea, type: 3}
-  m_Name: WhiteBalance
-  m_EditorClassIdentifier: Unity.RenderPipelines.HighDefinition.Runtime::UnityEngine.Rendering.HighDefinition.WhiteBalance
-  active: 1
-  temperature:
-    m_OverrideState: 1
-    m_Value: 8
-  tint:
-    m_OverrideState: 1
-    m_Value: 0

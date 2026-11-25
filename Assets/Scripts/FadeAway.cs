@@ -15,6 +15,11 @@ public class FadeAway : MonoBehaviour
     public Material[] fadeMaterials = new Material[0];
     [Tooltip("함께 어두워지는 빛.")]
     public Light[] lights = new Light[0];
+    [Tooltip("지우는 동안 이만큼(비율) 키운다. 같은 자리 바꿈(사람 든 침대 → 빈 침대)에서 밑에 켜진 새 모델과 면이 겹쳐 " +
+             "번갈아 보이며 깨져 보였다(2026-11-25). 살짝 키우고 띄우면 옛 모델이 늘 바깥에 있다.")]
+    public float swell = 0f;
+    [Tooltip("지우는 동안 이만큼(m) 위로 띄운다.")]
+    public float lift = 0f;
 
     static readonly string[] ColorProps = { "_BaseColor", "_UnlitColor", "_Color" };
 
@@ -24,6 +29,8 @@ public class FadeAway : MonoBehaviour
     string[] liveProp;
     float[] lightBase;
     Coroutine running;
+    Vector3 baseScale, basePos;
+    bool moved;
 
     /// <summary>지금 진행 중인지.</summary>
     public bool Running => running != null;
@@ -79,6 +86,12 @@ public class FadeAway : MonoBehaviour
                 if (live[i].HasProperty(p)) { liveProp[i] = p; liveAlpha[i] = live[i].GetColor(p).a; break; }
         lightBase = new float[lights.Length];
         for (int i = 0; i < lights.Length; i++) if (lights[i] != null) lightBase[i] = lights[i].intensity;
+        if (swell > 0f || lift > 0f)
+        {
+            baseScale = transform.localScale; basePos = transform.position; moved = true;
+            transform.localScale = baseScale * (1f + swell);
+            transform.position = basePos + Vector3.up * lift;
+        }
     }
 
     void Apply(float a)
@@ -100,6 +113,7 @@ public class FadeAway : MonoBehaviour
         for (int i = 0; i < lights.Length; i++) if (lights[i] != null) lights[i].intensity = lightBase[i];
         foreach (var m in live) if (m != null) Destroy(m);
         originals = null; live = null;
+        if (moved) { transform.localScale = baseScale; transform.position = basePos; moved = false; }
     }
 
     void OnDisable() => Restore();

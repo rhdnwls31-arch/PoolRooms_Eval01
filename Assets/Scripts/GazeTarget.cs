@@ -26,6 +26,8 @@ public class GazeTarget : MonoBehaviour
     public Transform gazeBox;
 
     [Header("힌트")]
+    [Tooltip("못 찾을 때 깜빡여 알려 주는 힌트. 2026-11-25 사용자 결정으로 끔(깜빡임 싫음).")]
+    public bool useHint = false;
     [Tooltip("이 방의 범위. 플레이어가 안에 있는 동안만 힌트 시간을 센다.")]
     public Bounds roomBounds;
     [Tooltip("방에 들어온 뒤 이만큼(초) 못 찾으면 깜빡이기 시작한다.")]
@@ -64,6 +66,8 @@ public class GazeTarget : MonoBehaviour
     public float notifyDelay = 0f;
     [Tooltip("0보다 크면 hideOnFound는 이 시간(초)에 걸쳐 스르르 사라지고 showOnFound는 스르르 나타난다(각 오브젝트의 FadeAway). 2026-11-24 깜빡임 대신.")]
     public float fadeTime = 0f;
+    [Tooltip("나타날 것 중 사라질 것과 같은 자리를 차지하는 것(예: 사람 든 이불 → 빈 침대). 이것들은 바로 불투명하게 켜고, 사라질 것만 그 위에서 스르르 지운다. 둘 다 반투명으로 겹치면 속 면이 비쳐 깨져 보였다(2026-11-25).")]
+    public GameObject[] showUnderneath = new GameObject[0];
 
     /// <summary>찾았는지.</summary>
     public bool Found { get; private set; }
@@ -159,6 +163,7 @@ public class GazeTarget : MonoBehaviour
 
     void UpdateHint(Vector3 playerPos)
     {
+        if (!useHint) return; // 2026-11-25 사용자 결정: 힌트 깜빡임 넣지 않음
         if (!roomBounds.Contains(playerPos)) { if (hintOff) SetHintVisible(true); return; }
         roomTime += Time.deltaTime;
         if (roomTime < hintAfter) return;
@@ -234,6 +239,7 @@ public class GazeTarget : MonoBehaviour
         {
             if (go == null) continue;
             go.SetActive(true);
+            if (System.Array.IndexOf(showUnderneath, go) >= 0) continue; // 바로 불투명하게(위에서 옛 모습이 사라진다)
             var f = go.GetComponent<FadeAway>();
             if (f != null) { f.Begin(0f, 1f, fadeTime, false); any = true; }
         }

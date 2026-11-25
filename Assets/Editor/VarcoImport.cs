@@ -24,7 +24,7 @@ public static class VarcoImport
     public static string Import(string srcFbx, string room, string name, float height, float yaw = 0f, bool wall = false, float scale = 1f)
     {
         string fbxName = $"VAR_{room}_{name}";
-        string roomDir = $"{Root}/{room}";
+        string roomDir = Ensure(Root, room); // 새 방이면 방 폴더부터 만든다(2026-11-25 DollRoom)
         foreach (var sub in new[] { "Models", "Textures", "Materials", "Prefabs" }) Ensure(roomDir, sub);
         string texDir = Ensure($"{roomDir}/Textures", fbxName);
         string dest = $"{roomDir}/Models/{fbxName}.fbx";

@@ -38,7 +38,16 @@ public static partial class GreyboxGraphicsPass
             g.blinkCount = 0;
             g.changeWhenUnseen = false; // 보는 앞에서 스르르
             g.fadeTime = FindFadeTime;
+            // 같은 자리 바꿈(빈 침대, 꺼진 표지판)은 새 모습을 바로, 옛 모습만 스르르. 다른 자리에 나타나는 것(벽 그림자)은 그대로 스르르.
+            var under = new List<GameObject>();
+            foreach (var o in g.showOnFound) if (o != null && SwapsInPlace(g.hideOnFound, new[] { o })) under.Add(o);
+            g.showUnderneath = under.ToArray();
             foreach (var o in g.hideOnFound) if (AddFade(o)) fades++;
+            // 2026-11-25: 같은 자리 바꿈이면 사라지는 쪽을 지우는 동안 1.2% 키우고 1.2cm 띄워 밑의 새 모델과 면이 겹치지 않게(깨짐 방지)
+            foreach (var o in g.hideOnFound)
+                if (o != null && o.TryGetComponent<FadeAway>(out var hf)) { hf.swell = under.Count > 0 ? 0.012f : 0f; hf.lift = under.Count > 0 ? 0.012f : 0f; EditorUtility.SetDirty(hf); }
+            // 2026-11-25: 거실 TV는 1.5초 응시가 길게 느껴졌다(사용자 피드백) → 0.8초
+            if (g.name == "Oddity_TV") g.dwellTime = 0.8f;
             foreach (var o in g.showOnFound) if (o != null && !HasBehaviour(o) && AddFade(o)) fades++;
             EditorUtility.SetDirty(g);
             targets++;
@@ -69,6 +78,26 @@ public static partial class GreyboxGraphicsPass
             EditorUtility.SetDirty(gate);
         }
         Debug.Log($"[GreyboxGraphicsPass] 찾기 반응: 이상한 점 {targets}개 스르르, 페이드 묶음 {fades}개, 출구 {gates.Count}개 ({(GateOpenInView ? "보는 앞에서 열림" : "예전처럼 화면 밖에서 열림")})");
+    }
+
+    /// <summary>사라질 것과 나타날 것이 거의 같은 자리를 차지하는지(겹치는 부피가 작은 쪽의 절반 이상).</summary>
+    static bool SwapsInPlace(GameObject[] hide, GameObject[] show)
+    {
+        bool B(GameObject[] gs, out Bounds b)
+        {
+            b = default; bool any = false;
+            foreach (var g in gs)
+            {
+                if (g == null) continue;
+                foreach (var r in g.GetComponentsInChildren<Renderer>(true)) { if (!any) { b = r.bounds; any = true; } else b.Encapsulate(r.bounds); }
+            }
+            return any;
+        }
+        if (show == null || show.Length == 0 || !B(hide, out var h) || !B(show, out var s)) return false;
+        Vector3 lo = Vector3.Max(h.min, s.min), hi = Vector3.Min(h.max, s.max);
+        if (lo.x >= hi.x || lo.y >= hi.y || lo.z >= hi.z) return false;
+        float V(Vector3 v) => v.x * v.y * v.z;
+        return V(hi - lo) >= 0.5f * Mathf.Min(V(h.size), V(s.size));
     }
 
     static bool HasBehaviour(GameObject o)
@@ -107,7 +136,13 @@ public static partial class GreyboxGraphicsPass
         else { t.shader = m.shader; t.CopyPropertiesFromMaterial(m); }
         bool wasTransparent = m.GetFloat("_SurfaceType") > 0.5f;
         t.SetFloat("_SurfaceType", 1f);
-        if (!wasTransparent) t.SetFloat("_BlendMode", 0f); // 알파 섞기
+        if (!wasTransparent)
+        {
+            t.SetFloat("_BlendMode", 0f); // 알파 섞기
+            // 2026-11-25 사용자 "파란 방 스르르 바뀔 때 깨짐": 반투명이 되면 모델 안쪽·뒷면이 비쳐 보였다.
+            // 깊이를 먼저 그려(투명 깊이 프리패스) 가장 앞면만 남긴다.
+            if (t.HasProperty("_TransparentDepthPrepassEnable")) t.SetFloat("_TransparentDepthPrepassEnable", 1f);
+        }
         if (t.HasProperty("_EnableBlendModePreserveSpecularLighting")) t.SetFloat("_EnableBlendModePreserveSpecularLighting", 0f);
         if (t.HasProperty("_EnableFogOnTransparent")) t.SetFloat("_EnableFogOnTransparent", 1f);
         UnityEditor.Rendering.HighDefinition.HDShaderUtils.ResetMaterialKeywords(t);

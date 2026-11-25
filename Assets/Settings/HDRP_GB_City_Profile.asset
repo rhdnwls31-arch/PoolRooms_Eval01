@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-7843973757994989815
+--- !u!114 &-2556168532311559011
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -28,7 +28,7 @@ MonoBehaviour:
   reflectionProbeIntensityMultiplier:
     m_OverrideState: 1
     m_Value: 1
---- !u!114 &-7465550126444058343
+--- !u!114 &-670087529856597741
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -122,7 +122,7 @@ MonoBehaviour:
   volumetricLightingDensityCutoff:
     m_OverrideState: 1
     m_Value: 0
---- !u!114 &-892402333432087425
+--- !u!114 &-653951411255382131
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -141,24 +141,7 @@ MonoBehaviour:
   tint:
     m_OverrideState: 1
     m_Value: 0
---- !u!114 &11400000
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d7fd9488000d3734a9e00ee676215985, type: 3}
-  m_Name: HDRP_GB_City_Profile
-  m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.VolumeProfile
-  components:
-  - {fileID: 85111120518220196}
-  - {fileID: -7843973757994989815}
-  - {fileID: -7465550126444058343}
-  - {fileID: -892402333432087425}
---- !u!114 &85111120518220196
+--- !u!114 &-231764342647881105
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -309,3 +292,20 @@ MonoBehaviour:
   proceduralSoftness:
     m_OverrideState: 1
     m_Value: 0.5
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7fd9488000d3734a9e00ee676215985, type: 3}
+  m_Name: HDRP_GB_City_Profile
+  m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.VolumeProfile
+  components:
+  - {fileID: -231764342647881105}
+  - {fileID: -2556168532311559011}
+  - {fileID: -670087529856597741}
+  - {fileID: -653951411255382131}

@@ -31,6 +31,7 @@ public static partial class GreyboxGraphicsPass
         BuildLiving();
         BuildCorridor(); // 2026-11-18 꽃무늬 아파트 복도(노란 방 → 복도 → 거실, Corridor.cs)
         BuildBedroom();
+        BuildDollRoom(); // 2026-11-25 목각인형 화실(거실 → 화실 → 침실, 순간이동, DollRoom.cs)
         BuildComputer(); // 2026-11-18 컴퓨터 속 맵(침실 → 컴퓨터 속 → 도시, Computer.cs)
         BuildSunkenCity(); // 2026-11-18 가라앉은 집들의 도시(컴퓨터 속 → 도시 → 천사 방, SunkenCity.cs)
     }

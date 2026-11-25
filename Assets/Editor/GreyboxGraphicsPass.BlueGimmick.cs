@@ -29,12 +29,11 @@ public static partial class GreyboxGraphicsPass
 
         // ---- 1) 이불 속 사람: 꺼질 때 그림자를 켠다. 출구 벽에 이 id를 남겨도 출구 조건(그림자)에는 상관없다.
         var gz = AddGaze(lump.gameObject, "BedroomFigure", gate, room);
-        gz.blinkRenderers = lump.GetComponentsInChildren<Renderer>();
-        gz.blinkCount = 2; gz.blinkOff = 0.18f;
-        // 판정 컴포넌트가 붙은 lump 자체를 끄면 코루틴도 멈춘다. 그래서 몸 조각(자식)만 끈다.
-        var parts = new GameObject[lump.childCount];
-        for (int i = 0; i < parts.Length; i++) parts[i] = lump.GetChild(i).gameObject;
-        gz.hideOnFound = parts;
+        // 2026-11-25(사용자 결정): 침대 바꿈은 디졸브 중 계속 어색했다. 침대는 처음 모습(이불 속 사람) 그대로 두고,
+        // 찾으면 벽에 그림자만 스르르 생겨서 알게 한다. 깜빡임도 없다(깜빡일 것이 있으면 ConvertFindReactions가 그것을 지운다).
+        gz.blinkRenderers = new Renderer[0];
+        gz.blinkCount = 0;
+        gz.hideOnFound = new GameObject[0];
         var emptyBed = lump.parent.Find("Bed_Empty"); // VARCO 침대일 때만 있다: 사람이 사라지면 빈 침대로 바꾼다
         // 2026-11-19: 보는 앞에서 바뀌면 침대째 사라져 보였다. 꿈틀(깜빡)한 뒤 플레이어가 시선을 돌렸을 때
         // 사람 든 침대 → 빈 침대로 바꾸고, 같은 순간 벽에 그림자가 생긴다(사용자 결정).
@@ -66,7 +65,8 @@ public static partial class GreyboxGraphicsPass
         sg.hideOnFound = new[] { sil };   // 판정 컴포넌트가 붙은 shadowRoot는 끄지 않는다
         sg.hideDelay = 1f; sg.notifyDelay = 1.3f;
         // 예전에는 여기서 빈 침대를 덮어써 지워 버려서, 찾으면 침대가 통째로 사라졌다(2026-11-19 버그).
-        gz.showOnFound = emptyBed != null ? new[] { emptyBed.gameObject, shadowRoot } : new[] { shadowRoot };
+        gz.showOnFound = new[] { shadowRoot }; // 빈 침대(emptyBed)는 쓰지 않는다: 꺼진 채로 둔다
+        if (emptyBed != null) emptyBed.gameObject.SetActive(false);
         shadowRoot.SetActive(false);
         EditorUtility.SetDirty(gz); EditorUtility.SetDirty(sg);
 
