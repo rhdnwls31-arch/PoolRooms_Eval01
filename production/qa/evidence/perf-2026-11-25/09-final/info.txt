@@ -1,0 +1,4 @@
+api Direct3D11
+gpu NVIDIA GeForce RTX 3060 Ti
+dlssDetected True
+scale 1.000

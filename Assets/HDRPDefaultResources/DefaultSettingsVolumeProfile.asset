@@ -50,6 +50,46 @@ MonoBehaviour:
   saturation:
     m_OverrideState: 1
     m_Value: 0
+--- !u!114 &-7606061047408135693
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca2bb06aec7829041afd3bb65c0bd9e9, type: 3}
+  m_Name: CrtScreen
+  m_EditorClassIdentifier: Assembly-CSharp::CrtScreen
+  active: 1
+  intensity:
+    m_OverrideState: 1
+    m_Value: 0
+  curvature:
+    m_OverrideState: 1
+    m_Value: 0.08
+  cornerRadius:
+    m_OverrideState: 1
+    m_Value: 0.06
+  scanline:
+    m_OverrideState: 1
+    m_Value: 0.35
+  scanlineCount:
+    m_OverrideState: 1
+    m_Value: 360
+  phosphorMask:
+    m_OverrideState: 1
+    m_Value: 0.15
+  rollBand:
+    m_OverrideState: 1
+    m_Value: 0.05
+  jitter:
+    m_OverrideState: 1
+    m_Value: 0.5
+  edgeDarken:
+    m_OverrideState: 1
+    m_Value: 0.5
 --- !u!114 &-7089757308646879465
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -1548,6 +1588,7 @@ MonoBehaviour:
   - {fileID: 4289305282556728849}
   - {fileID: -6082165301622701858}
   - {fileID: 6964560261705691506}
+  - {fileID: -7606061047408135693}
 --- !u!114 &448115243408767295
 MonoBehaviour:
   m_ObjectHideFlags: 3

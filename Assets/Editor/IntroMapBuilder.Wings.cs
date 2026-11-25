@@ -81,6 +81,8 @@ public static partial class IntroMapBuilder
         float g = StairWidth / 2f;
         float segW = outerHalf - g;
         float segC = (outerHalf + g) / 2f;
+        // 계단이 턱보다 넓으면(수로) 남는 턱이 없다. 예전에는 폭 -0.1m 상자가 생겨 빌드에서 음수 크기 충돌 경고가 났다(2026-11-25).
+        if (segW <= 0.01f) return;
         Box(parent, name + "_W", new Vector3(c.x - segC, CurbHeight / 2f, z), new Vector3(segW, CurbHeight, 0.3f), MatFloor, true);
         Box(parent, name + "_E", new Vector3(c.x + segC, CurbHeight / 2f, z), new Vector3(segW, CurbHeight, 0.3f), MatFloor, true);
     }

@@ -66,6 +66,10 @@ public class GazeTarget : MonoBehaviour
     public float notifyDelay = 0f;
     [Tooltip("0보다 크면 hideOnFound는 이 시간(초)에 걸쳐 스르르 사라지고 showOnFound는 스르르 나타난다(각 오브젝트의 FadeAway). 2026-11-24 깜빡임 대신.")]
     public float fadeTime = 0f;
+    [Tooltip("바라보는 동안 사라질 것이 미리 이만큼(0~1) 옅어진다. 응시하면 반응한다는 것을 알게(2026-11-25 사용자 결정: 보는 동안 서서히 변하기). 0이면 끔.")]
+    public float previewFade = 0.45f;
+    [Tooltip("눈을 떼면 미리 옅어진 것이 이 시간(초)에 걸쳐 원래대로 돌아온다(깜빡이지 않게 천천히).")]
+    public float previewReturnTime = 0.8f;
     [Tooltip("나타날 것 중 사라질 것과 같은 자리를 차지하는 것(예: 사람 든 이불 → 빈 침대). 이것들은 바로 불투명하게 켜고, 사라질 것만 그 위에서 스르르 지운다. 둘 다 반투명으로 겹치면 속 면이 비쳐 깨져 보였다(2026-11-25).")]
     public GameObject[] showUnderneath = new GameObject[0];
 
@@ -75,11 +79,16 @@ public class GazeTarget : MonoBehaviour
     public bool Swapped { get; private set; }
     /// <summary>화면 밖에서 바뀌어야 찾을 수 있는 이상한 점인지.</summary>
     public bool NeedsSwap => swapIn.Length > 0 || swapOut.Length > 0;
+    /// <summary>바라보는 동안 미리 옅어진 정도(0~1).</summary>
+    public float PreviewAmount => preview;
+    /// <summary>겨눠야 하는 판정 범위의 가운데(개발용 점검에서 쓴다).</summary>
+    public Vector3 GazeCenter => CurrentBounds().center;
 
-    float dwell, unseen, roomTime, hintClock;
+    float dwell, unseen, roomTime, hintClock, preview;
     bool seen, hintOff;
     Vector3 dropStart;
     Camera cam;
+    Renderer[] childRenderers;
 
     void Awake()
     {
@@ -101,11 +110,16 @@ public class GazeTarget : MonoBehaviour
             if (inView && Vector3.Distance(cam.transform.position, b.center) <= maxDistance * 2f) seen = true;
             if (SwapStep(ref unseen, seen, inView, Time.deltaTime, unseenToSwap)) Swap();
         }
-        else if (Accumulate(ref dwell, IsGazedAt(cam, b), Time.deltaTime, dwellTime))
+        else
         {
-            SetHintVisible(true);
-            StartCoroutine(OnFound());
-            return;
+            bool gazing = IsGazedAt(cam, b);
+            if (Accumulate(ref dwell, gazing, Time.deltaTime, dwellTime))
+            {
+                SetHintVisible(true);
+                StartCoroutine(OnFound());
+                return;
+            }
+            UpdatePreview(PreviewStep(preview, gazing, dwellTime > 0f ? dwell / dwellTime : 1f, Time.deltaTime, previewReturnTime));
         }
 
         UpdateHint(cam.transform.position);
@@ -116,6 +130,29 @@ public class GazeTarget : MonoBehaviour
     {
         dwell = gazing ? dwell + dt : 0f;
         return dwell >= need;
+    }
+
+    /// <summary>
+    /// 미리 옅어지는 정도(0~1)의 다음 값. 보는 동안은 바라본 비율을 그대로 따르고, 눈을 떼면 returnTime초에 걸쳐 0으로 돌아간다.
+    /// </summary>
+    public static float PreviewStep(float current, bool gazing, float dwellRatio, float dt, float returnTime)
+    {
+        if (gazing) return Mathf.Clamp01(Mathf.Max(current, dwellRatio));
+        return returnTime <= 0f ? 0f : Mathf.Max(0f, current - dt / returnTime);
+    }
+
+    void UpdatePreview(float next)
+    {
+        if (previewFade <= 0f || fadeTime <= 0f) return;
+        if (Mathf.Approximately(next, preview)) return;
+        bool wasOn = preview > 0f;
+        preview = next;
+        bool on = preview > 0f;
+        // 같은 자리 바꿈이면 새 모습을 밑에 미리 켜 둔다(옛 모습이 옅어지며 새 모습이 비친다). 다 돌아오면 다시 끈다.
+        if (on != wasOn) foreach (var go in showUnderneath) if (go != null) go.SetActive(on);
+        float a = 1f - previewFade * preview;
+        foreach (var go in hideOnFound)
+            if (go != null && go.activeInHierarchy && go.TryGetComponent<FadeAway>(out var f)) f.Preview(a);
     }
 
     /// <summary>한 번 본 뒤 화면 밖에 있던 시간을 쌓고, 다 찼으면 참. 다시 화면에 들어오면 처음부터 센다.</summary>
@@ -151,7 +188,9 @@ public class GazeTarget : MonoBehaviour
             return gb;
         }
         Bounds b = default; bool any = false;
-        var rs = gazeRenderers.Length > 0 ? gazeRenderers : GetComponentsInChildren<Renderer>(false);
+        // 매 프레임 자식 렌더러를 새로 찾으면 쓰레기가 쌓여 가끔 끊겼다 → 한 번 찾아 두고 켜진 것만 쓴다
+        if (childRenderers == null) childRenderers = GetComponentsInChildren<Renderer>(true);
+        var rs = gazeRenderers.Length > 0 ? gazeRenderers : childRenderers;
         foreach (var r in rs)
         {
             if (r == null || !r.gameObject.activeInHierarchy) continue;
@@ -247,7 +286,7 @@ public class GazeTarget : MonoBehaviour
         {
             if (go == null || !go.activeInHierarchy) continue;
             var f = go.GetComponent<FadeAway>();
-            if (f != null) { f.Begin(1f, 0f, fadeTime, true); any = true; }
+            if (f != null) { f.Begin(f.Alpha, 0f, fadeTime, true); any = true; } // 미리 옅어진 데서 이어서
             else go.SetActive(false);
         }
         if (any) yield return new WaitForSeconds(fadeTime + 0.05f);
@@ -266,7 +305,7 @@ public class GazeTarget : MonoBehaviour
         StopAllCoroutines();
         RestoreFades();
         Found = false; Swapped = false; seen = false;
-        dwell = unseen = roomTime = hintClock = 0f;
+        dwell = unseen = roomTime = hintClock = preview = 0f;
         SetHintVisible(true);
         if (dropTarget != null) dropTarget.localPosition = dropStart;
         foreach (var r in blinkRenderers) if (r != null) r.enabled = true;

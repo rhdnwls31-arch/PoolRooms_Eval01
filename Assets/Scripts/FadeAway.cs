@@ -24,16 +24,33 @@ public class FadeAway : MonoBehaviour
     static readonly string[] ColorProps = { "_BaseColor", "_UnlitColor", "_Color" };
 
     Material[][] originals;
+    // 바꿔 끼운 재질 칸(렌더러별). 한 번 만들면 계속 쓴다(바라볼 때마다 새로 만들고 지우면 끊겼다, 2026-11-25).
+    Material[][] swappedCache;
     Material[] live;
     float[] liveAlpha;
     string[] liveProp;
     float[] lightBase;
     Coroutine running;
+    float alpha = 1f;
     Vector3 baseScale, basePos;
     bool moved;
 
     /// <summary>지금 진행 중인지.</summary>
     public bool Running => running != null;
+    /// <summary>지금 보이는 정도(1 = 원래, 0 = 안 보임).</summary>
+    public float Alpha => originals == null ? 1f : alpha;
+
+    /// <summary>
+    /// 바라보는 동안 미리 조금 옅어지기(2026-11-25: 응시하면 반응한다는 것을 알게). a가 1이면 원래대로 되돌린다.
+    /// 진행 중인 Begin이 있으면 건드리지 않는다.
+    /// </summary>
+    public void Preview(float a)
+    {
+        if (running != null || !isActiveAndEnabled) return;
+        if (a >= 0.999f) { Restore(); return; }
+        SwapIn();
+        Apply(a);
+    }
 
     /// <summary>from에서 to까지 알파(0 = 안 보임, 1 = 원래)를 time초에 걸쳐 바꾼다. deactivateAtEnd면 끝에 오브젝트를 끈다.</summary>
     public void Begin(float from, float to, float time, bool deactivateAtEnd)
@@ -61,29 +78,38 @@ public class FadeAway : MonoBehaviour
     {
         if (originals != null) return;
         originals = new Material[renderers.Length][];
-        var list = new System.Collections.Generic.List<Material>();
+        bool build = swappedCache == null;
+        if (build) swappedCache = new Material[renderers.Length][];
+        var list = build ? new System.Collections.Generic.List<Material>() : null;
         int k = 0;
         for (int i = 0; i < renderers.Length; i++)
         {
             var r = renderers[i];
             if (r == null) { originals[i] = null; continue; }
             originals[i] = r.sharedMaterials;
-            var swapped = new Material[originals[i].Length];
-            for (int s = 0; s < swapped.Length; s++, k++)
+            if (build)
             {
-                var twin = k < fadeMaterials.Length ? fadeMaterials[k] : null;
-                if (twin == null) { swapped[s] = originals[i][s]; continue; }
-                swapped[s] = new Material(twin) { name = twin.name + " (fading)" };
-                list.Add(swapped[s]);
+                var swapped = new Material[originals[i].Length];
+                for (int s = 0; s < swapped.Length; s++, k++)
+                {
+                    var twin = k < fadeMaterials.Length ? fadeMaterials[k] : null;
+                    if (twin == null) { swapped[s] = originals[i][s]; continue; }
+                    swapped[s] = new Material(twin) { name = twin.name + " (fading)" };
+                    list.Add(swapped[s]);
+                }
+                swappedCache[i] = swapped;
             }
-            r.sharedMaterials = swapped;
+            if (swappedCache[i] != null) r.sharedMaterials = swappedCache[i];
         }
-        live = list.ToArray();
-        liveAlpha = new float[live.Length];
-        liveProp = new string[live.Length];
-        for (int i = 0; i < live.Length; i++)
-            foreach (var p in ColorProps)
-                if (live[i].HasProperty(p)) { liveProp[i] = p; liveAlpha[i] = live[i].GetColor(p).a; break; }
+        if (build)
+        {
+            live = list.ToArray();
+            liveAlpha = new float[live.Length];
+            liveProp = new string[live.Length];
+            for (int i = 0; i < live.Length; i++)
+                foreach (var p in ColorProps)
+                    if (live[i].HasProperty(p)) { liveProp[i] = p; liveAlpha[i] = live[i].GetColor(p).a; break; }
+        }
         lightBase = new float[lights.Length];
         for (int i = 0; i < lights.Length; i++) if (lights[i] != null) lightBase[i] = lights[i].intensity;
         if (swell > 0f || lift > 0f)
@@ -96,6 +122,7 @@ public class FadeAway : MonoBehaviour
 
     void Apply(float a)
     {
+        alpha = a;
         for (int i = 0; i < live.Length; i++)
         {
             if (liveProp[i] == null) continue;
@@ -111,10 +138,15 @@ public class FadeAway : MonoBehaviour
         if (originals == null) return;
         for (int i = 0; i < renderers.Length; i++) if (renderers[i] != null && originals[i] != null) renderers[i].sharedMaterials = originals[i];
         for (int i = 0; i < lights.Length; i++) if (lights[i] != null) lights[i].intensity = lightBase[i];
-        foreach (var m in live) if (m != null) Destroy(m);
-        originals = null; live = null;
+        Apply(1f); // 다음에 다시 끼울 때 원래 알파에서 시작
+        originals = null; alpha = 1f;
         if (moved) { transform.localScale = baseScale; transform.position = basePos; moved = false; }
     }
 
     void OnDisable() => Restore();
+
+    void OnDestroy()
+    {
+        if (live != null) foreach (var m in live) if (m != null) Destroy(m);
+    }
 }

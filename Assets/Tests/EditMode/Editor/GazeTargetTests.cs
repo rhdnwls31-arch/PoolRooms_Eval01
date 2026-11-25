@@ -40,4 +40,26 @@ public class GazeTargetTests
         Assert.IsFalse(GazeTarget.RayReaches(ray, target, MaxDist, 2f), "앞이 가려져 있다");
         Assert.IsFalse(GazeTarget.RayReaches(new Ray(Vector3.zero, Vector3.right), target, MaxDist, float.PositiveInfinity), "다른 곳을 본다");
     }
+
+    [Test]
+    public void PreviewStep_FollowsGazeAndEasesBack()
+    {
+        // Arrange
+        const float ReturnTime = 0.8f;
+        float p = 0f;
+
+        // Act / Assert: 보는 동안은 바라본 비율을 따른다
+        p = GazeTarget.PreviewStep(p, true, 0.5f, 0.1f, ReturnTime);
+        Assert.AreEqual(0.5f, p, 1e-4f);
+        // 잠깐 눈을 떼면 한 번에 0이 아니라 천천히 줄어든다
+        p = GazeTarget.PreviewStep(p, false, 0f, 0.4f, ReturnTime);
+        Assert.AreEqual(0f, p, 1e-4f, "0.5에서 0.4초 = 0.8초 동안 1만큼 줄어드는 속도로 0");
+        p = GazeTarget.PreviewStep(0.5f, false, 0f, 0.2f, ReturnTime);
+        Assert.AreEqual(0.25f, p, 1e-4f);
+        // 다시 보면 남아 있던 만큼에서 이어진다(처음부터 다시 세는 비율이 작아도 튀지 않는다)
+        p = GazeTarget.PreviewStep(p, true, 0.05f, 0.1f, ReturnTime);
+        Assert.AreEqual(0.25f, p, 1e-4f);
+        // 1을 넘지 않는다
+        Assert.AreEqual(1f, GazeTarget.PreviewStep(0.9f, true, 1.3f, 0.1f, ReturnTime), 1e-4f);
+    }
 }

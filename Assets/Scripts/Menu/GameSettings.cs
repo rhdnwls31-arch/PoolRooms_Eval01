@@ -39,6 +39,8 @@ public static class GameSettings
     public static int ResolutionIndex { get => Mathf.Clamp(PlayerPrefs.GetInt("set.resolution", DefaultResolutionIndex()), 0, Resolutions().Count - 1); set { PlayerPrefs.SetInt("set.resolution", value); } }
     public static int FrameRateIndex { get => Mathf.Clamp(PlayerPrefs.GetInt("set.frameRate", 3), 0, FrameRateValues.Length - 1); set { PlayerPrefs.SetInt("set.frameRate", value); } }
     public static int MotionBlurOn { get => PlayerPrefs.GetInt("set.motionBlur", 1); set { PlayerPrefs.SetInt("set.motionBlur", value); } }
+    /// <summary>DLSS(0 끔 / 1 켬). 기본 끔: 1080p에서는 빨라지지 않았다(2026-11-25 측정). 큰 해상도에서 쓰라고 설정에 둔다.</summary>
+    public static int DlssOn { get => PlayerPrefs.GetInt("set.dlss", 0); set { PlayerPrefs.SetInt("set.dlss", value); } }
     public static float Volume01 { get => PlayerPrefs.GetFloat("set.volume", DefaultVolume); set { PlayerPrefs.SetFloat("set.volume", value); } }
     public static float Brightness01 { get => PlayerPrefs.GetFloat("set.brightness", DefaultBrightness); set { PlayerPrefs.SetFloat("set.brightness", value); } }
     public static float Sensitivity01 { get => PlayerPrefs.GetFloat("set.sensitivity", DefaultSensitivity); set { PlayerPrefs.SetFloat("set.sensitivity", value); } }
@@ -64,6 +66,25 @@ public static class GameSettings
         return labels;
     }
 
+    /// <summary>이 컴퓨터에서 DLSS를 쓸 수 있는지(NVIDIA RTX). 에디터 미리보기에서는 거짓.</summary>
+    public static bool DlssSupported => Application.isPlaying && HDDynamicResolutionPlatformCapabilities.DLSSDetected;
+
+    /// <summary>DLSS 행 선택지. 못 쓰는 컴퓨터에서는 "지원 안 됨" 하나만.</summary>
+    public static string[] DlssLabels() => DlssSupported || !Application.isPlaying ? OnOffLabels : new[] { "지원 안 됨" };
+
+    /// <summary>카메라가 DLSS로 그릴지(설정이 켬이고 지원될 때만).</summary>
+    public static bool UseDlss(int setting, bool supported) => setting == 1 && supported;
+
+    /// <summary>지금 씬의 플레이어 눈 카메라에 DLSS 설정을 반영한다.</summary>
+    static void ApplyDlss()
+    {
+        var cam = Camera.main;
+        if (cam == null || !cam.TryGetComponent<HDAdditionalCameraData>(out var hd)) return;
+        bool on = UseDlss(DlssOn, DlssSupported);
+        hd.allowDynamicResolution = on;
+        hd.allowDeepLearningSuperSampling = on;
+    }
+
     static int DefaultResolutionIndex()
     {
         var rs = Resolutions();
@@ -79,6 +100,7 @@ public static class GameSettings
         if (!Application.isPlaying) return; // 에디터 미리보기(캡처)에서는 아무것도 바꾸지 않는다
         AudioListener.volume = Volume01;
 
+        ApplyDlss();
         int fps = FrameRateValues[FrameRateIndex];
         QualitySettings.vSyncCount = 0;
         Application.targetFrameRate = fps;
@@ -126,5 +148,10 @@ public static class GameSettings
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-    static void Boot() { Apply(); }
+    static void Boot()
+    {
+        Apply();
+        // 씬마다 카메라가 새로 생기므로 씬이 열릴 때마다 DLSS를 다시 반영한다
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += (s, m) => ApplyDlss();
+    }
 }

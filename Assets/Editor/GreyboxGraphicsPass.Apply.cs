@@ -49,8 +49,10 @@ public static partial class GreyboxGraphicsPass
         ApplyIntroLight(); // 2026-11-24 후처리: 인트로 전용 볼륨(SSGI·SSR·옅은 안개)과 해 높이
         GradeRooms(); // 2026-11-24 후처리 4단계: 거실·침실만 그림자·채도 보정
         ConvertFindReactions(); AddWaterBobs(); // 2026-11-24 2차 피드백: 찾기 반응 스르르·보는 앞에서 열림, 공·튜브 동동(Feedback1124b.cs)
+        ApplyBuildFeedback1125(); // 2026-11-25 빌드 플레이: 수영장 홀 남쪽 벽 닫기, 거실 TV 찾는 거리(Feedback1125.cs)
         SwapDistantMannequin(); // 2026-11-24 수영장 홀 끝 마네킹 → VARCO 수영모 인외(모델이 오면)
         SwapPoolLoungers(); // 2026-11-20 VARCO 선베드: 인트로·같은 수영장 더미를 바꾼다(같은 수영장 복사본이 만들어진 뒤라 맨 끝)
+        ApplyPerformance(); // 2026-11-25 성능 단계: DLSS 등(Perf1125.cs)
         AssetDatabase.SaveAssets();
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);

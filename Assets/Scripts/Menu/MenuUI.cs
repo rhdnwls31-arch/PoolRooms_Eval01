@@ -21,18 +21,18 @@ public class MenuUIRefs
     public List<Button> menuButtons = new List<Button>();
 
     // 화면 모드/해상도는 '적용하기'를 누를 때까지 보류 값으로 들고 있는다.
-    public int pendingScreenMode, pendingResolution, pendingFrameRate, pendingMotionBlur;
+    public int pendingScreenMode, pendingResolution, pendingFrameRate, pendingMotionBlur, pendingDlss;
     public float pendingVolume, pendingBrightness, pendingSensitivity;
     public void ResetPending()
     {
         pendingScreenMode = GameSettings.ScreenMode; pendingResolution = GameSettings.ResolutionIndex;
-        pendingFrameRate = GameSettings.FrameRateIndex; pendingMotionBlur = GameSettings.MotionBlurOn;
+        pendingFrameRate = GameSettings.FrameRateIndex; pendingMotionBlur = GameSettings.MotionBlurOn; pendingDlss = GameSettings.DlssOn;
         pendingVolume = GameSettings.Volume01; pendingBrightness = GameSettings.Brightness01; pendingSensitivity = GameSettings.Sensitivity01;
     }
     public bool IsDirty()
     {
         return pendingScreenMode != GameSettings.ScreenMode || pendingResolution != GameSettings.ResolutionIndex
-            || pendingFrameRate != GameSettings.FrameRateIndex || pendingMotionBlur != GameSettings.MotionBlurOn
+            || pendingFrameRate != GameSettings.FrameRateIndex || pendingMotionBlur != GameSettings.MotionBlurOn || pendingDlss != GameSettings.DlssOn
             || !Mathf.Approximately(pendingVolume, GameSettings.Volume01) || !Mathf.Approximately(pendingBrightness, GameSettings.Brightness01)
             || !Mathf.Approximately(pendingSensitivity, GameSettings.Sensitivity01);
     }
@@ -160,12 +160,7 @@ public static class MenuUIFactory
         refs.saveButton = MenuItem(parent, "저장하기", new Vector2(0, 1), new Vector2(left, top - pitch), TextAnchor.MiddleLeft, 34, refs);
         refs.settingsButton = MenuItem(parent, "설정", new Vector2(0, 1), new Vector2(left, top - pitch * 2), TextAnchor.MiddleLeft, 34, refs);
         refs.quitButton = MenuItem(parent, "메인으로 나가기", new Vector2(0, 1), new Vector2(left, top - pitch * 3), TextAnchor.MiddleLeft, 34, refs);
-
-        var hint = NewText("PauseTitle", parent, "일시정지", 26, Dim, TextAnchor.LowerLeft);
-        var hr = hint.rectTransform;
-        hr.anchorMin = hr.anchorMax = new Vector2(0, 0); hr.pivot = new Vector2(0, 0);
-        hr.anchoredPosition = new Vector2(left, 60); hr.sizeDelta = new Vector2(400, 40);
-        hint.raycastTarget = false;
+        // 왼쪽 아래 "일시정지" 글자는 2026-11-25 사용자 요청으로 뺐다.
     }
 
     // ---- 설정 패널 ----------------------------------------------------------------
@@ -178,7 +173,7 @@ public static class MenuUIFactory
         panel.offsetMin = panel.offsetMax = Vector2.zero;
         refs.settingsPanel = panel.gameObject;
 
-        float y = -40f; const float pitch = 82f;
+        float y = -40f; const float pitch = 74f; // 2026-11-25 DLSS 행을 넣으며 82 → 74(메인 메뉴 패널 높이 안에 들게)
         float labelW = 440f;
 
         refs.ResetPending();
@@ -187,6 +182,8 @@ public static class MenuUIFactory
         AddOptionRow(panel, refs, "해상도", GameSettings.ResolutionLabels(), () => refs.pendingResolution, i => refs.pendingResolution = i, ref y, pitch, labelW, true);
         AddOptionRow(panel, refs, "프레임 제한", GameSettings.FrameRateLabels, () => refs.pendingFrameRate, i => refs.pendingFrameRate = i, ref y, pitch, labelW, true);
         AddOptionRow(panel, refs, "모션 블러", GameSettings.OnOffLabels, () => refs.pendingMotionBlur, i => refs.pendingMotionBlur = i, ref y, pitch, labelW, true);
+        // DLSS: NVIDIA RTX 그래픽 카드에서만 켤 수 있다(2026-11-25 사용자 결정: 기본 끔, 설정에서 고르기)
+        AddOptionRow(panel, refs, "DLSS", GameSettings.DlssLabels(), () => refs.pendingDlss, i => refs.pendingDlss = GameSettings.DlssSupported ? i : 0, ref y, pitch, labelW, true);
         AddSliderRow(panel, refs, "음량", () => refs.pendingVolume, v => refs.pendingVolume = v, ref y, pitch, labelW, v => Mathf.RoundToInt(v * 100) + "%");
         AddSliderRow(panel, refs, "밝기", () => refs.pendingBrightness, v => refs.pendingBrightness = v, ref y, pitch, labelW, v => ((v - 0.5f) * 2f).ToString("+0.0;-0.0;0.0"));
         AddSliderRow(panel, refs, "마우스 감도", () => refs.pendingSensitivity, v => refs.pendingSensitivity = v, ref y, pitch, labelW, v => Mathf.Lerp(0.3f, 3f, v).ToString("0.0") + "x");
@@ -203,7 +200,7 @@ public static class MenuUIFactory
             if (!Application.isPlaying) return;
             GameSettings.ScreenMode = refs.pendingScreenMode;
             GameSettings.ResolutionIndex = refs.pendingResolution;
-            GameSettings.FrameRateIndex = refs.pendingFrameRate; GameSettings.MotionBlurOn = refs.pendingMotionBlur;
+            GameSettings.FrameRateIndex = refs.pendingFrameRate; GameSettings.MotionBlurOn = refs.pendingMotionBlur; GameSettings.DlssOn = refs.pendingDlss;
             GameSettings.Volume01 = refs.pendingVolume; GameSettings.Brightness01 = refs.pendingBrightness; GameSettings.Sensitivity01 = refs.pendingSensitivity;
             GameSettings.Save(); GameSettings.Apply(); RefreshAll(refs);
         });

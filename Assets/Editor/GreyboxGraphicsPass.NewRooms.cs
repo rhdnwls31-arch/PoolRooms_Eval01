@@ -720,7 +720,8 @@ public static partial class GreyboxGraphicsPass
         MakeLight(lights, "TV_Glow", LightType.Point, tvPos + new Vector3(0.7f, 0.9f, 0), Vector3.zero, new Color(0.6f, 0.72f, 1f), 10000f, 6f, LLiving, false, false);
         MakeLight(lights, "Fill", LightType.Point, new Vector3(44.4f, 1.4f, -118f), Vector3.zero, new Color(0.9f, 0.7f, 0.5f), 9000f, 6f, LLiving, false, false);
         MakeLight(lights, "SideboardLamp", LightType.Point, sbLampPos + (VarcoPrefab("LivingRoom", "Sideboard") != null ? new Vector3(0, 1.0f, -1.0f) : new Vector3(0, 0.28f, 0.15f)), Vector3.zero, new Color(1f, 0.62f, 0.32f), 6000f, VarcoPrefab("LivingRoom", "Sideboard") != null ? 4f : 3.5f, LLiving, false, false);
-        var profile = RoomProfile("Living", 6.8f, 0.01f, 0.04f, new Color(0.7f, 0.55f, 0.42f), 40f, new Color(0.02f, 0.015f, 0.01f), 8f, 0f);
+        // 2026-11-25 빌드 플레이: 너무 어두워 문이 안 보였다 → EV 6.8에서 5.9(약 1.9배 밝게)
+        var profile = RoomProfile("Living", 5.9f, 0.01f, 0.04f, new Color(0.7f, 0.55f, 0.42f), 40f, new Color(0.02f, 0.015f, 0.01f), 8f, 0f);
         LocalVolume(gen, "LocalVolume", new Vector3((LvX0 + LvX1) / 2, LvH / 2, (LvZ0 + LvZ1) / 2), new Vector3(LvX1 - LvX0, LvH, LvZ1 - LvZ0), 1f, 125f, profile);
 
         // 찾기 규칙: TV 속 소파에 사람이 앉아 있는데 진짜 소파는 비어 있다. TV를 바라보면 화면이 깜빡이고 사람이 사라지며,

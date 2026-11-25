@@ -83,6 +83,12 @@ public class HiddenEnding : MonoBehaviour
     [Tooltip("마지막 자막을 보여 주는 시간(초).")]
     public float finalLineHold = 3f;
 
+    [Header("끝난 뒤")]
+    [Tooltip("엔딩이 끝나면 이 씬(메인 메뉴)으로 돌아간다(2026-11-25 사용자 결정). 비우면 검은 화면에 머문다.")]
+    public string returnScene = "Scene_MainMenu";
+    [Tooltip("마지막 자막이 사라진 뒤 메인 메뉴로 가기 전 검은 화면으로 쉬는 시간(초).")]
+    public float returnDelay = 1.5f;
+
     /// <summary>지금 단계. 0 = 아직 못 찾음, 1 = 연출 중, 2 = 끝남.</summary>
     public int Stage { get; private set; }
 
@@ -338,6 +344,7 @@ public class HiddenEnding : MonoBehaviour
         {
             yield return StartCoroutine(VhsMontage());
             Stage = 2;
+            yield return ReturnToMenu();
             yield break;
         }
         for (int i = 0; i < montageShots.Length; i++)
@@ -357,6 +364,18 @@ public class HiddenEnding : MonoBehaviour
         // 8) 문구 없이 검은 화면으로 끝난다(showEndPanel이면 예전 엔딩 문구 화면).
         if (showEndPanel && endPanel != null) endPanel.SetActive(true);
         Stage = 2;
+        yield return ReturnToMenu();
+    }
+
+    /// <summary>엔딩이 끝난 검은 화면에서 잠시 쉰 뒤 메인 메뉴(검은 배경)로 돌아간다.</summary>
+    IEnumerator ReturnToMenu()
+    {
+        if (string.IsNullOrEmpty(returnScene)) yield break;
+        yield return new WaitForSecondsRealtime(returnDelay);
+        Time.timeScale = 1f;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+        UnityEngine.SceneManagement.SceneManager.LoadScene(returnScene);
     }
 
     void LookAtFace(Vector3 face) => cam.transform.rotation = Quaternion.LookRotation(face - cam.transform.position);
