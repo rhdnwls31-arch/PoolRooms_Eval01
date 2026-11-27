@@ -91,13 +91,13 @@ public class MenuController : MonoBehaviour
         Refs.quitButton.onClick.AddListener(mode == MenuMode.Main ? Quit : (UnityEngine.Events.UnityAction)ToMainMenu);
         if (mode == MenuMode.Main)
         {
-            Refs.primaryButton.onClick.AddListener(() => { Time.timeScale = 1f; SceneManager.LoadScene(firstSceneName); });
+            // 새로 시작하면 예전 저장은 지운다(방에 들어서면 다시 자동 저장된다)
+            Refs.primaryButton.onClick.AddListener(() => { Time.timeScale = 1f; GameSave.Clear(); SceneManager.LoadScene(firstSceneName); });
             Refs.continueButton.onClick.AddListener(GameSave.Continue);
         }
         else
         {
             Refs.primaryButton.onClick.AddListener(Close);
-            Refs.saveButton.onClick.AddListener(Save);
         }
     }
 
@@ -106,7 +106,7 @@ public class MenuController : MonoBehaviour
     {
         open = true;
         Time.timeScale = 0f; // 이상현상/페이드 등 게임 시간을 모두 멈춘다
-        player = FindFirstObjectByType<PlayerController>();
+        player = FindAnyObjectByType<PlayerController>();
         if (player != null) { playerWasEnabled = player.enabled; player.enabled = false; }
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
@@ -123,12 +123,6 @@ public class MenuController : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
         SetVisible(false);
-    }
-
-    void Save()
-    {
-        bool ok = GameSave.Save(player != null ? player.transform : null);
-        ShowToast(ok ? "저장되었습니다" : "저장할 수 없습니다");
     }
 
     void ToMainMenu()
@@ -159,15 +153,9 @@ public class MenuController : MonoBehaviour
         if (v) { Refs.ResetPending(); MenuUIFactory.RefreshAll(Refs); }
     }
 
-    void ShowToast(string msg)
-    {
-        Refs.toast.text = msg;
-        toastHideAt = Time.unscaledTime + 1.8f;
-    }
-
     static void EnsureEventSystem()
     {
-        if (EventSystem.current != null || FindFirstObjectByType<EventSystem>() != null) return;
+        if (EventSystem.current != null || FindAnyObjectByType<EventSystem>() != null) return;
         var go = new GameObject("EventSystem", typeof(EventSystem));
         var module = go.AddComponent<InputSystemUIInputModule>();
         module.AssignDefaultActions(); // 새 Input System용 기본 UI 액션(클릭/이동)을 연결

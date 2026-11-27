@@ -13,7 +13,6 @@ public class MenuUIRefs
     public GameObject settingsPanel;
     public Button primaryButton;   // Main: 시작하기 / Pause: 계속하기
     public Button continueButton;  // Main: 이어하기 (Pause에서는 null)
-    public Button saveButton;      // Pause: 저장하기 (Main에서는 null)
     public Button settingsButton;
     public Button quitButton;
     public Text toast;
@@ -101,9 +100,16 @@ public static class MenuUIFactory
     static readonly Color Disabled = new Color(1f, 1f, 1f, 0.2f);
     static Font font;
 
-    /// <summary>한글이 나오는 얇은 OS 글꼴(맑은 고딕 Semilight 우선). 설치 글꼴이라 파일을 프로젝트에 넣지 않는다.</summary>
+    /// <summary>메뉴 글꼴 리소스 이름(Assets/Fonts/Pretendard/Resources). SIL OFL 1.1, 라이선스는 Assets/Fonts/Pretendard/LICENSE.txt.</summary>
+    public const string FontResource = "Pretendard-Light";
+
+    /// <summary>
+    /// 메뉴 한글 글꼴. 2026-11-25 사용자 결정: 윈도우 맑은 고딕을 빌려 쓰던 것을 프로젝트에 넣은 Pretendard Light로(어느 PC에서나 같은 모양).
+    /// 파일을 못 찾으면 예전처럼 OS 글꼴로 대신한다.
+    /// </summary>
     public static Font GetFont()
     {
+        if (font == null) font = Resources.Load<Font>(FontResource);
         if (font == null)
             font = Font.CreateDynamicFontFromOSFont(new[] { "Malgun Gothic Semilight", "Malgun Gothic", "NanumGothic", "Arial" }, 32);
         return font;
@@ -122,7 +128,11 @@ public static class MenuUIFactory
         bgImg.raycastTarget = true; // 일시정지 중 뒤 UI가 클릭되지 않게
         refs.root = bg;
 
-        if (mode == MenuMode.Main) BuildMainLayout(bg, refs);
+        if (mode == MenuMode.Main)
+        {
+            MenuBackgroundVideo.Attach(bg); // 2026-11-27: 검은 배경 대신 인게임 영상(맨 아래 층)
+            BuildMainLayout(bg, refs);
+        }
         else BuildPauseLayout(bg, refs);
 
         BuildSettingsPanel(bg, refs, mode);
@@ -133,23 +143,70 @@ public static class MenuUIFactory
         trt.anchorMin = new Vector2(0.5f, 0f); trt.anchorMax = new Vector2(0.5f, 0f);
         trt.pivot = new Vector2(0.5f, 0f); trt.anchoredPosition = new Vector2(0, 60); trt.sizeDelta = new Vector2(900, 50);
         refs.toast.raycastTarget = false;
+
+        // 메인: 영상·글자 모두 TV 화면 안에 있는 것처럼 둥근 모서리·어두운 가장자리를 맨 위에 덮는다
+        if (mode == MenuMode.Main) MenuBackgroundVideo.AttachTvFrame(bg);
         return refs;
     }
 
-    // ---- 메인: 오른쪽 위 메뉴, 왼쪽 아래 제목 ---------------------------------
+    // ---- 메인: 위 가운데 제목, 오른쪽 가운데 메뉴 (2026-11-27 사용자 스케치) ----------
+    // 제목 모양은 커버 이미지를 따른다: 얇은 흰 글자, 아주 넓은 자간, 옅은 빛 번짐과 빨강/청록 색 어긋남(CRT 화면 위 글자처럼).
+    const string TitleText = "DEPTH";
+    const int TitleSize = 84;              // 글자 크기(1920x1080 기준)
+    const float TitleLetterPitch = 140f;   // 글자 중심 사이 간격
+    const float TitleY = -150f;            // 화면 위에서 글자 중심까지
+    const float TitleFringe = 2f;          // 빨강/청록 어긋남(px). 배경 영상 위에서 3은 너무 셌다(2026-11-27)
+    const float TitleGlowRadius = 4f;      // 빛 번짐 반경(px)
+
     static void BuildMainLayout(RectTransform parent, MenuUIRefs refs)
     {
-        const float top = -110f, pitch = 76f, right = -190f;
-        refs.primaryButton = MenuItem(parent, "시작하기", new Vector2(1, 1), new Vector2(right, top), TextAnchor.MiddleRight, 42, refs);
-        refs.continueButton = MenuItem(parent, "이어하기", new Vector2(1, 1), new Vector2(right, top - pitch), TextAnchor.MiddleRight, 42, refs);
-        refs.settingsButton = MenuItem(parent, "설정", new Vector2(1, 1), new Vector2(right, top - pitch * 2), TextAnchor.MiddleRight, 42, refs);
-        refs.quitButton = MenuItem(parent, "종료하기", new Vector2(1, 1), new Vector2(right, top - pitch * 3), TextAnchor.MiddleRight, 42, refs);
+        // 메뉴 묶음의 가운데가 화면 높이의 36.5%(아래 기준)에 오도록 — 스케치의 오른쪽 가운데 동그라미
+        const float pitch = 76f, right = -190f;
+        float top = (0.365f - 0.5f) * 1080f + pitch * 2f;
+        var anchor = new Vector2(1, 0.5f);
+        refs.primaryButton = MenuItem(parent, "시작하기", anchor, new Vector2(right, top), TextAnchor.MiddleRight, 42, refs);
+        refs.continueButton = MenuItem(parent, "이어하기", anchor, new Vector2(right, top - pitch), TextAnchor.MiddleRight, 42, refs);
+        refs.settingsButton = MenuItem(parent, "설정", anchor, new Vector2(right, top - pitch * 2), TextAnchor.MiddleRight, 42, refs);
+        refs.quitButton = MenuItem(parent, "종료하기", anchor, new Vector2(right, top - pitch * 3), TextAnchor.MiddleRight, 42, refs);
 
-        var title = NewText("Title", parent, "DEPTH", 150, Bright, TextAnchor.LowerLeft);
-        var rt = title.rectTransform;
-        rt.anchorMin = rt.anchorMax = new Vector2(0, 0); rt.pivot = new Vector2(0, 0);
-        rt.anchoredPosition = new Vector2(120, 110); rt.sizeDelta = new Vector2(1100, 190);
-        title.raycastTarget = false;
+        BuildTitle(parent);
+    }
+
+    /// <summary>위 가운데 제목. 글자마다 따로 놓아 자간을 넓히고, 빛 번짐·색 어긋남은 옅은 사본을 겹쳐 만든다.</summary>
+    static void BuildTitle(RectTransform parent)
+    {
+        var root = NewRect("Title", parent);
+        root.anchorMin = root.anchorMax = new Vector2(0.5f, 1f); root.pivot = new Vector2(0.5f, 0.5f);
+        root.anchoredPosition = new Vector2(0, TitleY); root.sizeDelta = new Vector2(TitleLetterPitch * TitleText.Length, TitleSize * 1.6f);
+
+        var glow = new Color(0.75f, 0.95f, 1f, 0.07f);
+        var red = new Color(1f, 0.25f, 0.3f, 0.45f);
+        var cyan = new Color(0.2f, 0.9f, 1f, 0.45f);
+        float x0 = -TitleLetterPitch * (TitleText.Length - 1) * 0.5f;
+        for (int i = 0; i < TitleText.Length; i++)
+        {
+            var letter = NewRect("Letter_" + TitleText[i], root);
+            letter.anchorMin = letter.anchorMax = new Vector2(0.5f, 0.5f);
+            letter.anchoredPosition = new Vector2(x0 + TitleLetterPitch * i, 0); letter.sizeDelta = new Vector2(TitleLetterPitch, TitleSize * 1.6f);
+            string s = TitleText[i].ToString();
+            // 빛 번짐: 둘레 8방향에 아주 옅은 사본
+            for (int k = 0; k < 8; k++)
+            {
+                float a = k * Mathf.PI / 4f;
+                TitleLayer(letter, s, glow, new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * TitleGlowRadius);
+            }
+            TitleLayer(letter, s, red, new Vector2(-TitleFringe, 0));
+            TitleLayer(letter, s, cyan, new Vector2(TitleFringe, 0));
+            TitleLayer(letter, s, Bright, Vector2.zero);
+        }
+    }
+
+    static void TitleLayer(RectTransform letter, string s, Color c, Vector2 offset)
+    {
+        var t = NewText("L", letter, s, TitleSize, c, TextAnchor.MiddleCenter);
+        Stretch(t.rectTransform);
+        t.rectTransform.anchoredPosition = offset;
+        t.raycastTarget = false;
     }
 
     // ---- 일시정지: 왼쪽 메뉴 ----------------------------------------------------
@@ -157,9 +214,9 @@ public static class MenuUIFactory
     {
         const float top = -70f, pitch = 64f, left = 90f;
         refs.primaryButton = MenuItem(parent, "계속하기", new Vector2(0, 1), new Vector2(left, top), TextAnchor.MiddleLeft, 34, refs);
-        refs.saveButton = MenuItem(parent, "저장하기", new Vector2(0, 1), new Vector2(left, top - pitch), TextAnchor.MiddleLeft, 34, refs);
-        refs.settingsButton = MenuItem(parent, "설정", new Vector2(0, 1), new Vector2(left, top - pitch * 2), TextAnchor.MiddleLeft, 34, refs);
-        refs.quitButton = MenuItem(parent, "메인으로 나가기", new Vector2(0, 1), new Vector2(left, top - pitch * 3), TextAnchor.MiddleLeft, 34, refs);
+        // "저장하기"는 2026-11-25 사용자 결정으로 뺐다(방에 들어서면 자동 저장, RoomCheckpoint).
+        refs.settingsButton = MenuItem(parent, "설정", new Vector2(0, 1), new Vector2(left, top - pitch), TextAnchor.MiddleLeft, 34, refs);
+        refs.quitButton = MenuItem(parent, "메인으로 나가기", new Vector2(0, 1), new Vector2(left, top - pitch * 2), TextAnchor.MiddleLeft, 34, refs);
         // 왼쪽 아래 "일시정지" 글자는 2026-11-25 사용자 요청으로 뺐다.
     }
 
@@ -168,10 +225,17 @@ public static class MenuUIFactory
     {
         var panel = NewRect("SettingsPanel", parent);
         // 메인: 왼쪽 중앙(오른쪽 메뉴와 겹치지 않게) / 일시정지: 왼쪽 메뉴 오른쪽 넓은 영역
-        if (mode == MenuMode.Main) { panel.anchorMin = new Vector2(0.05f, 0.27f); panel.anchorMax = new Vector2(0.64f, 0.92f); }
+        // 메인 패널 위쪽은 위 가운데 제목(2026-11-27)을 피해 0.80까지만
+        if (mode == MenuMode.Main) { panel.anchorMin = new Vector2(0.05f, 0.10f); panel.anchorMax = new Vector2(0.64f, 0.80f); }
         else { panel.anchorMin = new Vector2(0.22f, 0.10f); panel.anchorMax = new Vector2(0.96f, 0.90f); }
         panel.offsetMin = panel.offsetMax = Vector2.zero;
         refs.settingsPanel = panel.gameObject;
+        if (mode == MenuMode.Main)
+        {
+            // 2026-11-27 배경 영상 위에서 설정 글자가 읽히도록 반투명 검은 판을 깐다
+            var back = panel.gameObject.AddComponent<Image>();
+            back.color = new Color(0f, 0f, 0f, 0.7f);
+        }
 
         float y = -40f; const float pitch = 74f; // 2026-11-25 DLSS 행을 넣으며 82 → 74(메인 메뉴 패널 높이 안에 들게)
         float labelW = 440f;
@@ -320,7 +384,9 @@ public static class MenuUIFactory
         c.normalColor = new Color(1, 1, 1, 0.78f); c.highlightedColor = Color.white; c.pressedColor = new Color(1, 1, 1, 0.6f);
         c.selectedColor = new Color(1, 1, 1, 0.78f); c.disabledColor = Disabled; c.fadeDuration = 0.08f;
         b.colors = c;
-        t.color = Color.white; // ColorTint는 그래픽 색에 곱해진다
+        t.color = Color.white; // ColorTint는 그래픽 색에 곱해진다        // 2026-11-27 배경 영상 위에서도 읽히게 옅은 그림자
+        var sh = t.gameObject.AddComponent<Shadow>();
+        sh.effectColor = new Color(0f, 0f, 0f, 0.55f); sh.effectDistance = new Vector2(2f, -2f);
         t.gameObject.AddComponent<HoverScale>();
         refs.menuButtons.Add(b);
         return b;

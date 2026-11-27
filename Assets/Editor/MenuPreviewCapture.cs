@@ -41,7 +41,7 @@ public static class MenuPreviewCapture
         var camGo = new GameObject("__MenuCapCam");
         var cam = camGo.AddComponent<Camera>();
         cam.fieldOfView = 70f; cam.nearClipPlane = 0.05f; cam.farClipPlane = 300f;
-        if (view == null) { cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = Color.black; cam.cullingMask = -1; /* 캔버스 오브젝트는 Default 레이어 */ }
+        if (view == null) { cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = Color.black; cam.cullingMask = -1; /* 캔버스 오브젝트는 Default 레이어 */ camGo.transform.position = new Vector3(0, -5000f, 0); /* 다른 씬이 열려 있어도 물체가 안 비치게 */ }
         else { cam.clearFlags = CameraClearFlags.Skybox; camGo.transform.position = view[0]; camGo.transform.LookAt(view[1]); }
 
         var rt = new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32);

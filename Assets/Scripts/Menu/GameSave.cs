@@ -3,69 +3,63 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// 가장 단순한 저장/이어하기: 지금 씬 이름과 플레이어 위치·방향을 PlayerPrefs에 한 칸 저장한다.
-/// 스테이지 진행도(주운 아이템 등)는 아직 시스템이 없어서 포함하지 않는다 — 생기면 Data에 필드를 추가.
+/// 저장/이어하기. 2026-11-25 사용자 결정: 방에 들어서면 자동 저장(<see cref="RoomCheckpoint"/>)하고,
+/// 이어하기는 그 방 입구에서 앞 방들을 모두 푼 상태로 시작한다(<see cref="RoomRoute.Restore"/>).
+/// 예전에는 ESC 메뉴 "저장하기"로 위치만 저장해서, 이어하면 앞 방 출구·통로가 처음 상태로 돌아갔다.
 /// </summary>
 public static class GameSave
 {
     [Serializable]
-    class Data { public string scene; public float x, y, z, yaw; public string savedAt; }
+    class Data { public string scene; public int room = -1; public string savedAt; }
 
     const string Key = "save.slot0";
-    static bool pendingLoad;
-    static Data pending;
 
     /// <summary>저장된 게임이 있는가.</summary>
     public static bool Exists => PlayerPrefs.HasKey(Key);
 
+    /// <summary>저장된 방 번호(없으면 -1).</summary>
+    public static int SavedRoom()
+    {
+        var d = Read();
+        return d != null ? d.room : -1;
+    }
+
     /// <summary>저장 시각 문자열(없으면 빈 문자열).</summary>
     public static string SavedAt()
     {
-        if (!Exists) return "";
-        var d = JsonUtility.FromJson<Data>(PlayerPrefs.GetString(Key));
+        var d = Read();
         return d != null ? d.savedAt : "";
     }
 
-    /// <summary>플레이어의 현재 위치로 저장한다. 플레이어가 없으면 false.</summary>
-    public static bool Save(Transform player)
+    /// <summary>방에 들어섰을 때 자동 저장한다.</summary>
+    public static void SaveRoom(string scene, int room)
     {
-        if (player == null) return false;
-        var d = new Data
-        {
-            scene = SceneManager.GetActiveScene().name,
-            x = player.position.x, y = player.position.y, z = player.position.z,
-            yaw = player.eulerAngles.y,
-            savedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
-        };
+        var d = new Data { scene = scene, room = room, savedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm") };
         PlayerPrefs.SetString(Key, JsonUtility.ToJson(d));
         PlayerPrefs.Save();
-        return true;
     }
 
-    /// <summary>저장된 씬을 불러오고, 씬이 열리면 플레이어를 저장 위치로 옮긴다.</summary>
+    /// <summary>저장을 지운다(새로 시작할 때).</summary>
+    public static void Clear()
+    {
+        PlayerPrefs.DeleteKey(Key);
+        PlayerPrefs.Save();
+    }
+
+    /// <summary>저장된 씬을 열고, 저장된 방의 시작 상태로 맞춘다.</summary>
     public static void Continue()
     {
-        if (!Exists) return;
-        pending = JsonUtility.FromJson<Data>(PlayerPrefs.GetString(Key));
-        if (pending == null || string.IsNullOrEmpty(pending.scene)) return;
-        pendingLoad = true;
+        var d = Read();
+        if (d == null || string.IsNullOrEmpty(d.scene)) return;
+        RoomCheckpoint.ContinueFrom(d.room);
         Time.timeScale = 1f;
-        SceneManager.LoadScene(pending.scene);
+        SceneManager.LoadScene(d.scene);
     }
 
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-    static void Hook() { SceneManager.sceneLoaded += OnSceneLoaded; }
-
-    static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    static Data Read()
     {
-        if (!pendingLoad || pending == null) return;
-        pendingLoad = false;
-        var player = GameObject.FindGameObjectWithTag("Player");
-        if (player == null) return;
-        var cc = player.GetComponent<CharacterController>();
-        if (cc != null) cc.enabled = false; // 켜진 채로는 위치를 옮겨도 밀려난다
-        player.transform.position = new Vector3(pending.x, pending.y, pending.z);
-        player.transform.rotation = Quaternion.Euler(0f, pending.yaw, 0f);
-        if (cc != null) cc.enabled = true;
+        if (!Exists) return null;
+        try { return JsonUtility.FromJson<Data>(PlayerPrefs.GetString(Key)); }
+        catch (ArgumentException) { return null; }
     }
 }
