@@ -92,6 +92,11 @@ public class BlueRoomDoor : MonoBehaviour
         if (cam == null) cam = Camera.main;
         if (cam == null) return;
 
+        if (!knocked && Stage == 0 && knockZone.size != Vector3.zero && knockZone.Contains(player.position))
+        {
+            knocked = true;
+            Invoke(nameof(Knock), knockDelay);
+        }
         if (Stage <= 2) UpdatePeek();
         if (Stage == 2 && !Peeking && overlayAlpha <= 0f)
         {
@@ -176,6 +181,8 @@ public class BlueRoomDoor : MonoBehaviour
         Peeking = true;
         peekStart = Time.time;
         if (figure != null) figure.SetActive(Stage == 0);
+        // 2026-11-27 사운드: 인외가 렌즈 너머에 있는 동안만 기이한 소리
+        if (Stage == 0) GameAudio.Play(Cue.PeepEerie, viewPoint.position);
         if (disc != null && overlay != null)
         {
             var pr = ((RectTransform)overlay.transform).rect;
@@ -187,15 +194,26 @@ public class BlueRoomDoor : MonoBehaviour
     void EndPeek()
     {
         Peeking = false;
+        // 2026-11-27 사운드: 렌즈에서 눈을 떼고 조금 뒤, 문 너머(방금 들여다보던 그것)가 노크한다
+        GameAudio.Stop(Cue.PeepEerie, 0.4f);
         if (Stage == 0) Stage = 1;
         else if (Stage == 1) Stage = 2;
         // 인외는 시야가 완전히 풀린 뒤(Update에서, 화면 밖에서) 사라진다. 다음에 들여다볼 때 이미 없다.
     }
 
+    [Tooltip("복도에 들어온 뒤 노크가 들리기까지(초).")]
+    public float knockDelay = 0.3f;
+    [Tooltip("이 범위(복도)에 처음 들어오면 문 너머에서 한 번 노크한다(2026-11-27 사용자: 복도 진입하자마자 똑똑, 그다음엔 안 난다).")]
+    public Bounds knockZone;
+    bool knocked;
+
+    void Knock() => GameAudio.Play(Cue.Knock, viewPoint.position);
+
     void Open()
     {
         Stage = 3;
         openT = 0f; // 문짝은 Update에서 openDuration 동안 돌아간다(앞쪽 = 플레이어 반대쪽으로 열린다)
+        GameAudio.Play(Cue.DoorCreak, leafHinge != null ? leafHinge.position + Vector3.up : viewPoint.position); // 2026-11-27 사운드
         if (leafBlocker != null) leafBlocker.enabled = false;
     }
 
@@ -211,11 +229,14 @@ public class BlueRoomDoor : MonoBehaviour
         if (cc != null) cc.enabled = true;
         if (arrivalDoor != null) arrivalDoor.SetActive(true);
         Stage = 4;
+        GameAudio.Play(Cue.Transition, pos); // 2026-11-27 사운드: 막 전환
     }
 
     /// <summary>처음 상태(닫힌 문, 인외 숨김, 도착 문 숨김)로 되돌린다. 개발용 방 옮기기에서도 쓴다.</summary>
     public void ResetDoor()
     {
+        CancelInvoke(nameof(Knock));
+        knocked = false;
         Stage = 0;
         Peeking = false;
         overlayAlpha = 0f;

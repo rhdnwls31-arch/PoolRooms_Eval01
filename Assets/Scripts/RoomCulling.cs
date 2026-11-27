@@ -16,6 +16,10 @@ public class RoomCulling : MonoBehaviour
     public float cullDistance = 30f;
     [Tooltip("묶음에서 뺄 맨 위 오브젝트 이름(플레이어, 화면 UI, 볼륨 등 그릴 것이 없는 것).")]
     public string[] skipRoots = { "Player", "FadeCanvas", "PauseUI", "Lighting" };
+    [Tooltip("멀리서도 보이는 방(넓은 마당 너머 출구 등). 이 방들은 farDistance까지 그린다.")]
+    public string[] farRoots = new string[0];
+    [Tooltip("farRoots 방을 그리는 거리(m).")]
+    public float farDistance = 90f;
 
     /// <summary>켜져 있는지(점검용 스위치).</summary>
     public static bool Active = true;
@@ -27,6 +31,7 @@ public class RoomCulling : MonoBehaviour
         public Renderer[] renderers;
         public WaterSurface[] waters;
         public bool hidden;
+        public float distance;
         public readonly List<WaterSurface> disabledWaters = new List<WaterSurface>();
     }
 
@@ -51,7 +56,8 @@ public class RoomCulling : MonoBehaviour
             var ws = root.GetComponentsInChildren<WaterSurface>(true);
             if (rs.Length == 0 && ws.Length == 0) continue;
             if (!TryBounds(rs, ws, out var b)) continue;
-            groups.Add(new Group { name = root.name, bounds = b, renderers = rs, waters = ws });
+            float dist = System.Array.IndexOf(farRoots, root.name) >= 0 ? Mathf.Max(cullDistance, farDistance) : cullDistance;
+            groups.Add(new Group { name = root.name, bounds = b, renderers = rs, waters = ws, distance = dist });
         }
     }
 
@@ -86,7 +92,7 @@ public class RoomCulling : MonoBehaviour
         int hiddenNow = 0;
         foreach (var g in groups)
         {
-            bool hide = Active && !ShouldDraw(g.bounds, eye, cullDistance);
+            bool hide = Active && !ShouldDraw(g.bounds, eye, g.distance);
             if (hide) hiddenNow++;
             if (hide == g.hidden) continue;
             g.hidden = hide;

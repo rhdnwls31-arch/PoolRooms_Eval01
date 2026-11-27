@@ -47,10 +47,13 @@ public class MenuController : MonoBehaviour
         canvas = CreateCanvas(transform);
         Refs = MenuUIFactory.Build((RectTransform)canvas.transform, mode);
         Wire();
+
     }
 
     void Start()
     {
+        // 2026-11-27 사운드: 메인 메뉴 주제곡·영상 환경음, 시작하기 소리(배경 영상이 Awake에서 만들어진 뒤라 Start에서)
+        if (mode == MenuMode.Main) MenuAudio.Attach(gameObject, canvas.transform, true, Refs.primaryButton);
         Time.timeScale = 1f;
         GameSettings.Apply();
         if (mode == MenuMode.Main)

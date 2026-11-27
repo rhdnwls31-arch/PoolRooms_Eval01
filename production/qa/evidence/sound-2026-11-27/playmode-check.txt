@@ -1,0 +1,23 @@
+2026-11-27 사운드 연결 Play 확인 (에디터, Scene_DescentGreybox)
+EditMode 테스트: 40 통과 / 0 실패 (GameAudioTests 12개 추가)
+
+방 시작 자리 -> 소리 범위(바닥, 환경음)
+0 인트로 메인    -> Zone_Intro Tile amb_pool
+1 수영장 홀      -> Zone_PoolHall Tile amb_pool
+2 금 간 복도     -> Zone_Crack Tile amb_corridor
+3 잠긴 샤워실    -> Zone_Shower Tile amb_shower (FindGate_Shower 열리면 크기 0.9 -> 0)
+4 노란 방        -> Zone_Yellow Carpet amb_yellow
+5 꽃무늬 복도    -> Zone_Corridor Wood amb_corridor
+6 밤의 거실      -> Zone_Living Carpet amb_living
+7 파란 침실      -> Zone_Bedroom Carpet (무음)
+  목각인형 화실  -> Zone_DollRoom Wood (무음)
+8 컴퓨터 속      -> Zone_Computer Carpet amb_computer
+9 가라앉은 도시  -> Zone_City Tile amb_city
+10 천사 방       -> Zone_Angel Stone amb_sky
+11 하늘 계단     -> Zone_SkyStairs Stone amb_sky
+12 마지막 수영장 -> Zone_FinalPool Tile amb_pool (인트로와 같은 물소리)
+
+한 번 나는 소리(다듬은 길이): found 2.87s, hint 1.27s, exit_open 1.66s, doll_step 2.50s(원본 최대 0.08 -> 0.89로 키움),
+doll_final 4.42s, knock 4.84s, fall 0.50s, flicker 3.50s, transition 2.50s, ending_swell 4.08s
+발소리 조각: tile 10, carpet 4, wood 9, stone 3
+콘솔 오류 0

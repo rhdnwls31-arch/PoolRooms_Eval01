@@ -36,6 +36,12 @@ public class GazeTarget : MonoBehaviour
     public float hintInterval = 4f;
     [Tooltip("힌트로 꺼져 있는 시간(초).")]
     public float hintFlash = 0.12f;
+    [Tooltip("hintAfter가 지나도 못 찾으면 이상한 점 쪽에서 아주 작은 소리(오르골 한 음)를 낸다(2026-11-27 사운드 단계). 깜빡임 없이 소리로만 알린다.")]
+    public bool hintSound = true;
+    [Tooltip("찾았을 때 찾음 소리를 낼지(2026-11-27: 마지막 마네킹은 소리 없이).")]
+    public bool foundSound = true;
+    [Tooltip("힌트 소리 간격(초).")]
+    public float hintSoundInterval = 30f;
 
     [Header("화면 밖에서 바뀌기(선택)")]
     [Tooltip("바뀔 때 끄는 것.")]
@@ -84,7 +90,7 @@ public class GazeTarget : MonoBehaviour
     /// <summary>겨눠야 하는 판정 범위의 가운데(개발용 점검에서 쓴다).</summary>
     public Vector3 GazeCenter => CurrentBounds().center;
 
-    float dwell, unseen, roomTime, hintClock, preview;
+    float dwell, unseen, roomTime, hintClock, preview, hintSoundClock;
     bool seen, hintOff;
     Vector3 dropStart;
     Camera cam;
@@ -202,14 +208,26 @@ public class GazeTarget : MonoBehaviour
 
     void UpdateHint(Vector3 playerPos)
     {
-        if (!useHint) return; // 2026-11-25 사용자 결정: 힌트 깜빡임 넣지 않음
-        if (!roomBounds.Contains(playerPos)) { if (hintOff) SetHintVisible(true); return; }
+        if (!useHint && !hintSound) return;
+        if (roomBounds.size == Vector3.zero || !roomBounds.Contains(playerPos)) { if (hintOff) SetHintVisible(true); return; }
         roomTime += Time.deltaTime;
         if (roomTime < hintAfter) return;
+        if (hintSound && HintSoundDue(ref hintSoundClock, Time.deltaTime, hintSoundInterval))
+            GameAudio.Play(Cue.Hint, CurrentBounds().center);
+        if (!useHint) return; // 2026-11-25 사용자 결정: 힌트 깜빡임 넣지 않음
         hintClock += Time.deltaTime;
         float t = Mathf.Repeat(hintClock, hintInterval);
         bool off = t < hintFlash;
         if (off != hintOff) SetHintVisible(!off);
+    }
+
+    /// <summary>힌트 소리를 낼 때인지. 남은 시간(clock)을 줄이고, 0 이하가 되면 interval로 되돌리며 참. 처음(0)에는 바로 참.</summary>
+    public static bool HintSoundDue(ref float clock, float dt, float interval)
+    {
+        clock -= dt;
+        if (clock > 0f) return false;
+        clock = Mathf.Max(1f, interval);
+        return true;
     }
 
     void SetHintVisible(bool visible)
@@ -228,7 +246,10 @@ public class GazeTarget : MonoBehaviour
     IEnumerator OnFound()
     {
         Found = true;
+        if (foundSound) GameAudio.Play(Cue.Found, CurrentBounds().center);
         float start = Time.time;
+        // 2026-11-27 2차 피드백: 기다리는 동안 원래 모습으로 되돌리면 "바뀌려다 돌아온다"로 보였다 → 되돌리지 않는다(옅어진 데서 이어서 바뀐다).
+        // 거실 TV는 기다림(hideDelay)을 0으로 해서 찾자마자 밝은 화면으로 바뀐다(에디터 패스).
         if (hideDelay <= 0f && !changeWhenUnseen) StartCoroutine(ApplyFound());
         if (notifyDelay <= 0f && gate != null) gate.MarkVisited(id);
 
@@ -305,7 +326,7 @@ public class GazeTarget : MonoBehaviour
         StopAllCoroutines();
         RestoreFades();
         Found = false; Swapped = false; seen = false;
-        dwell = unseen = roomTime = hintClock = preview = 0f;
+        dwell = unseen = roomTime = hintClock = preview = hintSoundClock = 0f;
         SetHintVisible(true);
         if (dropTarget != null) dropTarget.localPosition = dropStart;
         foreach (var r in blinkRenderers) if (r != null) r.enabled = true;

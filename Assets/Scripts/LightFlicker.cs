@@ -20,6 +20,9 @@ public class LightFlicker : MonoBehaviour
     /// <summary>등마다 다르게 깜빡이도록 쓰는 난수 시드.</summary>
     public int seed = 1;
 
+    static float nextSoundAt; // 모든 등이 함께 쓴다
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics() => nextSoundAt = 0f; // 에디터가 도메인을 다시 불러오지 않아 지난 Play 값이 남지 않게
     System.Random rng;
     float next;
     int toggles;
@@ -35,7 +38,16 @@ public class LightFlicker : MonoBehaviour
     void Update()
     {
         if (Time.time < next) return;
-        if (toggles <= 0) toggles = rng.Next(blinks.x, blinks.y + 1) * 2; // 켜짐·꺼짐 한 쌍씩이라 끝은 꺼짐
+        if (toggles <= 0)
+        {
+            toggles = rng.Next(blinks.x, blinks.y + 1) * 2; // 켜짐·꺼짐 한 쌍씩이라 끝은 꺼짐
+            // 2026-11-27 사운드: 깜빡임 묶음이 시작될 때 지직 소리. 여러 등이 겹쳐 울리지 않게 소리 길이만큼은 한 번만.
+            if (Time.time >= nextSoundAt)
+            {
+                GameAudio.Play(Cue.Flicker, lamp != null ? lamp.transform.position : transform.position);
+                nextSoundAt = Time.time + Mathf.Max(1f, GameAudio.Length(Cue.Flicker));
+            }
+        }
         on = !on;
         Set(on);
         toggles--;

@@ -88,6 +88,7 @@ public class RevealWhenExplored : MonoBehaviour
     public void Reveal(bool instant = false)
     {
         Revealed = true;
+        if (!instant) GameAudio.Play(Cue.ExitOpen, wallBounds.center); // 2026-11-27 사운드: 벽이 걷히는 소리
         foreach (var go in showOnReveal) if (go != null) go.SetActive(true);
         if (openTime > 0f && !instant && isActiveAndEnabled) { StartCoroutine(Open()); return; }
         if (wall != null) wall.SetActive(false);

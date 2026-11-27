@@ -80,6 +80,7 @@ public class WanderCursor : MonoBehaviour
         if (visual == null) yield break;
         for (int c = 0; c < count; c++)
         {
+            GameAudio.Play(Cue.Click, transform.position); // 2026-11-27 사운드
             visual.localScale = Vector3.one * 0.82f;
             yield return new WaitForSeconds(0.12f);
             visual.localScale = Vector3.one;

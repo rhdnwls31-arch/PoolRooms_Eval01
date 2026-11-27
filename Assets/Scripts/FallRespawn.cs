@@ -61,6 +61,9 @@ public class FallRespawn : MonoBehaviour
             yield return null;
         }
         cover.color = Color.black;
+        // 2026-11-27 사운드: 화면이 다 검어지는 순간 쓰러지는 소리(귀 옆)
+        GameAudio.Stop(Cue.FallWind, 0.3f);
+        GameAudio.Play(Cue.Fall, player.position);
 
         var pc = player.GetComponent<PlayerController>();
         var cc = player.GetComponent<CharacterController>();

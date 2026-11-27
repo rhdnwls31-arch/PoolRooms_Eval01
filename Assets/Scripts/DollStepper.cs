@@ -107,7 +107,13 @@ public class DollStepper : MonoBehaviour
         if (cam == null) cam = Camera.main;
         if (cam == null) return;
         sinceStep += Time.deltaTime;
-        if (AnyInView()) { hiddenFor = 0f; seenSinceStep = true; return; }
+        if (AnyInView())
+        {
+            hiddenFor = 0f; seenSinceStep = true;
+            // 2026-11-27 피드백: 다시 앞을 보면 움직이던 소리가 멎는다(보는 동안엔 움직이지 않으니까)
+            if (stepSound == null || stepSound.clip == null) GameAudio.Stop(Cue.DollStep, 0.15f);
+            return;
+        }
         hiddenFor += Time.deltaTime;
         // 돌아볼 때마다 한 단계: 지난 단계 뒤에 인형을 한 번은 다시 봐야 다음 단계로 간다(계속 등 돌리고 있으면 한 단계만)
         if (seenSinceStep && hiddenFor >= hiddenTime && sinceStep >= minInterval) TryStep();
@@ -149,9 +155,11 @@ public class DollStepper : MonoBehaviour
         {
             if (doorClosed != null) doorClosed.SetActive(false);
             if (doorOpen != null) doorOpen.SetActive(true);
+            if (doorClosed != null) GameAudio.Play(Cue.DoorCreak, doorClosed.transform.position + Vector3.up); // 2026-11-27 사운드: 문이 열린다
         }
         // 소리 자리(§8): 인형이 움직인 순간, 등 뒤 인형 쪽에서
         if (stepSound != null && stepSound.clip != null) stepSound.Play();
+        else GameAudio.Play(Stage == LastStage ? Cue.DollFinal : Cue.DollStep, DollCenter()); // 2026-11-27 사운드: 마지막엔 여럿이 한꺼번에
         return true;
     }
 
@@ -160,6 +168,14 @@ public class DollStepper : MonoBehaviour
     /// </summary>
     public static float Approach(float current, float target, float player, float keepAway)
         => Mathf.Min(current, Mathf.Max(target, player + keepAway));
+
+    /// <summary>인형들 가운데(소리 낼 자리). 인형이 없으면 이 오브젝트 자리.</summary>
+    Vector3 DollCenter()
+    {
+        Vector3 sum = Vector3.zero; int n = 0;
+        foreach (var d in dolls) if (d != null && d.root != null) { sum += d.root.position; n++; }
+        return n > 0 ? sum / n + Vector3.up * 1f : transform.position;
+    }
 
     static Vector2 Spot(Doll d, int stage) => d.spots.Length == 0 ? Vector2.zero : d.spots[Mathf.Min(stage, d.spots.Length - 1)];
     static float Yaw(Doll d, int stage) => d.yaw.Length == 0 ? 180f : d.yaw[Mathf.Min(stage, d.yaw.Length - 1)];

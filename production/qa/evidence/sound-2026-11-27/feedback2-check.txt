@@ -1,0 +1,23 @@
+2026-11-27 사운드 2차 피드백 확인 (에디터 Play, 숫자)
+- Play 시작 씬: Scene_MainMenu (PlayFromMainMenu, 메뉴 DEPTH 5m/Play From Main Menu로 끔/켬)
+- 멈춘 상태 발소리: cc.Move 뒤 조작을 끄면 cc.velocity가 (0,0,-9.71)로 남음(예전 코드는 계속 걸음 소리) → 위치 변화 기준으로 바꾼 뒤 발소리 재생 없음
+- 목각인형 소리 멈춤: DollStep 재생 중 GameAudio.Stop(0.15s) → 다음 확인 때 재생 안 함
+- 터널(0,1.7,-30)에서: GB_00_IntroExit 꺼진 렌더러 0/10, GB_01_PoolHall 0/147 (전에는 39.6m·41.6m라 30m 기준으로 안 그려짐)
+- 파란 침실 복도(52,0,-134.7): 범위 Zone_BlueCorridor, 바닥 Carpet, 들어가자 노크 재생
+- 가라앉은 도시: 물 차오르기 전 환경음 목표 크기 0 (물 오브젝트 Flood 켜지면 0.5)
+- 샤워실 바닥 Wet(젖은 발소리 10조각), 나머지 타일은 마른 타일 소리(tile_steps 넣기 전까지 돌바닥 소리로 대신)
+- 천장(GB_Hall_EntryCeiling, GB_Yellow_CeilingTile): 매끈함 0.5→0.12, 화면 반사(SSR) 끔
+- EditMode 테스트 43/43 통과
+- 아직 안 넣은 새 원본(사용자 선택 대기): tile_steps, door_thud, creepy_hum, mouse_click, night_room, flood_loop
+
+3차 피드백 확인 (같은 날)
+- 소리 패스 결과: 타일 발소리 15조각(tile_steps 원본 2개에서), 젖은 10, 걸음 거리 걷기 1.45m·뛰기 2.05m(초당 약 2 / 2.7걸음)
+- 노크: 눌러 키움(drive 3) + 크기 1.0, 덜 멀어지게(3D 0.35)
+- 막 전환(순간이동) 소리 끔: 물 없는 방에서 들리던 물거품 소리의 정체(underwater_whoosh)
+- 거실 TV hideDelay 6→0, 기다리는 동안 되돌리던 동작 뺌
+- 카메라 안티에일리어싱 SMAA → TAA(High, 선명 0.6), 천장 텍스처 축소 필터 Kaiser
+- 물: 처음 수영장 (0,-1.2,2)에 두면 InWater=참(수면 -0.23, 바닥 -0.9). 카메라 물속이면 소리 먹먹(저역 통과 900Hz)
+- 가라앉은 도시 물 차오름 크기 0.5→0.2
+- 메뉴: MenuAudio 붙음(버튼 틱·클릭·시작 소리, 메인은 주제곡+영상 환경음+브라운관 소리). 파일은 Resources/MenuAudio
+- EditMode 테스트 47/47
+- 사용자 선택 대기 원본: stone_slam, bedroom_night, pool_step, door_creak, tv_switch(이름 바꿈), vhs_loop, falling_wind, button_tick, ui_confirm, menu_start(이름 바꿈), outdoor_pool(이름 바꿈), crt_whine, menu_theme(이름 바꿈)

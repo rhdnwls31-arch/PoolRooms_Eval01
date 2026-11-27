@@ -141,6 +141,10 @@ public class HiddenEnding : MonoBehaviour
         noiseAmount = 1f; // 하얗게 터진 화면에서 바로 지지직거리는 TV로 넘어간다
         tvBlack.color = new Color(0f, 0f, 0f, 0f);
         var ticker = StartCoroutine(TvTick());
+        // 2026-11-27 사운드: 테이프 도는 소리 + 주제곡(메뉴로 돌아갈 때까지), 방이 바뀔 때마다 채널 지직
+        GameAudio.StartLoop(Cue.VhsHiss, cam.transform.position);
+        GameAudio.PlayMusic(3f);
+        GameAudio.Play(Cue.TvSwitch, cam.transform.position);
         for (int i = 0; i < montageShots.Length; i++)
         {
             var shot = montageShots[i];
@@ -151,12 +155,14 @@ public class HiddenEnding : MonoBehaviour
             yield return new WaitForSeconds(Mathf.Max(0f, shotTime - staticTime * 2f));
             if (i == montageShots.Length - 1) break;
             // 화면 → 지지직(다음 방)
+            GameAudio.Play(Cue.TvSwitch, cam.transform.position);
             yield return Ramp(v => noiseAmount = v, noiseBase, 1f, staticTime);
         }
         // 마지막 방은 검게 천천히 사라진다. 노이즈도 같이 꺼진다.
         // UI는 선형 색공간에서 섞이므로 보이는 밝기가 고르게 줄도록 알파 = 1 - (1-v)^2.2.
         yield return Ramp(v => { tvBlack.color = new Color(0f, 0f, 0f, 1f - Mathf.Pow(1f - v, 2.2f)); noiseAmount = noiseBase * (1f - v); }, 0f, 1f, tvFinalFade);
         StopCoroutine(ticker);
+        GameAudio.StopLoop(Cue.VhsHiss, 1.5f);
         tvScreen.enabled = false; tvNoise.enabled = false; tvBand.enabled = false; tvCounter.enabled = false;
         yield return new WaitForSeconds(0.8f);
         var text = Subtitle.Create(tvCanvas.transform, "FinalSubtitle");
@@ -306,6 +312,7 @@ public class HiddenEnding : MonoBehaviour
         for (float t = 0f; t < stareHold; t += Time.deltaTime) { LookAtFace(Face()); yield return null; }
 
         // 3) 빨려 들어간다: 시야각이 좁아지고 가장자리가 조여 온다. 끝으로 갈수록 빨라진다.
+        GameAudio.Play(Cue.EndingSwell, cam.transform.position); // 2026-11-27 사운드: 점점 밝아지며 차오르는 소리(하얗게 터질 때까지)
         for (float t = 0f; t < pullTime; t += Time.deltaTime)
         {
             float k = t / pullTime, e = k * k * k;

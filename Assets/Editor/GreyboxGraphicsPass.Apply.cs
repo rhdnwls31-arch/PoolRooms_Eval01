@@ -53,6 +53,7 @@ public static partial class GreyboxGraphicsPass
         SwapDistantMannequin(); // 2026-11-24 수영장 홀 끝 마네킹 → VARCO 수영모 인외(모델이 오면)
         SwapPoolLoungers(); // 2026-11-20 VARCO 선베드: 인트로·같은 수영장 더미를 바꾼다(같은 수영장 복사본이 만들어진 뒤라 맨 끝)
         ApplyPerformance(); // 2026-11-25 성능 단계: DLSS 등(Perf1125.cs)
+        ApplyAudio(); // 2026-11-27 사운드 단계: VARCO 소리 다듬기·연결(Audio1127.cs)
         AssetDatabase.SaveAssets();
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);

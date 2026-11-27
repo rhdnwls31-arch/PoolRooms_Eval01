@@ -21,6 +21,9 @@ public class MenuBackgroundVideo : MonoBehaviour
     public const float DimAlpha = 0.28f;
     const int TexW = 1920, TexH = 1080;
 
+    /// <summary>지금 메뉴 배경으로 도는 영상 이름(없으면 null).</summary>
+    public static string CurrentClipName { get; private set; }
+
     readonly VideoPlayer[] players = new VideoPlayer[2];
     readonly RawImage[] images = new RawImage[2];
     readonly RenderTexture[] targets = new RenderTexture[2];
@@ -84,6 +87,7 @@ public class MenuBackgroundVideo : MonoBehaviour
         if (clips.Length == 0) { Debug.LogWarning($"[MenuBackgroundVideo] Resources/{ResourceFolder}에 영상이 없다."); enabled = false; return; }
         Array.Sort(clips, (a, b) => string.CompareOrdinal(a.name, b.name));
         var clip = clips[UnityEngine.Random.Range(0, clips.Length)]; // 메뉴를 열 때마다 하나를 무작위로
+        CurrentClipName = clip.name; // 메뉴 환경음이 영상에 맞춰 고른다(MenuAudio)
 
         for (int i = 0; i < 2; i++)
         {

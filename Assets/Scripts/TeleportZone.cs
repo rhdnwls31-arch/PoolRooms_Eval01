@@ -19,6 +19,8 @@ public class TeleportZone : MonoBehaviour
     public GameObject arrivalObject;
     [Tooltip("도착한 자리에서 이만큼 멀어져야 표시가 사라질 수 있다.")]
     public float hideDistance = 2.5f;
+    [Tooltip("옮겨질 때 막 전환 소리(물속으로 가라앉는 듯한 소리)를 낸다.")]
+    public bool transitionSound = true;
 
     /// <summary>0 기다림, 1 도착함(표시 보임), 2 표시가 사라짐.</summary>
     public int Stage { get; private set; }
@@ -62,6 +64,7 @@ public class TeleportZone : MonoBehaviour
         if (cc != null) cc.enabled = true;
         if (arrivalObject != null) arrivalObject.SetActive(true);
         Stage = 1;
+        if (transitionSound) GameAudio.Play(Cue.Transition, pos); // 2026-11-27 사운드: 막 전환
     }
 
     /// <summary>처음 상태로 되돌린다(개발용 방 옮기기에서도 쓴다).</summary>

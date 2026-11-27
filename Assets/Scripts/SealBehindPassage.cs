@@ -85,6 +85,8 @@ public class SealBehindPassage : MonoBehaviour
         Sealed = true;
         armed = false;
         if (plug != null) plug.SetActive(true);
+        // 2026-11-27 사운드: 등 뒤에서 통로가 닫히는 소리. 이어하기로 씬을 열 때 지난 통로를 한꺼번에 막는 것은 소리 없이.
+        if (Time.timeSinceLevelLoad > 1f) GameAudio.Play(Cue.DoorClose, plugBounds.center);
         if (hideOnSeal != null)
             foreach (var go in hideOnSeal) if (go != null) go.SetActive(false);
     }
