@@ -30,6 +30,8 @@ public sealed class CrtScreen : CustomPostProcessVolumeComponent, IPostProcessCo
     public ClampedFloatParameter jitter = new ClampedFloatParameter(0.5f, 0f, 1f);
     /// <summary>유리 가장자리가 어두워지는 정도.</summary>
     public ClampedFloatParameter edgeDarken = new ClampedFloatParameter(0.5f, 0f, 1f);
+    /// <summary>검은 베젤 두께(위아래는 화면 높이, 양옆은 화면 너비 기준 비율). 화면 비율은 그대로이고, 클수록 보이는 화면이 좁아진다(2026-11-28 QA: 시야를 좁게).</summary>
+    public ClampedFloatParameter bezelWidth = new ClampedFloatParameter(0f, 0f, 0.2f);
 
     Material m_Material;
     const string kShaderName = "Hidden/Shader/CrtScreen";
@@ -64,6 +66,7 @@ public sealed class CrtScreen : CustomPostProcessVolumeComponent, IPostProcessCo
         m_Material.SetFloat("_RollBand", rollBand.value);
         m_Material.SetFloat("_Jitter", jitter.value);
         m_Material.SetFloat("_EdgeDarken", edgeDarken.value);
+        m_Material.SetFloat("_Bezel", bezelWidth.value);
         m_Material.SetTexture("_MainTex", source);
         HDUtils.DrawFullScreen(cmd, m_Material, destination, shaderPassId: 0);
     }

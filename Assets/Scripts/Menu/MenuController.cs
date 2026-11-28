@@ -101,6 +101,7 @@ public class MenuController : MonoBehaviour
         else
         {
             Refs.primaryButton.onClick.AddListener(Close);
+            if (Refs.saveButton != null) Refs.saveButton.onClick.AddListener(SaveNow);
         }
     }
 
@@ -126,6 +127,14 @@ public class MenuController : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
         SetVisible(false);
+    }
+
+    /// <summary>일시정지 "저장하기": 지금 방을 저장하고 아래에 잠깐 알린다(멈춘 동안이라 unscaled 시간).</summary>
+    void SaveNow()
+    {
+        GameSave.SaveCurrent();
+        Refs.toast.text = "저장했습니다";
+        toastHideAt = Time.unscaledTime + 2f;
     }
 
     void ToMainMenu()

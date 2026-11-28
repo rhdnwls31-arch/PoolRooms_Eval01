@@ -13,6 +13,8 @@ public class WaterAudio : MonoBehaviour
     public float enterDepth = 0.25f;
     [Tooltip("첨벙 소리 사이 최소 간격(초).")]
     public float splashCooldown = 1.2f;
+    [Tooltip("물에 들어갈 때 첨벙 소리를 낼지. 2026-11-28 사용자 결정: 경박해서 끈다(물 헤치는 발소리·물속 먹먹함은 그대로).")]
+    public bool playEnterSplash = false;
     [Tooltip("물속에서 들리는 소리의 위쪽 한계(Hz). 낮을수록 먹먹하다.")]
     public float underwaterCutoff = 900f;
 
@@ -43,7 +45,7 @@ public class WaterAudio : MonoBehaviour
             if (Inside(t.position, t.lossyScale, t.rotation, foot) && Depth(y, foot.y) >= enterDepth) inWater = true;
             if (cam != null && cam.transform.position.y < y && Inside(t.position, t.lossyScale, t.rotation, cam.transform.position)) camUnder = true;
         }
-        if (inWater && !InWater && Time.time - lastSplash >= splashCooldown)
+        if (playEnterSplash && inWater && !InWater && Time.time - lastSplash >= splashCooldown)
         {
             lastSplash = Time.time;
             GameAudio.Play(Cue.WaterEnter, foot);

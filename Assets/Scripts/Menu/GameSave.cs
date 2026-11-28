@@ -39,6 +39,16 @@ public static class GameSave
         PlayerPrefs.Save();
     }
 
+    /// <summary>
+    /// 일시정지 메뉴 "저장하기"(2026-11-28 QA로 다시 넣음): 지금 씬과 지금까지 들어선 가장 뒤 방을 바로 저장한다.
+    /// 이어하기는 자동 저장과 같이 그 방 입구에서, 앞 방들을 푼 상태로 시작한다(위치만 저장하면 앞 방 출구가 처음 상태로 돌아갔다).
+    /// </summary>
+    public static void SaveCurrent()
+    {
+        var cp = UnityEngine.Object.FindAnyObjectByType<RoomCheckpoint>();
+        SaveRoom(SceneManager.GetActiveScene().name, cp != null ? cp.Reached : 0);
+    }
+
     /// <summary>저장을 지운다(새로 시작할 때).</summary>
     public static void Clear()
     {

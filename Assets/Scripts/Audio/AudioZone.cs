@@ -20,6 +20,8 @@ public class AudioZone : MonoBehaviour
     public FloorSurface surface = FloorSurface.Tile;
     [Tooltip("이 출구가 열리면 환경음이 천천히 사라진다(샤워실: 기믹을 풀면 물방울 소리가 멎는다).")]
     public RevealWhenExplored silenceWhenRevealed;
+    [Tooltip("이 이상한 점을 찾으면(기믹이 풀리면) 바로 환경음이 천천히 사라진다. 출구가 열리기를 기다리면 물줄기가 사라진 뒤에도 물방울 소리가 남았다(2026-11-28 QA).")]
+    public GazeTarget silenceWhenFound;
     [Tooltip("이 오브젝트가 켜져 있을 때만 환경음이 난다(가라앉은 도시: 물이 차오르기 시작해야 물소리).")]
     public GameObject onlyWhileActive;
     [Tooltip("새로 시작해 이 범위에 있으면 주제곡을 잠깐 튼다(처음 수영장).")]
@@ -28,7 +30,9 @@ public class AudioZone : MonoBehaviour
     static readonly List<AudioZone> all = new List<AudioZone>();
 
     /// <summary>지금 환경음을 낼 크기(출구가 열려 멎었으면 0).</summary>
-    public float TargetVolume => Gate(volume, silenceWhenRevealed != null && silenceWhenRevealed.Revealed, onlyWhileActive == null || onlyWhileActive.activeInHierarchy);
+    public float TargetVolume => Gate(volume,
+        (silenceWhenRevealed != null && silenceWhenRevealed.Revealed) || (silenceWhenFound != null && silenceWhenFound.Found),
+        onlyWhileActive == null || onlyWhileActive.activeInHierarchy);
 
     /// <summary>환경음 크기: 출구가 열려 멎었거나, 켜져야 하는 것이 아직 꺼져 있으면 0.</summary>
     public static float Gate(float volume, bool silenced, bool active) => silenced || !active ? 0f : volume;

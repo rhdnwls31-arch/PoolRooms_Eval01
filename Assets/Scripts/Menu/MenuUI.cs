@@ -13,6 +13,7 @@ public class MenuUIRefs
     public GameObject settingsPanel;
     public Button primaryButton;   // Main: 시작하기 / Pause: 계속하기
     public Button continueButton;  // Main: 이어하기 (Pause에서는 null)
+    public Button saveButton;      // Pause: 저장하기 (Main에서는 null)
     public Button settingsButton;
     public Button quitButton;
     public Text toast;
@@ -212,11 +213,12 @@ public static class MenuUIFactory
     // ---- 일시정지: 왼쪽 메뉴 ----------------------------------------------------
     static void BuildPauseLayout(RectTransform parent, MenuUIRefs refs)
     {
-        const float top = -70f, pitch = 64f, left = 90f;
+        // 2026-11-28 QA: 메뉴 묶음을 조금 아래로(-70 → -150), "저장하기"를 다시 넣었다(누르면 지금 방을 바로 저장, 이어하기가 켜진다).
+        const float top = -150f, pitch = 64f, left = 90f;
         refs.primaryButton = MenuItem(parent, "계속하기", new Vector2(0, 1), new Vector2(left, top), TextAnchor.MiddleLeft, 34, refs);
-        // "저장하기"는 2026-11-25 사용자 결정으로 뺐다(방에 들어서면 자동 저장, RoomCheckpoint).
-        refs.settingsButton = MenuItem(parent, "설정", new Vector2(0, 1), new Vector2(left, top - pitch), TextAnchor.MiddleLeft, 34, refs);
-        refs.quitButton = MenuItem(parent, "메인으로 나가기", new Vector2(0, 1), new Vector2(left, top - pitch * 2), TextAnchor.MiddleLeft, 34, refs);
+        refs.saveButton = MenuItem(parent, "저장하기", new Vector2(0, 1), new Vector2(left, top - pitch), TextAnchor.MiddleLeft, 34, refs);
+        refs.settingsButton = MenuItem(parent, "설정", new Vector2(0, 1), new Vector2(left, top - pitch * 2), TextAnchor.MiddleLeft, 34, refs);
+        refs.quitButton = MenuItem(parent, "메인으로 나가기", new Vector2(0, 1), new Vector2(left, top - pitch * 3), TextAnchor.MiddleLeft, 34, refs);
         // 왼쪽 아래 "일시정지" 글자는 2026-11-25 사용자 요청으로 뺐다.
     }
 

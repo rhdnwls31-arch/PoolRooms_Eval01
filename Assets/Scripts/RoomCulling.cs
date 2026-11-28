@@ -21,6 +21,19 @@ public class RoomCulling : MonoBehaviour
     [Tooltip("farRoots 방을 그리는 거리(m).")]
     public float farDistance = 90f;
 
+    /// <summary>이 방 범위 안에 카메라가 있으면 hideRoots 방들을 거리와 상관없이 그리지 않는다(2026-11-28 QA).</summary>
+    [System.Serializable]
+    public class ExclusiveRoom
+    {
+        [Tooltip("카메라가 이 맨 위 오브젝트(방)의 범위 안에 있을 때")]
+        public string insideRoot;
+        [Tooltip("그리지 않을 맨 위 오브젝트(방) 이름")]
+        public string[] hideRoots = new string[0];
+    }
+
+    [Tooltip("이 방 안에서는 저 방들을 그리지 않는다. 마지막 수영장 벽 위로 가라앉은 도시 껍데기(높이 80m)가 네모 상자로 보였다(2026-11-28 QA). --noculling이어도 적용된다(성능이 아니라 보이는 모습 규칙).")]
+    public ExclusiveRoom[] exclusiveRooms = new ExclusiveRoom[0];
+
     /// <summary>켜져 있는지(점검용 스위치).</summary>
     public static bool Active = true;
 
@@ -36,6 +49,7 @@ public class RoomCulling : MonoBehaviour
     }
 
     readonly List<Group> groups = new List<Group>();
+    readonly HashSet<string> excluded = new HashSet<string>();
 
     /// <summary>지금 그리지 않는 방 수(점검용).</summary>
     public int HiddenCount { get; private set; }
@@ -84,15 +98,38 @@ public class RoomCulling : MonoBehaviour
         return roomBounds.SqrDistance(eye) <= cullDistance * cullDistance;
     }
 
+    /// <summary>
+    /// 카메라가 안에 있는 방의 규칙에 따라 그리지 않을 방 이름을 모은다. roomBounds는 방 이름으로 범위를 찾는다(없으면 거짓).
+    /// </summary>
+    public static void CollectExcluded(ExclusiveRoom[] rules, System.Func<string, (bool found, Bounds bounds)> roomBounds, Vector3 eye, HashSet<string> into)
+    {
+        into.Clear();
+        if (rules == null) return;
+        foreach (var rule in rules)
+        {
+            if (rule == null || string.IsNullOrEmpty(rule.insideRoot) || rule.hideRoots == null) continue;
+            var (found, b) = roomBounds(rule.insideRoot);
+            if (!found || !b.Contains(eye)) continue;
+            foreach (var n in rule.hideRoots) if (!string.IsNullOrEmpty(n) && n != rule.insideRoot) into.Add(n);
+        }
+    }
+
+    (bool, Bounds) FindGroupBounds(string name)
+    {
+        foreach (var g in groups) if (g.name == name) return (true, g.bounds);
+        return (false, default);
+    }
+
     void LateUpdate()
     {
         var cam = Camera.main;
         if (cam == null) return;
         Vector3 eye = cam.transform.position;
+        CollectExcluded(exclusiveRooms, FindGroupBounds, eye, excluded);
         int hiddenNow = 0;
         foreach (var g in groups)
         {
-            bool hide = Active && !ShouldDraw(g.bounds, eye, g.distance);
+            bool hide = (Active && !ShouldDraw(g.bounds, eye, g.distance)) || excluded.Contains(g.name);
             if (hide) hiddenNow++;
             if (hide == g.hidden) continue;
             g.hidden = hide;

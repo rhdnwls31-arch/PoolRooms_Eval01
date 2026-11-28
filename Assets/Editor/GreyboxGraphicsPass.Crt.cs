@@ -19,6 +19,7 @@ public static partial class GreyboxGraphicsPass
     const float CrtRollBand = 0.05f;      // 내려가는 밝은 띠
     const float CrtJitter = 0.5f;         // 가끔 밀리는 줄
     const float CrtEdgeDarken = 0.5f;     // 유리 가장자리 어두움
+    const float CrtBezel = 0f;            // 검은 베젤 두께. 2026-11-28 QA로 0.07을 넣어 봤으나 사용자 결정으로 예전 테두리(0)로 되돌림
 
     static void ApplyCrtScreen()
     {
@@ -36,6 +37,7 @@ public static partial class GreyboxGraphicsPass
         crt.rollBand.Override(CrtRollBand);
         crt.jitter.Override(CrtJitter);
         crt.edgeDarken.Override(CrtEdgeDarken);
+        crt.bezelWidth.Override(CrtBezel);
         EditorUtility.SetDirty(crt); EditorUtility.SetDirty(profile);
     }
 

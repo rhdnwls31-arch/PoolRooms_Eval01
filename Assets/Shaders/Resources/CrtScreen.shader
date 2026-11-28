@@ -50,6 +50,7 @@ Shader "Hidden/Shader/CrtScreen"
     float _RollBand;       // 내려가는 밝은 띠 세기
     float _Jitter;         // 가끔 옆으로 밀리는 줄 세기
     float _EdgeDarken;     // 유리 가장자리 어두워짐
+    float _Bezel;          // 베젤 두께(위아래는 화면 높이, 양옆은 화면 너비 기준 비율). 화면 비율은 그대로 두고 보이는 화면을 좁힌다(2026-11-28)
     TEXTURE2D_X(_MainTex);
 
     float Hash(float n) { return frac(sin(n) * 43758.5453); }
@@ -105,7 +106,8 @@ Shader "Hidden/Shader/CrtScreen"
 
         // 6) 유리 가장자리 어두움 + 둥근 모서리 바깥은 베젤(거의 검정, 살짝 반사).
         float2 p = (suv - 0.5) * float2(aspect, 1.0);
-        float2 halfSize = float2(aspect, 1.0) * 0.5;
+        // 베젤만큼 가로·세로를 같은 비율로 줄인다(화면 비율 유지). 네 변에서 똑같이 빼면 화면이 옆으로 길어 보였다(2026-11-28 QA).
+        float2 halfSize = float2(aspect, 1.0) * 0.5 * saturate(1.0 - 2.0 * _Bezel);
         float d = RoundRectSdf(p, halfSize, _CornerRadius);
         float edge = saturate(1.0 + d * 6.0);           // 가장자리 근처에서 1에 가까워진다
         col *= 1.0 - _EdgeDarken * edge * edge;

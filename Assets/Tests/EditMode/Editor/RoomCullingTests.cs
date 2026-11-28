@@ -57,4 +57,48 @@ public class RoomCullingTests
         // Act / Assert
         Assert.IsFalse(CameraOnlyNear.Near(Room, 4f, eye));
     }
+
+    // ---- 이 방 안에서는 저 방을 그리지 않기(2026-11-28 QA: 마지막 수영장에서 가라앉은 도시 껍데기가 보였다) ----
+
+    static RoomCulling.ExclusiveRoom[] PoolRule() => new[]
+    {
+        new RoomCulling.ExclusiveRoom { insideRoot = "FinalPool", hideRoots = new[] { "City", "FinalPool" } }
+    };
+
+    static (bool, Bounds) Lookup(string name) => name == "FinalPool" ? (true, Room) : (false, default);
+
+    [Test]
+    public void CollectExcluded_EyeInsideRoom_HidesListedRoomsButNotItself()
+    {
+        // Arrange
+        var into = new System.Collections.Generic.HashSet<string>();
+        // Act
+        RoomCulling.CollectExcluded(PoolRule(), Lookup, new Vector3(1f, 1f, 1f), into);
+        // Assert
+        Assert.IsTrue(into.Contains("City"));
+        Assert.IsFalse(into.Contains("FinalPool"));
+    }
+
+    [Test]
+    public void CollectExcluded_EyeOutsideRoom_HidesNothing()
+    {
+        // Arrange: 방 가장자리(x = 5) 바로 밖
+        var into = new System.Collections.Generic.HashSet<string> { "Stale" };
+        // Act
+        RoomCulling.CollectExcluded(PoolRule(), Lookup, new Vector3(5.5f, 0f, 0f), into);
+        // Assert
+        Assert.AreEqual(0, into.Count);
+    }
+
+    [Test]
+    public void CollectExcluded_UnknownInsideRoom_HidesNothing()
+    {
+        // Arrange
+        var rules = new[] { new RoomCulling.ExclusiveRoom { insideRoot = "Missing", hideRoots = new[] { "City" } } };
+        var into = new System.Collections.Generic.HashSet<string>();
+        // Act
+        RoomCulling.CollectExcluded(rules, Lookup, Vector3.zero, into);
+        // Assert
+        Assert.AreEqual(0, into.Count);
+    }
 }

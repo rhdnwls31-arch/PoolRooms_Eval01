@@ -325,6 +325,9 @@ public static partial class GreyboxGraphicsPass
         var shower = Z("Shower", Gaze("Oddity_Shower_Up", none), "amb_shower", 0.55f, FloorSurface.Wet);
         var showerGate = GameObject.Find("FindGate_Shower");
         if (showerGate != null) shower.silenceWhenRevealed = showerGate.GetComponent<RevealWhenExplored>(); // 기믹을 풀면 물방울이 멎는다
+        // 2026-11-28 QA: 출구가 열리기(화면 밖일 때)를 기다리면 물줄기가 사라진 뒤에도 물방울 소리가 남았다 → 찾는 순간 멎게
+        var showerOdd = GameObject.Find("Oddity_Shower_Up");
+        if (showerOdd != null) shower.silenceWhenFound = showerOdd.GetComponent<GazeTarget>();
         Z("Yellow", Gaze("Oddity_Clown", none), "amb_yellow", 0.35f, FloorSurface.Carpet);
         Z("Corridor", new Bounds(new Vector3(112f, 1.5f, -232f), new Vector3(152f, 6f, 6f)), "amb_corridor", 0.18f, FloorSurface.Wood);
         Z("Living", Gaze("Oddity_TV", none), "amb_living", 0.4f, FloorSurface.Carpet);
